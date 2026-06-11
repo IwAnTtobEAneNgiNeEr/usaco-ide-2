@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# ---- Local secrets ----------------------------------------------------------
+# AI API key lives here. NEVER commit this file.
+# Copy data/ai-settings.example.json -> data/ai-settings.json and fill in your key.
+data/ai-settings.json
+
+# Local app settings (machine-specific compiler paths, etc.)
+# Copy data/settings.example.json -> data/settings.json, or let the app create it.
+data/settings.json
+
+# ---- User data ---------------------------------------------------------------
+# Personal problems, contests, run history and the compile cache all live in
+# workspace/. They are YOUR data, not the app's source. A fresh clone re-creates
+# the folder and seeds a sample problem on first run.
+workspace/
+
+# ---- Build output -------------------------------------------------------------
+desktop/dist/
+desktop/out/
+
+# ---- OS / editor / tooling ----------------------------------------------------
+.DS_Store
+Thumbs.db
+*.log
+.claude/

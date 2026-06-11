@@ -1,0 +1,38 @@
+{
+  "name": "usaco-ide-2-desktop",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Thin Electron desktop wrapper for USACO IDE 2.0",
+  "main": "main.js",
+  "scripts": {
+    "icon": "node scripts/make-icon.js",
+    "start": "electron .",
+    "dist": "node scripts/make-icon.js && electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.phuc.usacoide2",
+    "productName": "USACO IDE 2.0",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "build/**"],
+    "extraResources": [
+      { "from": "../backend", "to": "backend", "filter": ["**/*"] },
+      { "from": "../frontend", "to": "frontend", "filter": ["**/*"] }
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "USACO IDE 2.0"
+    }
+  }
+}

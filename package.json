@@ -1,0 +1,26 @@
+{
+  "name": "usaco-ide-2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Local-first C++ competitive programming IDE + judge with a gamified learning engine and an AI Coach. Express backend, vanilla-ESM frontend, real g++ grading.",
+  "license": "MIT",
+  "author": "Ho Thien Phuc",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "setup": "npm install --prefix backend",
+    "start": "npm start --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "test": "npm test --prefix backend"
+  },
+  "keywords": [
+    "competitive-programming",
+    "usaco",
+    "cpp",
+    "judge",
+    "ide",
+    "local-first",
+    "ai-coach"
+  ]
+}

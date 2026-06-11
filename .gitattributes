@@ -1,0 +1,15 @@
+# Normalize line endings in the repo; keep launchers native to their platform.
+* text=auto
+
+# Windows launchers must stay CRLF (cmd.exe misparses LF-only batch files).
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# POSIX scripts must stay LF.
+*.sh text eol=lf
+
+# Binary assets
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary

@@ -1,0 +1,12 @@
+{
+  "compilerPath": "g++",
+  "cppStandard": "c++17",
+  "optimization": "-O2",
+  "timeMs": 2000,
+  "compareMode": "loose",
+  "epsilon": 0.0001,
+  "memoryLimitMB": 0,
+  "autosave": true,
+  "autosaveDelayMs": 800,
+  "tabSize": 4
+}

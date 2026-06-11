@@ -1,0 +1,19 @@
+{
+  "name": "usaco-ide-2-backend",
+  "version": "2.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Local backend for USACO IDE 2.0 — file-based C++ problem workspace + g++ judge.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

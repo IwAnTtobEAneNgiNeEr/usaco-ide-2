@@ -1,0 +1,7 @@
+{
+  "aiProvider": "openai-compatible",
+  "apiKey": "PASTE_YOUR_API_KEY_HERE",
+  "baseUrl": "https://api.openai.com/v1",
+  "model": "gpt-4.1-mini",
+  "fallbackModels": ""
+}
