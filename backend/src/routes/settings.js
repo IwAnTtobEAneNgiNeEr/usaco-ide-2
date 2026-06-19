@@ -17,6 +17,18 @@ router.put("/", asyncHandler(async (req, res) => {
   res.json({ settings: await settingsStore.saveSettings(req.body || {}) });
 }));
 
+// GET /api/settings/template — the C++ starter for new problems.
+// `custom` says whether data/template.cpp overrides the built-in one.
+router.get("/template", asyncHandler(async (req, res) => {
+  res.json(await settingsStore.readTemplateState());
+}));
+
+// PUT /api/settings/template — blank template resets to the built-in starter.
+router.put("/template", asyncHandler(async (req, res) => {
+  const template = req.body && typeof req.body.template === "string" ? req.body.template : "";
+  res.json(await settingsStore.saveCodeTemplate(template));
+}));
+
 // GET /api/settings/compiler — probe whether the configured compiler exists
 router.get("/compiler", asyncHandler(async (req, res) => {
   const settings = await settingsStore.getSettings();

@@ -23,8 +23,18 @@ export function initTimer(app) {
   const state = { total: savedTotal, remaining: savedTotal, running: false, intervalId: null, endAt: 0 };
   app._timer = state;
 
-  if (el.timerPreset) el.timerPreset.value = savedPreset;
-  if (customEl) customEl.value = savedCustom;
+  // The custom-minutes input is revealed only when "Tùy chọn…" is picked, so the
+  // top bar shows a single duration control at rest (progressive disclosure).
+  function showCustom(show) {
+    if (!customEl) return;
+    customEl.hidden = !show;
+  }
+
+  // savedPreset === "" means the last duration was a custom value.
+  const startedCustom = savedPreset === "" && savedCustom !== "";
+  if (el.timerPreset) el.timerPreset.value = startedCustom ? "custom" : savedPreset;
+  if (customEl) customEl.value = startedCustom ? savedCustom : "";
+  showCustom(startedCustom);
 
   function saveTimerSettings(total, preset, custom) {
     try {
@@ -98,7 +108,16 @@ export function initTimer(app) {
 
   el.timerToggle.addEventListener("click", () => (state.running ? pause() : start()));
   el.timerReset.addEventListener("click", reset);
-  el.timerPreset.addEventListener("change", () => setMinutes(el.timerPreset.value));
+  el.timerPreset.addEventListener("change", () => {
+    if (el.timerPreset.value === "custom") {
+      // Reveal the input and wait for a value instead of changing the duration now.
+      showCustom(true);
+      if (customEl) { customEl.focus(); if (customEl.value) setMinutes(customEl.value, { fromCustom: true }); }
+      return;
+    }
+    showCustom(false);
+    setMinutes(el.timerPreset.value);
+  });
   if (customEl) {
     customEl.addEventListener("change", () => {
       if (customEl.value) setMinutes(customEl.value, { fromCustom: true });

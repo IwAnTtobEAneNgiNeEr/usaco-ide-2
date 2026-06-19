@@ -30,6 +30,19 @@ async function resolveCode(id, body) {
   return problemStore.getFile(id, "code");
 }
 
+// SPJ source when the problem opts in (getFile falls back to the starter checker).
+async function resolveChecker(id, meta) {
+  return meta && meta.usesChecker ? problemStore.getFile(id, "checker") : null;
+}
+
+// True once the client has gone away (closed tab / pressed Stop) — lets the
+// judge skip the remaining tests instead of burning CPU on a dead request.
+function clientGone(res) {
+  let gone = false;
+  res.on("close", () => { if (!res.writableEnded) gone = true; });
+  return () => gone;
+}
+
 // POST /api/problems/:id/run  — compile + run once against input.txt / expected.txt
 router.post("/:id/run", requireProblem, asyncHandler(async (req, res) => {
   const id = req.problemId;
@@ -37,10 +50,11 @@ router.post("/:id/run", requireProblem, asyncHandler(async (req, res) => {
   const meta = await problemStore.readMeta(id);
   const fileMode = fileModeFor(meta);
   const code = await resolveCode(id, req.body);
+  const checker = await resolveChecker(id, meta);
   const input = await problemStore.getFile(id, "input");
   const expected = await problemStore.getFile(id, "expected");
 
-  const result = await judgeService.compileAndRun({ code, settings: effectiveSettings(settings, meta), input, expected, fileMode });
+  const result = await judgeService.compileAndRun({ code, settings: effectiveSettings(settings, meta), input, expected, fileMode, checker });
 
   if (result.compilerMissing) {
     await problemStore.recordRun(id, { type: "run", verdict: "CE", error: "compiler missing" });
@@ -62,6 +76,8 @@ router.post("/:id/judge", requireProblem, asyncHandler(async (req, res) => {
   const meta = await problemStore.readMeta(id);
   const fileMode = fileModeFor(meta);
   const code = await resolveCode(id, req.body);
+  const checker = await resolveChecker(id, meta);
+  const shouldStop = clientGone(res);
   let tests = await problemStore.listTests(id);
 
   // Optionally judge a single test case (used by the "Run" button on each card).
@@ -93,10 +109,11 @@ router.post("/:id/judge", requireProblem, asyncHandler(async (req, res) => {
     });
   }
 
-  const result = await judgeService.compileAndJudge({ code, settings: effectiveSettings(settings, meta), tests, fileMode });
+  const result = await judgeService.compileAndJudge({ code, settings: effectiveSettings(settings, meta), tests, fileMode, checker, shouldStop });
 
-  // Single-test runs are exploratory — don't pollute history / lastVerdict.
-  if (!single) {
+  // Single-test runs are exploratory, and a cancelled judge is a partial one —
+  // neither should pollute history / lastVerdict.
+  if (!single && !result.cancelled) {
     if (result.compilerMissing) {
       await problemStore.recordRun(id, { type: "judge", verdict: "CE", total: result.summary.total, passed: 0, error: "compiler missing" });
     } else if (!result.compileOk) {

@@ -1,0 +1,141 @@
+/* =========================================================================
+   lux.css — "precision instrument" elevation layer (loaded LAST).
+   Product-register bold: depth, one sharper accent, and satisfying motion —
+   clarity and craft, not theatrics. No neon, no glass, no gradient text.
+   Every animation here is still neutralised by the reduced-motion catch-all
+   in refine.css (which is !important and wins).
+   ========================================================================= */
+
+:root {
+  /* Indigo-tinted elevation — shadows the colour of the room, not pure black. */
+  --shadow-1: 0 1px 2px rgba(2, 6, 23, .45);
+  --shadow-2: 0 6px 22px -8px rgba(2, 6, 23, .6);
+  --shadow-3: 0 28px 70px -20px rgba(2, 6, 23, .78);
+  /* Hairline "lit from above" edge reused across raised surfaces. */
+  --edge-light: inset 0 1px 0 rgba(255, 255, 255, .055);
+  /* Focus halo: a crisp ring plus a soft bloom. */
+  --ring: 0 0 0 2px rgba(59, 130, 246, .6), 0 0 0 6px rgba(59, 130, 246, .14);
+  /* Motion. */
+  --ease: cubic-bezier(.22, 1, .36, 1);   /* ease-out-quint */
+  --lux-fast: 120ms;
+  --lux: 200ms;
+}
+
+/* ---- Ambient: each column lit faintly from the top so the UI reads as a
+        screen, not flat paint. Barely perceptible by design. ---- */
+.col-problems, .col-editor, .col-panel {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .014), transparent 240px);
+}
+
+/* ---- Top bar: a touch of depth + a brand mark that reads as a real logo ---- */
+.topbar {
+  background: linear-gradient(180deg, #0e1428, #0b1020);
+  box-shadow: var(--edge-light), 0 1px 0 rgba(0, 0, 0, .5);
+}
+.brand-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 27px; height: 27px; font-size: 13px; line-height: 1;
+  border-radius: 8px;
+  color: #bfd4ff;
+  background: linear-gradient(180deg, rgba(59, 130, 246, .22), rgba(59, 130, 246, .07));
+  border: 1px solid rgba(59, 130, 246, .38);
+  box-shadow: var(--edge-light), 0 3px 12px -4px rgba(59, 130, 246, .5);
+}
+.brand-name { font-weight: 650; letter-spacing: -0.02em; }
+
+/* ---- Section heads / labels: crisper hierarchy ---- */
+.col-head { box-shadow: var(--edge-light); }
+.col-title { color: var(--text-muted); }
+.meta-title { font-weight: 700; letter-spacing: -0.02em; }
+
+/* ---- Problem list: alive hover + a signature selected state ---- */
+.p-item {
+  transition: background var(--lux-fast) var(--ease),
+              border-color var(--lux-fast) var(--ease),
+              transform var(--lux-fast) var(--ease);
+}
+.p-item:hover { background: rgba(255, 255, 255, .035); }
+.p-item.active {
+  background: linear-gradient(90deg, rgba(59, 130, 246, .17), rgba(59, 130, 246, .05) 55%, rgba(59, 130, 246, 0));
+  box-shadow: var(--edge-light);
+}
+.p-item.active::before {
+  width: 3px; border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #7cb0ff, var(--accent));
+  box-shadow: 0 0 10px rgba(59, 130, 246, .75);
+}
+
+/* ---- Buttons: tactile. A lighter top edge, an ambient coloured shadow on the
+        two hero actions, a lift on hover, a press on active. The gradient is
+        derived from the live button colour so custom accents still work. ---- */
+.btn-primary, .btn-run, .btn-judge {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, 0));
+  transition: transform var(--lux-fast) var(--ease),
+              box-shadow var(--lux) var(--ease),
+              filter var(--lux-fast) var(--ease),
+              background-color var(--lux-fast) var(--ease);
+}
+.btn-primary { box-shadow: var(--edge-light), 0 3px 10px -4px rgba(59, 130, 246, .5); }
+.btn-run     { box-shadow: var(--edge-light), 0 4px 16px -6px rgba(59, 130, 246, .6); }
+.btn-judge   { box-shadow: var(--edge-light), 0 4px 16px -6px rgba(34, 197, 94, .55); }
+.btn-primary:hover:not(:disabled),
+.btn-run:hover:not(:disabled),
+.btn-judge:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.07) saturate(1.05);
+}
+.btn-primary:active:not(:disabled),
+.btn-run:active:not(:disabled),
+.btn-judge:active:not(:disabled) { transform: translateY(0) scale(.985); }
+
+/* Ghost / secondary buttons: quieter but still responsive. */
+.btn-ghost { transition: background var(--lux-fast) var(--ease), color var(--lux-fast) var(--ease), transform var(--lux-fast) var(--ease); }
+.btn-ghost:hover:not(:disabled) { transform: translateY(-1px); }
+
+/* Crisp, haloed focus for keyboard users. */
+.btn:focus-visible { box-shadow: var(--ring) !important; outline: none; }
+.input:focus, .select:focus { box-shadow: var(--ring); border-color: var(--accent); }
+
+/* ---- Verdict chip: the reward moment. Saturated, deep, and quietly glowing
+        in the verdict's own colour. ---- */
+.verdict-chip {
+  box-shadow: var(--edge-light);
+  transition: background var(--lux) var(--ease), color var(--lux) var(--ease),
+              border-color var(--lux) var(--ease), box-shadow var(--lux) var(--ease);
+}
+.verdict-AC  { box-shadow: var(--edge-light), 0 0 0 1px rgba(34, 197, 94, .25), 0 8px 26px -8px rgba(34, 197, 94, .8); }
+.verdict-WA  { box-shadow: var(--edge-light), 0 8px 26px -10px rgba(239, 68, 68, .7); }
+.verdict-TLE { box-shadow: var(--edge-light), 0 8px 26px -10px rgba(245, 158, 11, .6); }
+.verdict-MLE { box-shadow: var(--edge-light), 0 8px 26px -10px rgba(249, 115, 22, .6); }
+.verdict-RE  { box-shadow: var(--edge-light), 0 8px 26px -10px rgba(139, 92, 246, .6); }
+.verdict-OK, .verdict-running { box-shadow: var(--edge-light), 0 6px 20px -10px rgba(59, 130, 246, .6); }
+/* A single, gentle pop when an accept lands — fires once on render. */
+@media (prefers-reduced-motion: no-preference) {
+  .verdict-AC { animation: lux-pop .34s var(--ease); }
+  @keyframes lux-pop { 0% { transform: scale(.92); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
+}
+
+/* ---- Tabs: the active tab gets a luminous underline ---- */
+.panel-tabs .tab { transition: color var(--lux-fast) var(--ease), background var(--lux-fast) var(--ease); }
+.panel-tabs .tab.active { box-shadow: inset 0 -2px 0 var(--accent), 0 2px 10px -4px rgba(59, 130, 246, .5); }
+
+/* ---- Raised content surfaces get the same top-edge light for cohesion ---- */
+.console-output .term,
+.editor-toolbar,
+.snip-item,
+.dash-card,
+.tcard, .gt-card, .ai-card,
+.modal {
+  box-shadow: var(--edge-light), var(--shadow-1);
+}
+.modal { box-shadow: var(--edge-light), var(--shadow-3); }
+
+/* ---- Code editor frame: a hair more presence ---- */
+.code-stack { box-shadow: var(--edge-light), var(--shadow-2); }
+
+/* ---- Meta chips / pills: refined ---- */
+.meta-chips .chip, .pill { box-shadow: var(--edge-light); }
+
+/* ---- Scrollbar thumb: indigo, with a touch of life on hover ---- */
+::-webkit-scrollbar-thumb { background: #2f3e58; background-clip: content-box; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #455a7e; background-clip: content-box; }

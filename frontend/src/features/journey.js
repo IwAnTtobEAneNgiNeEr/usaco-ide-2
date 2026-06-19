@@ -25,7 +25,7 @@ const QUOTES = [
 const NAME_KEY = "usaco2.userName";
 
 function userName() {
-  try { return localStorage.getItem(NAME_KEY) || "Phúc"; } catch { return "Phúc"; }
+  try { return localStorage.getItem(NAME_KEY) || "bạn"; } catch { return "bạn"; }
 }
 
 function greeting() {
@@ -207,48 +207,6 @@ function renderHome(p) {
 }
 
 // ---------------------------------------------------------------------------
-// Celebrations
-// ---------------------------------------------------------------------------
-
-const CONFETTI_COLORS = ["#5b9bff", "#4ade80", "#f2c044", "#ff5d6c", "#c084fc", "#5fd0c8"];
-
-function confetti(count = 40) {
-  const host = document.createElement("div");
-  host.className = "jh-confetti";
-  for (let i = 0; i < count; i++) {
-    const s = document.createElement("span");
-    const size = 6 + Math.random() * 7;
-    s.style.left = `${8 + Math.random() * 84}vw`;
-    s.style.width = `${size}px`;
-    s.style.height = `${size * (0.4 + Math.random() * 0.8)}px`;
-    s.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
-    s.style.animationDelay = `${Math.random() * 0.35}s`;
-    s.style.animationDuration = `${1 + Math.random() * 0.9}s`;
-    s.style.setProperty("--spin", `${(Math.random() * 720 - 360).toFixed(0)}deg`);
-    host.appendChild(s);
-  }
-  document.body.appendChild(host);
-  setTimeout(() => host.remove(), 2400);
-}
-
-function levelUpOverlay(level, name) {
-  const old = document.getElementById("jh-levelup");
-  if (old) old.remove();
-  const el = document.createElement("div");
-  el.id = "jh-levelup";
-  el.className = "jh-levelup";
-  el.innerHTML = `
-    <div class="jh-levelup-card">
-      <div class="jh-levelup-burst">⬆</div>
-      <div class="jh-levelup-title">LÊN CẤP ${level}!</div>
-      <div class="jh-levelup-name">${escapeHtml(name)}</div>
-    </div>`;
-  el.addEventListener("click", () => el.remove());
-  document.body.appendChild(el);
-  setTimeout(() => { el.classList.add("fade"); setTimeout(() => el.remove(), 400); }, 2600);
-}
-
-// ---------------------------------------------------------------------------
 // init
 // ---------------------------------------------------------------------------
 
@@ -291,24 +249,11 @@ export function initJourney(app) {
     document.dispatchEvent(new CustomEvent("journey:painted", { detail: { progress: p } }));
   }
 
-  // --- celebrations: compare snapshots ---
-  function celebrate(prev, next) {
-    if (!prev) return;
-    const delta = next.xp.total - prev.xp.total;
-    if (delta > 0) app.toast(`+${delta} XP${next.xp.today ? ` · ${next.xp.today} XP hôm nay` : ""}`, "xp");
-    if (next.xp.level > prev.xp.level) {
-      confetti(60);
-      levelUpOverlay(next.xp.level, next.xp.levelName);
-      if (app.playSound) app.playSound("ac");
-    } else if (delta >= 20) {
-      confetti(36); // a fresh solve — worth a shower
-    }
-    // newly finished quests
-    const prevDone = new Set(prev.quests.filter((q) => q.done).map((q) => q.id));
-    for (const q of next.quests) {
-      if (q.done && !prevDone.has(q.id)) app.toast(`${q.icon} Nhiệm vụ xong: ${q.label}`, "ok");
-    }
-  }
+  // Celebrations intentionally disabled — the gamification layer is demoted, so
+  // judging no longer triggers XP toasts, level-up overlays, or confetti. The
+  // Journey home (reachable via the 🏠 chip) still shows streak/XP/quests
+  // quietly for anyone who wants them. Kept as a no-op so refresh() needn't care.
+  function celebrate(/* prev, next */) {}
 
   async function refresh({ quiet = false } = {}) {
     try {

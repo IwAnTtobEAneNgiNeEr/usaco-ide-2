@@ -5,6 +5,7 @@
 // no localhost URL in the user's face.
 
 const { app, BrowserWindow, Menu, shell, dialog } = require("electron");
+app.commandLine.appendSwitch("disable-http-cache");
 const { fork } = require("child_process");
 const path = require("path");
 const http = require("http");
@@ -83,7 +84,7 @@ function createWindow() {
   ];
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
-  win.loadURL(URL);
+  win.loadURL(URL + "?v=" + Date.now());
   // External links open in the real browser, not inside the app.
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: "deny" }; });
   win.on("closed", () => { win = null; });

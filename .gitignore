@@ -10,6 +10,12 @@ data/ai-settings.json
 # Copy data/settings.example.json -> data/settings.json, or let the app create it.
 data/settings.json
 
+# Weekend Boss state (per-user progress, written by the app)
+data/boss.json
+
+# Personal C++ starter template (Settings → Code template)
+data/template.cpp
+
 # ---- User data ---------------------------------------------------------------
 # Personal problems, contests, run history and the compile cache all live in
 # workspace/. They are YOUR data, not the app's source. A fresh clone re-creates
@@ -19,6 +25,11 @@ workspace/
 # ---- Build output -------------------------------------------------------------
 desktop/dist/
 desktop/out/
+
+# ---- Python tooling (OCR / MarkItDown helper scripts) -------------------------
+# Bytecode caches are regenerated on every run — never commit them.
+__pycache__/
+*.pyc
 
 # ---- OS / editor / tooling ----------------------------------------------------
 .DS_Store

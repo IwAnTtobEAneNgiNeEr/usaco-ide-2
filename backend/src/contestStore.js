@@ -13,8 +13,9 @@
 //       02/  ...
 
 const path = require("path");
-const { CONTESTS_DIR, DEFAULT_TEMPLATE, LIMITS } = require("./config");
+const { CONTESTS_DIR, LIMITS } = require("./config");
 const store = require("./fileStore");
+const settingsStore = require("./settingsStore");
 
 const PROBLEM_FILES = Object.freeze({
   code: "main.cpp",
@@ -157,14 +158,22 @@ function toClientProblem(meta) {
 
 const PROBLEM_PATCHABLE = ["title", "status", "lastVerdict"];
 
+// Same lost-update hazard as problemStore: autosave's touchProblem races the
+// judge's recordRun over the same meta.json. Serialize per contest problem.
+function withLock(contestId, pid, fn) {
+  return store.withLock(`contest:${contestId}/${pid}`, fn);
+}
+
 async function updateProblemMeta(contestId, pid, patch = {}) {
-  const meta = await readProblemMeta(contestId, pid);
-  for (const key of PROBLEM_PATCHABLE) {
-    if (key in patch) meta[key] = patch[key];
-  }
-  meta.updatedAt = nowIso();
-  await writeProblemMeta(contestId, pid, meta);
-  return meta;
+  return withLock(contestId, pid, async () => {
+    const meta = await readProblemMeta(contestId, pid);
+    for (const key of PROBLEM_PATCHABLE) {
+      if (key in patch) meta[key] = patch[key];
+    }
+    meta.updatedAt = nowIso();
+    await writeProblemMeta(contestId, pid, meta);
+    return meta;
+  });
 }
 
 async function listProblemIds(contestId) {
@@ -180,8 +189,9 @@ async function listProblemIds(contestId) {
 async function getProblemFile(contestId, pid, kind) {
   const name = PROBLEM_FILES[kind];
   if (!name) throw new Error(`Unknown contest file kind: ${kind}`);
-  const fallback = kind === "code" ? DEFAULT_TEMPLATE : "";
-  return store.readText(path.join(problemDir(contestId, pid), name), fallback);
+  const raw = await store.readText(path.join(problemDir(contestId, pid), name), null);
+  if (raw != null) return raw;
+  return kind === "code" ? settingsStore.getCodeTemplate() : "";
 }
 
 async function setProblemFile(contestId, pid, kind, content) {
@@ -193,9 +203,11 @@ async function setProblemFile(contestId, pid, kind, content) {
 }
 
 async function touchProblem(contestId, pid) {
-  const meta = await readProblemMeta(contestId, pid);
-  meta.updatedAt = nowIso();
-  await writeProblemMeta(contestId, pid, meta);
+  return withLock(contestId, pid, async () => {
+    const meta = await readProblemMeta(contestId, pid);
+    meta.updatedAt = nowIso();
+    await writeProblemMeta(contestId, pid, meta);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -333,38 +345,52 @@ async function listHistory(contestId, pid) {
   return raw && Array.isArray(raw.entries) ? raw.entries : [];
 }
 
+// Snapshot stdout/stderr are display-only; cap them so history.json stays
+// bounded (same policy as problemStore — code is never capped).
+const SNAPSHOT_TEXT_CAP = 64 * 1024;
+
+function capSnapshotText(value) {
+  const s = typeof value === "string" ? value : "";
+  if (s.length <= SNAPSHOT_TEXT_CAP) return s;
+  return s.slice(0, SNAPSHOT_TEXT_CAP) + `\n… (cắt bớt — ${s.length - SNAPSHOT_TEXT_CAP} ký tự nữa)`;
+}
+
 async function recordRun(contestId, pid, entry) {
-  const at = nowIso();
-  const meta = await readProblemMeta(contestId, pid);
+  const record = await withLock(contestId, pid, async () => {
+    const at = nowIso();
+    const meta = await readProblemMeta(contestId, pid);
 
-  const record = {
-    at,
-    type: entry.type || "run",
-    verdict: entry.verdict || null,
-    timeMs: Math.round(entry.timeMs || 0),
-    passed: entry.passed != null ? entry.passed : null,
-    total: entry.total != null ? entry.total : null,
-    error: entry.error || null
-  };
-  meta.history.unshift(record);
-  if (meta.history.length > LIMITS.historyLimit) meta.history = meta.history.slice(0, LIMITS.historyLimit);
-  if (entry.verdict) meta.lastVerdict = entry.verdict;
-  if (entry.verdict === "AC") meta.status = "solved";
-  meta.updatedAt = at;
-  await writeProblemMeta(contestId, pid, meta);
+    const rec = {
+      at,
+      type: entry.type || "run",
+      verdict: entry.verdict || null,
+      timeMs: Math.round(entry.timeMs || 0),
+      passed: entry.passed != null ? entry.passed : null,
+      total: entry.total != null ? entry.total : null,
+      error: entry.error || null
+    };
+    meta.history.unshift(rec);
+    if (meta.history.length > LIMITS.historyLimit) meta.history = meta.history.slice(0, LIMITS.historyLimit);
+    if (entry.verdict) meta.lastVerdict = entry.verdict;
+    if (entry.verdict === "AC") meta.status = "solved";
+    meta.updatedAt = at;
+    await writeProblemMeta(contestId, pid, meta);
 
-  if (entry.snapshot) {
-    const entries = await listHistory(contestId, pid);
-    entries.unshift({
-      ...record,
-      code: typeof entry.snapshot.code === "string" ? entry.snapshot.code : "",
-      stdout: typeof entry.snapshot.stdout === "string" ? entry.snapshot.stdout : "",
-      stderr: typeof entry.snapshot.stderr === "string" ? entry.snapshot.stderr : ""
-    });
-    await store.writeJson(historyPath(contestId, pid), { entries: entries.slice(0, LIMITS.historyLimit) });
-  }
+    if (entry.snapshot) {
+      const entries = await listHistory(contestId, pid);
+      entries.unshift({
+        ...rec,
+        code: typeof entry.snapshot.code === "string" ? entry.snapshot.code : "",
+        stdout: capSnapshotText(entry.snapshot.stdout),
+        stderr: capSnapshotText(entry.snapshot.stderr)
+      });
+      await store.writeJson(historyPath(contestId, pid), { entries: entries.slice(0, LIMITS.historyLimit) });
+    }
+    return rec;
+  });
 
-  // Keep the contest's roll-up status fresh after every run.
+  // Keep the contest's roll-up status fresh after every run (outside the
+  // per-problem lock — it reads every problem meta in the contest).
   await refreshContestStatus(contestId);
   return record;
 }
@@ -503,7 +529,7 @@ async function createContest({ topic, minRating, maxRating, basedOnProblemIds, a
     const dir = problemDir(id, pid);
     await store.ensureDir(path.join(dir, "tests"));
 
-    await store.writeText(path.join(dir, PROBLEM_FILES.code), DEFAULT_TEMPLATE);
+    await store.writeText(path.join(dir, PROBLEM_FILES.code), await settingsStore.getCodeTemplate());
     await store.writeText(path.join(dir, PROBLEM_FILES.statement), buildStatementMd(p));
 
     // Scratch input/expected: seed from the first verified test (or first sample).

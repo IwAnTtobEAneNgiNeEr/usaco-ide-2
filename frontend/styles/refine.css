@@ -1,0 +1,773 @@
+/* =========================================================================
+   refine.css — REDESIGN PASS (loaded LAST, after polish.css).
+   Component-only. Uses existing tokens from main.css — no new colors invented,
+   no gradients, no glow. Three jobs:
+     1. AI Coach: turn the chat dump into a scannable assistant panel.
+     2. Editor Appearance: settings UI for fonts / themes / colors / power options.
+     3. Visual polish: buttons, tabs, inputs, settings hierarchy + cursor hooks.
+   ========================================================================= */
+
+/* =========================================================================
+   1 · AI COACH — premium, scannable assistant
+   ========================================================================= */
+
+/* AI turns become content blocks (wide, flat) instead of cramped chat bubbles.
+   User turns stay as right-aligned bubbles for conversational rhythm. */
+/* AI turns become content blocks (wide, flat) instead of cramped chat bubbles.
+   User turns stay as right-aligned bubbles for conversational rhythm. */
+@keyframes coachBubbleFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.coach-msg {
+  margin-bottom: 12px;
+  animation: coachBubbleFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.coach-msg-ai .coach-bubble {
+  max-width: 100%;
+  width: 100%;
+  background: #0b0f19 !important;
+  border: 1px solid rgba(59, 130, 246, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #cbd5e1 !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.coach-msg-me .coach-bubble {
+  max-width: 86%;
+  background: #1e3a8a !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #f1f5f9 !important;
+  border-radius: 12px !important;
+  border-bottom-right-radius: 4px !important;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Markdown hierarchy inside an AI turn — weight + spacing led, not color. */
+.coach-msg-ai .coach-bubble > :first-child { margin-top: 0; }
+.coach-msg-ai .coach-bubble > :last-child { margin-bottom: 0; }
+.coach-msg-ai .coach-bubble p { margin: 0 0 10px; }
+.coach-msg-ai .coach-bubble h1,
+.coach-msg-ai .coach-bubble h2,
+.coach-msg-ai .coach-bubble h3,
+.coach-msg-ai .coach-bubble h4 {
+  font-size: 13px; font-weight: 650; color: #f8fafc;
+  margin: 16px 0 8px; letter-spacing: -0.005em;
+}
+.coach-msg-ai .coach-bubble ul,
+.coach-msg-ai .coach-bubble ol { margin: 6px 0 10px; padding-left: 20px; }
+.coach-msg-ai .coach-bubble li { margin: 4px 0; }
+.coach-msg-ai .coach-bubble strong { color: #f8fafc; font-weight: 650; }
+.coach-msg-ai .coach-bubble a { color: #60a5fa; text-decoration: underline; }
+.coach-msg-ai .coach-bubble table {
+  border-collapse: collapse; width: 100%; margin: 6px 0 10px; font-size: 12px;
+}
+.coach-msg-ai .coach-bubble th,
+.coach-msg-ai .coach-bubble td { border: 1px solid #1e293b; padding: 6px 10px; text-align: left; }
+.coach-msg-ai .coach-bubble th { background: #1e293b; color: #f8fafc; }
+
+/* Section labels: a heading that names a phase becomes a colored card label. */
+.coach-sec {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 0; margin: 18px 0 10px;
+  border-left: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0;
+  background: transparent !important;
+  font-size: 11px !important; font-weight: 700 !important;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.coach-sec:hover {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+.coach-sec::before { content: attr(data-icon); font-size: 13px; }
+.coach-sec::after {
+  content: "▼";
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--text-dim);
+  transition: transform 0.15s ease;
+}
+.coach-sec.collapsed::after {
+  transform: rotate(-90deg);
+}
+
+.coach-sec-inline::before { content: attr(data-icon); margin-right: 4px; }
+.coach-sec-inline { font-weight: 700; }
+
+.coach-sec-hint    { border-bottom-color: rgba(59, 130, 246, 0.3) !important; color: #60a5fa !important; }
+.coach-sec-obs     { border-bottom-color: rgba(245, 158, 11, 0.3) !important; color: #f59e0b !important; }
+.coach-sec-mistake { border-bottom-color: rgba(239, 68, 68, 0.3) !important; color: #f87171 !important; }
+.coach-sec-fix     { border-bottom-color: rgba(34, 197, 94, 0.3) !important; color: #4ade80 !important; }
+.coach-sec-next    { border-bottom-color: rgba(245, 158, 11, 0.3) !important; color: #f59e0b !important; }
+.coach-sec-cur     { border-bottom-color: rgba(249, 115, 22, 0.3) !important; color: #fb923c !important; }
+.coach-sec-goal    { border-bottom-color: rgba(34, 197, 94, 0.3) !important; color: #4ade80 !important; }
+
+.coach-sec-inline.coach-sec-hint    { color: #60a5fa; }
+.coach-sec-inline.coach-sec-mistake { color: #f87171; }
+.coach-sec-inline.coach-sec-fix     { color: #4ade80; }
+
+.hidden-collapsed {
+  display: none !important;
+}
+
+/* CP technique chips highlighted in prose. */
+.coach-kw {
+  font-weight: 600; color: #c084fc;
+  background: rgba(147, 51, 234, 0.1);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  border-radius: 6px; padding: 1px 6px; white-space: nowrap;
+  font-size: 11.5px;
+}
+
+/* Risk / confidence strip. */
+.coach-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+.coach-badge {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.coach-badge.warn-tle { color: var(--tle); border-color: rgba(245,158,11,.5); background: rgba(245,158,11,.12); }
+.coach-badge.warn-wa  { color: var(--wa);  border-color: rgba(239,68,68,.5);  background: rgba(239,68,68,.12); }
+.coach-badge.warn-of  { color: var(--mle); border-color: rgba(249,115,22,.5);  background: rgba(249,115,22,.12); }
+.coach-badge.warn-mem { color: #fca5a5;    border-color: rgba(239,68,68,.4);   background: rgba(239,68,68,.1); }
+.coach-badge.conf-high { color: var(--ac); border-color: rgba(34,197,94,.5);   background: rgba(34,197,94,.12); }
+.coach-badge.conf-med  { color: var(--tle); border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.1); }
+.coach-badge.conf-low  { color: var(--text-dim); border-color: var(--border);   background: var(--bg-soft); }
+
+/* Code block: header bar (lang + copy) + highlighted body. */
+.coach-code {
+  margin: 10px 0 12px;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #090d16;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.coach-code-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px 6px 12px;
+  background: #111827;
+  border-bottom: 1px solid #1e293b;
+}
+.coach-code-lang {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8;
+}
+.coach-copy {
+  font-family: var(--sans); font-size: 10.5px; font-weight: 600;
+  color: #94a3b8; background: transparent;
+  border: 1px solid #1e293b; border-radius: 5px;
+  padding: 2px 9px; cursor: pointer; transition: all .12s ease;
+}
+.coach-copy:hover { color: #fff; border-color: #475569; background: #1f2937; }
+.coach-copy.done { color: #4ade80; border-color: rgba(34,197,94,.5); background: rgba(34,197,94,0.1); }
+.coach-code-pre {
+  margin: 0; padding: 12px 14px; overflow: auto; max-height: 340px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.55;
+  color: #e2e8f0; white-space: pre; tab-size: 4;
+}
+.coach-code-pre code { font: inherit; background: none; border: none; padding: 0; }
+
+/* Layout adjustments for the coach panel elements */
+.coach-head {
+  background: #0f172a !important;
+  border-bottom: 1px solid #1e293b !important;
+  padding: 10px 14px !important;
+}
+.coach-title {
+  color: #3b82f6 !important;
+  font-size: 11.5px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.08em !important;
+}
+.coach-reveal-toggle {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+.coach-reveal-toggle:hover {
+  border-color: #3b82f6 !important;
+  color: #e2e8f0 !important;
+}
+.coach-reveal-toggle:has(input:checked) {
+  background: rgba(59, 130, 246, .15) !important;
+  border-color: rgba(59, 130, 246, .55) !important;
+  color: #60a5fa !important;
+}
+.coach-clear {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+.coach-clear:hover {
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, .45) !important;
+  background: rgba(239, 68, 68, .1) !important;
+}
+.coach-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  padding: 10px 14px !important;
+  background: #090d16 !important;
+  border-top: 1px solid #1e293b !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+.coach-actions .btn {
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #cbd5e1 !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+}
+.coach-actions .btn:hover {
+  background: #334155 !important;
+  color: #fff !important;
+  border-color: #475569 !important;
+  transform: translateY(-0.5px);
+}
+.coach-actions .btn.coach-qa-active {
+  background: rgba(59, 130, 246, .18) !important;
+  border-color: rgba(59, 130, 246, .55) !important;
+  color: #60a5fa !important;
+  font-weight: 650 !important;
+}
+.coach-composer {
+  background: #0b0f19 !important;
+  border-top: 1px solid #1e293b !important;
+  padding: 12px 14px !important;
+}
+.coach-input {
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  background: #090d16 !important;
+  color: #fff !important;
+  padding: 9px 12px !important;
+  font-size: 13px !important;
+  transition: all 0.15s ease !important;
+}
+.coach-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+}
+
+/* =========================================================================
+   2 · EDITOR APPEARANCE — settings UI
+   ========================================================================= */
+.ea-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.ea-slider { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.ea-slider label { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.ea-slider label b { font-family: var(--mono); font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ea-slider input[type=range], .ea-toggles input[type=range] { width: 100%; }
+input[type=range] {
+  -webkit-appearance: none; appearance: none; height: 5px; border-radius: 3px;
+  background: #1f2937 !important; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: #ffffff !important; border: 2.5px solid #3b82f6 !important;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.4) !important;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+input[type=range]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; background: #ffffff !important;
+  border: 2.5px solid #3b82f6 !important;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Syntax theme gallery */
+.ea-themes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.ea-theme {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 6px; background: var(--panel-2);
+  border: 1px solid var(--border-soft); border-radius: 8px;
+  cursor: pointer; text-align: left; transition: border-color .12s, transform .12s;
+}
+.ea-theme:hover { border-color: #475569; transform: translateY(-1px); }
+.ea-theme.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ea-theme-prev {
+  display: flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 10px; border-radius: 5px;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+}
+.ea-theme-prev i { font-style: normal; }
+.ea-theme-name { font-size: 11px; font-weight: 600; color: var(--text-muted); padding-left: 2px; }
+
+/* Advanced custom colors */
+.ea-advanced { margin-top: 8px; border: 1px solid var(--border-soft); border-radius: 8px; background: var(--bg-surface); }
+.ea-advanced summary {
+  cursor: pointer; padding: 9px 12px; font-size: 12px; font-weight: 600; color: var(--text-muted);
+  user-select: none; list-style: none;
+}
+.ea-advanced summary::-webkit-details-marker { display: none; }
+.ea-advanced summary::before { content: "▸ "; color: var(--text-dim); }
+.ea-advanced[open] summary::before { content: "▾ "; }
+.ea-colors {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 12px;
+  padding: 4px 12px 12px;
+}
+.ea-color { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-muted); }
+.ea-color input[type=color] {
+  -webkit-appearance: none; appearance: none; width: 26px; height: 22px;
+  padding: 0; border: 1px solid var(--border); border-radius: 5px; background: none; cursor: pointer; flex: none;
+}
+.ea-color input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+.ea-color input[type=color]::-webkit-color-swatch { border: none; border-radius: 3px; }
+
+.ea-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 4px 0 6px; }
+.ea-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* =========================================================================
+   3 · POWER-USER EDITOR HOOKS (cursor style / blink / smooth scroll)
+   These are CSS-only; the toggles set data-attrs on <html> (editor-appearance.js).
+   ========================================================================= */
+html[data-cursor-blink="off"] .cm-cursorLayer { animation: none !important; }
+html[data-cursor-style="block"] .cm-cursor-primary {
+  border-left-width: 0.62em; opacity: 0.45;
+}
+html[data-cursor-style="underline"] .cm-cursor-primary {
+  border-left: none; border-bottom: 2px solid var(--ed-cursor); margin-bottom: -1px;
+}
+html[data-smooth-scroll="on"] .cm-scroller,
+html[data-smooth-scroll="on"] .code-editor { scroll-behavior: smooth; }
+
+/* =========================================================================
+   4 · VISUAL POLISH — buttons / tabs / inputs / settings hierarchy
+   Quiet, professional (VS Code / Linear / JetBrains). No glow, no toys.
+   ========================================================================= */
+
+/* Tabs: clearer inactive→active contrast, weight-led. */
+.panel-tabs .tab { font-weight: 600; color: var(--text-dim); }
+.panel-tabs .tab:hover { color: var(--text-muted); }
+.panel-tabs .tab.active { color: var(--text); }
+
+/* Buttons: tighter disabled + consistent pressed feedback. */
+.btn:disabled { opacity: .4; }
+.btn:active:not(:disabled) { transform: translateY(0.5px); }
+.btn-ai { font-weight: 550; }
+
+/* Inputs/selects: slightly stronger resting border so fields read as fields. */
+.input, .select { transition: border-color .12s, box-shadow .12s, background .12s; }
+.input:hover:not(:focus), .select:hover:not(:focus) { border-color: #475569; }
+
+/* Settings: give sections breathing room + a quiet card feel via the dividers. */
+.settings-form { gap: 16px; }
+.settings-section-title {
+  font-size: 10.5px; letter-spacing: 0.09em;
+  display: flex; align-items: center; gap: 8px;
+}
+.settings-section-title::after {
+  content: ""; flex: 1; height: 1px; background: var(--border-soft);
+}
+.settings-group > label { letter-spacing: 0.005em; }
+
+/* Overflow dropdowns: a touch more elevation + hover clarity. */
+.ov-panel .btn:hover:not(:disabled) { background: var(--panel-2); }
+
+/* Problem explorer titles: tabular meta, weight-led hierarchy. */
+.p-title { letter-spacing: -0.005em; }
+
+@media (max-width: 1500px) {
+  .ea-themes { grid-template-columns: 1fr 1fr; }
+}
+
+/* =========================================================================
+   ⚙️ Premium Settings Panel & Component Overrides
+   ========================================================================= */
+
+.settings-card {
+  background: #0f1624 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 12px !important;
+  padding: 18px 20px !important;
+  margin-bottom: 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+.settings-card .settings-section-title {
+  margin-top: 0 !important;
+  margin-bottom: 4px;
+}
+
+.settings-card .input, 
+.settings-card .select,
+.input,
+.select {
+  background: #0b1220 !important;
+  border: 1px solid #243042 !important;
+  border-radius: 8px !important;
+  color: var(--text) !important;
+  padding: 8px 12px !important;
+  font-size: 12.5px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.settings-card .input:focus,
+.settings-card .select:focus,
+.input:focus,
+.select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+}
+
+.ea-slider {
+  margin-top: 6px;
+}
+
+.check-row {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.check-row input[type=checkbox] {
+  accent-color: #3b82f6;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.ea-advanced {
+  background: #0b1220 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 8px !important;
+}
+
+.ea-advanced summary {
+  padding: 10px 14px !important;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ea-advanced[open] {
+  border-color: #243042 !important;
+}
+
+.ea-theme {
+  background: #111827 !important;
+  border: 1px solid #243042 !important;
+  transition: transform 0.15s ease, border-color 0.15s ease !important;
+}
+
+.ea-theme:hover {
+  transform: translateY(-2px) !important;
+  border-color: #3b82f6 !important;
+}
+
+.ea-theme.on {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+}
+
+.coach-badge.warn-progress {
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+  background: rgba(96, 165, 250, 0.1) !important;
+}
+
+.coach-code {
+  margin: 10px 0 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  background: #0b1220 !important;
+}
+
+/* =========================================================================
+   🎛️ Segmented Tabs [Code | Problem] & EDIT INFO Button Redesign
+   ========================================================================= */
+
+.mode-toggle {
+  display: inline-flex !important;
+  background: #0b1220 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 8px !important;
+  padding: 3px !important;
+  gap: 2px !important;
+}
+
+.mode-btn {
+  font-family: var(--sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #94a3b8 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 6px !important;
+  padding: 6px 16px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 150ms ease !important;
+}
+
+.mode-btn:hover {
+  color: #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.mode-btn.active {
+  color: #ffffff !important;
+  background: #1f2937 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3) !important;
+  border-bottom: none !important;
+}
+
+#btn-edit-meta {
+  font-family: var(--sans) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+  color: #94a3b8 !important;
+  background: #0b1220 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: all 150ms ease !important;
+}
+
+#btn-edit-meta:hover {
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  background: #111827 !important;
+}
+
+/* =========================================================================
+   🎓 Premium Collapsible Coach Cards (Image 1 style)
+   ========================================================================= */
+
+.coach-card-sec {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1px solid var(--card-border) !important;
+  background: var(--card-bg) !important;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.25) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.coach-card-sec:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Header bar */
+.coach-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px !important;
+  background: var(--card-hdr-bg) !important;
+  font-family: var(--sans) !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--card-hdr-fg) !important;
+  border-bottom: 1px solid var(--card-border-soft) !important;
+  cursor: pointer;
+  user-select: none;
+}
+
+.coach-card-header::after {
+  content: "▼" !important;
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--card-hdr-fg);
+  opacity: 0.8;
+  transition: transform 0.2s ease;
+}
+
+.coach-card-sec.collapsed .coach-card-header::after {
+  transform: rotate(-90deg) !important;
+}
+
+.coach-card-header span:first-child {
+  font-size: 13px;
+}
+
+/* Body */
+.coach-card-body {
+  padding: 12px 14px !important;
+  font-size: 12.5px !important;
+  line-height: 1.6 !important;
+  color: #cbd5e1 !important;
+}
+
+.coach-card-body p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.coach-card-body pre,
+.coach-card-body .coach-code {
+  margin: 10px 0 0 !important;
+}
+
+.coach-card-sec.collapsed .coach-card-body {
+  display: none !important;
+}
+
+/* Specific theme color configurations */
+
+/* Idea/Hint (Blue) */
+.coach-card-sec-hint {
+  --card-border: rgba(59, 130, 246, 0.35);
+  --card-border-soft: rgba(59, 130, 246, 0.15);
+  --card-bg: #0d1320;
+  --card-hdr-bg: #1e293b;
+  --card-hdr-fg: #60a5fa;
+}
+
+/* Observation (Amber) */
+.coach-card-sec-obs {
+  --card-border: rgba(245, 158, 11, 0.35);
+  --card-border-soft: rgba(245, 158, 11, 0.15);
+  --card-bg: #14110f;
+  --card-hdr-bg: #2d2013;
+  --card-hdr-fg: #fbbf24;
+}
+
+/* Mistake (Red) */
+.coach-card-sec-mistake {
+  --card-border: rgba(239, 68, 68, 0.35);
+  --card-border-soft: rgba(239, 68, 68, 0.15);
+  --card-bg: #181011;
+  --card-hdr-bg: #351c1e;
+  --card-hdr-fg: #f87171;
+}
+
+/* Fix (Green) */
+.coach-card-sec-fix {
+  --card-border: rgba(34, 197, 94, 0.35);
+  --card-border-soft: rgba(34, 197, 94, 0.15);
+  --card-bg: #0e1611;
+  --card-hdr-bg: #1a2d20;
+  --card-hdr-fg: #4ade80;
+}
+
+/* Next Step (Amber) */
+.coach-card-sec-next {
+  --card-border: rgba(245, 158, 11, 0.35);
+  --card-border-soft: rgba(245, 158, 11, 0.15);
+  --card-bg: #14110f;
+  --card-hdr-bg: #2d2013;
+  --card-hdr-fg: #fbbf24;
+}
+
+/* Current Step (Orange) */
+.coach-card-sec-cur {
+  --card-border: rgba(249, 115, 22, 0.35);
+  --card-border-soft: rgba(249, 115, 22, 0.15);
+  --card-bg: #16100e;
+  --card-hdr-bg: #321d14;
+  --card-hdr-fg: #fb923c;
+}
+
+/* Goal (Green) */
+.coach-card-sec-goal {
+  --card-border: rgba(34, 197, 94, 0.35);
+  --card-border-soft: rgba(34, 197, 94, 0.15);
+  --card-bg: #0e1611;
+  --card-hdr-bg: #1a2d20;
+  --card-hdr-fg: #4ade80;
+}
+
+/* =========================================================================
+   5 · RESPONSIVE — graceful degradation for smaller laptops.
+   The fixed 290px + 460px side rails crush the center editor below ~1300px
+   (the problem title wraps one word per line and code gets clipped). 1366×768
+   is the most common student laptop, so shrink the rails in steps and shed the
+   lowest-value topbar widgets to protect the title + Run/Judge.
+
+   Design intent is preserved at >=1400px (1440/1536/1920 are untouched) — this
+   is purely defensive for narrower screens, not a mobile layout. The
+   :not(.sb-collapsed):not(.zen-mode) guards let Ctrl+B collapse and Zen mode
+   keep full control of the grid at any width.
+   ========================================================================= */
+@media (max-width: 1400px) {
+  .workbench.mode-coding:not(.sb-collapsed):not(.zen-mode) {
+    grid-template-columns: 268px minmax(0, 1fr) 416px;
+  }
+  .workbench.mode-reading:not(.zen-mode) {
+    grid-template-columns: 0 minmax(0, 1fr) 360px;
+  }
+  /* Shed the two lowest-value topbar widgets first. Ctrl+K still opens the
+     command palette without its button; the session counters return wider. */
+  #btn-cmdk,
+  #session-stats { display: none; }
+}
+
+@media (max-width: 1240px) {
+  .workbench.mode-coding:not(.sb-collapsed):not(.zen-mode) {
+    grid-template-columns: 244px minmax(0, 1fr) 380px;
+  }
+  .workbench.mode-reading:not(.zen-mode) {
+    grid-template-columns: 0 minmax(0, 1fr) 340px;
+  }
+  /* The centered file title duplicates the <h1> directly below it. Drop it when
+     space is contested so it never truncates to "[..."; push actions right. */
+  .topbar-center { display: none; }
+  .topbar-actions { margin-left: auto; }
+  /* Panel-tab fit is handled by a container query on .col-panel (main.css),
+     so it works for reading mode's narrow panel too — no viewport rule here. */
+}
+
+@media (max-width: 1100px) {
+  .workbench.mode-coding:not(.sb-collapsed):not(.zen-mode) {
+    grid-template-columns: 222px minmax(0, 1fr) 344px;
+  }
+  .timer-preset { display: none; }       /* timer still runs via the ▶ / ↺ buttons */
+  .jh-chips #jh-chip-home { display: none; }
+}
+
+/* =========================================================================
+   Reduced motion — global safety net (loaded last so it wins).
+   Per-component rules above handle specific entrances; this guarantees that
+   ANY animation/transition (toast slide-in, spinners, future additions)
+   collapses to near-instant for users who asked for less motion, while still
+   settling on the final state so nothing renders blank or half-shown.
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+

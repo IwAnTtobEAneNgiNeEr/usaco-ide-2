@@ -6,7 +6,83 @@
 
 import { api } from "./api.js";
 import { renderMeta } from "./editor.js";
-import { renderMarkdown, escapeHtml } from "./md.js";
+import { renderMarkdown, escapeHtml, renderMath } from "./md.js";
+
+// ---- Statement reading page (section-aware) --------------------------------
+// A real competitive-programming problem page: the raw Markdown is split into
+// recognized sections (Description / Input / Output / Constraints / Examples /
+// Notes / Subtasks) by heading keywords — Vietnamese AND English — and each is
+// rendered with a quiet section label. Falls back to one "Đề bài" block when a
+// statement has no headings. The raw textarea stays the source of truth (Edit).
+
+function stripDiacritics(s) {
+  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+}
+function normHead(s) {
+  return stripDiacritics(s).toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Order matters: "Sample Input" must classify as Examples, not Input — so the
+// example/sample rules are tested before the bare input/output rules.
+const SECTION_RULES = [
+  { type: "examples",    label: "Ví dụ",              kw: ["example", "examples", "sample", "samples", "vi du", "vi du mau", "test vi du"] },
+  { type: "subtasks",    label: "Subtasks & chấm điểm", kw: ["subtask", "subtasks", "scoring", "cham diem", "phan diem"] },
+  { type: "constraints", label: "Ràng buộc",          kw: ["constraint", "constraints", "rang buoc", "gioi han", "limit", "limits"] },
+  { type: "input",       label: "Dữ liệu vào",        kw: ["input", "dau vao", "du lieu vao", "du lieu", "input format", "standard input", "dinh dang vao"] },
+  { type: "output",      label: "Kết quả ra",         kw: ["output", "dau ra", "ket qua", "ket qua ra", "output format", "standard output", "dinh dang ra"] },
+  { type: "notes",       label: "Ghi chú",            kw: ["note", "notes", "ghi chu", "giai thich", "luu y", "explanation", "remark", "remarks"] },
+  { type: "description", label: "Đề bài",             kw: ["de bai", "bai toan", "problem", "mo ta", "description", "statement", "noi dung", "tom tat de"] }
+];
+
+function classifyHeading(text) {
+  const h = normHead(text);
+  if (!h) return null;
+  for (const r of SECTION_RULES) {
+    for (const k of r.kw) {
+      if (h === k || h.startsWith(k + " ") || h.includes(" " + k) || h.includes(k + " ") || h === k) return r;
+    }
+  }
+  return null;
+}
+
+function parseSections(raw) {
+  const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+  const sections = [];
+  let cur = { type: "description", label: "Đề bài", lines: [] };
+  let inFence = false;
+  for (const line of lines) {
+    if (/^\s*```+/.test(line)) inFence = !inFence;
+    const hm = !inFence && line.match(/^(#{1,6})\s+(.*)$/);
+    if (hm) {
+      const rule = classifyHeading(hm[2]);
+      if (rule) {
+        sections.push(cur);
+        cur = { type: rule.type, label: rule.label, lines: [] };
+        continue; // the heading becomes the section label chip, not body text
+      }
+    }
+    cur.lines.push(line);
+  }
+  sections.push(cur);
+  return sections.filter((s) => s.lines.join("\n").trim().length > 0);
+}
+
+export function renderStatement(app) {
+  const host = app.el.statementRendered;
+  if (!host) return;
+  const raw = app.el.ioStatement.value || "";
+  if (!raw.trim()) {
+    host.innerHTML = '<div class="stmt-empty">Chưa có đề bài. Bấm <b>Edit</b> để dán đề (Markdown được hỗ trợ), hoặc dùng <b>⤴ Image / PDF</b> · <b>📋 Paste</b> để nhập từ ảnh — AI sẽ tự phân tích &amp; tạo test.</div>';
+    return;
+  }
+  const sections = parseSections(raw);
+  host.innerHTML = sections.map((s) =>
+    `<section class="stmt-section stmt-${s.type}">
+       <h2 class="stmt-section-label">${escapeHtml(s.label)}</h2>
+       <div class="stmt-section-body">${renderMarkdown(s.lines.join("\n"))}</div>
+     </section>`).join("");
+  renderMath(host);
+}
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -85,8 +161,21 @@ function renderAnalysis(app, a) {
   card.classList.remove("hidden");
   const tech = (a.kyThuat || []).map((t) => `<span class="tag-pill tech">${escapeHtml(t)}</span>`).join("");
   const tags = (a.tags || []).map((t) => `<span class="tag-pill">${escapeHtml(t)}</span>`).join("");
+  
+  const getIcon = (label) => {
+    switch (label) {
+      case "Tóm tắt": return "📝";
+      case "Độ khó": return "📊";
+      case "Kỹ thuật": return "🛠️";
+      case "Ràng buộc": return "⚙️";
+      case "Lưu ý": return "⚠️";
+      case "Tags": return "🏷️";
+      default: return "🔹";
+    }
+  };
+
   const row = (label, body, cls) => body
-    ? `<div class="an-row"><div class="an-label">${label}</div><div class="an-body ${cls || ""}">${body}</div></div>`
+    ? `<div class="an-row"><div class="an-label"><span>${getIcon(label)}</span><span>${label}</span></div><div class="an-body ${cls || ""}">${body}</div></div>`
     : "";
 
   // Difficulty line: USACO tier chip + estimated CF rating chip + complexity chips + the prose note.
@@ -294,6 +383,7 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
   try {
     await api.saveStatement(app.state.currentId, statement);
     app.state.savedStatement = statement;
+    renderStatement(app);
 
     const res = await api.aiProcess({
       problemId: app.state.currentId,
@@ -380,6 +470,7 @@ async function runOcr(app, dataUrl, mimeType, fileName) {
     await api.saveStatement(app.state.currentId, app.el.ioStatement.value);
     app.state.savedStatement = app.el.ioStatement.value;
     app.state._aiAutoDisabled = false;
+    if (app.setStatementMode) app.setStatementMode("read");
     const viaLabel = { tesseract: "Tesseract (local)", markitdown: "MarkItDown" }[res.via] || res.via || "OCR";
     const cleanLabel = res.cleaned ? " · đã làm sạch tiếng Việt" : "";
     status(app, `OCR xong (${viaLabel}${cleanLabel}). Đang phân tích…`);
@@ -413,6 +504,10 @@ export function loadProblemView(app) {
   renderExamples(app, extractSamples(app.el.ioStatement.value));
   app.el.genTestsCard.classList.add("hidden");
   app.el.genTestsCard.innerHTML = "";
+  // Default to the rendered reading page when there's a statement, else Edit.
+  const hasStmt = !!app.el.ioStatement.value.trim();
+  if (app.setStatementMode) app.setStatementMode(hasStmt ? "read" : "edit");
+  else renderStatement(app);
 }
 
 // ---- Init ------------------------------------------------------------------
@@ -422,6 +517,26 @@ export function initStatement(app) {
 
   app.showProblemView = () => app.setView("problem");
   app.runStatementPipeline = () => { app.showProblemView(); runPipeline(app, { force: true }); };
+  app.renderStatement = () => renderStatement(app);
+
+  // Read = rendered problem page (default when a statement exists);
+  // Edit = raw Markdown textarea (the source of truth).
+  app.setStatementMode = (mode) => {
+    const edit = mode === "edit";
+    app.state.statementMode = edit ? "edit" : "read";
+    el.ioStatement.classList.toggle("hidden", !edit);
+    if (app.el.statementRendered) app.el.statementRendered.classList.toggle("hidden", edit);
+    const tg = document.getElementById("stmt-mode-toggle");
+    if (tg) tg.querySelectorAll(".stmt-mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === app.state.statementMode));
+    if (edit) setTimeout(() => el.ioStatement.focus(), 0);
+    else renderStatement(app);
+  };
+  const modeToggle = document.getElementById("stmt-mode-toggle");
+  if (modeToggle) {
+    modeToggle.querySelectorAll(".stmt-mode-btn").forEach((b) => {
+      b.addEventListener("click", () => app.setStatementMode(b.dataset.mode));
+    });
+  }
 
   // Debounced auto-pipeline as the statement changes.
   let debounceTimer = null;
@@ -442,6 +557,7 @@ export function initStatement(app) {
     try {
       await api.saveStatement(app.state.currentId, el.ioStatement.value);
       app.state.savedStatement = el.ioStatement.value;
+      renderStatement(app);
       app.toast("Đã lưu đề bài", "ok");
     } catch (err) { app.toast(err.message, "err"); }
   });
@@ -454,6 +570,7 @@ export function initStatement(app) {
     el.analysisCard.classList.add("hidden"); el.analysisCard.innerHTML = "";
     el.examplesCard.classList.add("hidden"); el.examplesCard.innerHTML = "";
     el.genTestsCard.classList.add("hidden"); el.genTestsCard.innerHTML = "";
+    if (app.setStatementMode) app.setStatementMode("edit");
     status(app, "Dán ảnh (Ctrl+V), tải ảnh/PDF, hoặc gõ đề bài — AI sẽ tự phân tích &amp; tạo test.");
     try { await api.saveStatement(app.state.currentId, ""); app.state.savedStatement = ""; } catch (err) { app.toast(err.message, "err"); }
   });

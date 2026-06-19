@@ -60,6 +60,22 @@ function modelCandidates(settings) {
   return [...new Set(list.filter(Boolean))];
 }
 
+// Turn a raw provider HTTP error into a friendly, actionable Vietnamese message
+// while keeping the provider's own text in parentheses for debugging. Used so
+// the user sees "kiểm tra key trong Settings" instead of a raw vendor string.
+function friendlyAiError(status, providerMsg) {
+  const detail = providerMsg ? ` (${String(providerMsg).slice(0, 200)})` : "";
+  if (status === 401 || status === 403)
+    return `API key bị từ chối — kiểm tra lại key trong Settings → AI.${detail}`;
+  if (status === 429)
+    return `Hết hạn mức / bị giới hạn tốc độ (429) — đợi một lát, hoặc thêm model dự phòng ("Fallback models") trong Settings → AI.${detail}`;
+  if (status === 404)
+    return `Không tìm thấy model hoặc endpoint (404) — kiểm tra "Model" và "Base URL" trong Settings → AI.${detail}`;
+  if (status >= 500)
+    return `Nhà cung cấp AI đang lỗi tạm thời (${status}) — hệ thống sẽ tự thử lại.${detail}`;
+  return `AI error ${status}: ${providerMsg}`;
+}
+
 // One concrete request to one model. Throws an Error tagged with `.retryable`
 // (429 / 5xx / overloaded → try a fallback) or `.fatal` (auth / bad request).
 // With `stream: true` the response is consumed as SSE: `onDelta(text)` fires per
@@ -117,8 +133,9 @@ async function chatOnce({ settings, model, messages, jsonMode, maxTokens, timeou
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = null; }
     const providerMsg = (data && data.error && (data.error.message || data.error.type)) || res.statusText || "request failed";
-    const e = new Error(`AI error ${res.status}: ${providerMsg}`);
+    const e = new Error(friendlyAiError(res.status, providerMsg));
     e.status = res.status;
+    e.providerMessage = providerMsg;
     // 429 (rate limit) + 5xx (overload/transient) are retryable; 4xx auth/bad-request are fatal.
     e.retryable = res.status === 429 || res.status >= 500;
     if (res.status === 401 || res.status === 403) e.code = "AUTH";
@@ -784,8 +801,8 @@ const REVIEW_SYSTEM = [
   "Bạn nhận: đề bài, code hiện tại của học sinh, và lịch sử các lần WA (kèm output sai gần nhất).",
   "Trả về DUY NHẤT JSON hợp lệ (không markdown ngoài JSON):",
   "{",
-  '  "tongQuan": "1-2 câu nhận định chung bằng tiếng Việt",',
-  '  "saiTuDuy": ["nơi tư duy/thuật toán sai, từng ý ngắn, tiếng Việt"],',
+  '  "tongQuan": "1-2 câu chốt LỖI TƯ DUY LỚN NHẤT đang khiến bài sai (cụ thể, không nói chung chung), tiếng Việt",',
+  '  "saiTuDuy": ["mỗi ý: gọi tên hiểu lầm cốt lõi + nêu 1 input nhỏ hoặc điều kiện cụ thể làm lộ nó, tiếng Việt"],',
   '  "truongHopThieu": ["trường hợp đầu vào chưa xử lý / chưa cover, tiếng Việt"],',
   '  "edgeCase": ["edge case cụ thể dễ làm sai (n=1, rỗng, trùng, tràn số, …), tiếng Việt"],',
   '  "kyThuatNenDung": ["kỹ thuật/thuật toán nên dùng hoặc bổ sung"]',
@@ -990,7 +1007,7 @@ const AUTOFIX_SYSTEM = [
   "NHIỆM VỤ: Tìm chỗ sai trong code và trả về CÁC BẢN VÁ nhỏ nhất có thể để sửa.",
   "Trả về DUY NHẤT JSON hợp lệ (không markdown ngoài JSON):",
   "{",
-  '  "explanation": "Giải thích ngắn gọn vì sao code sai, bằng tiếng Việt",',
+  '  "explanation": "Vì sao code sai: gọi tên NGUYÊN NHÂN GỐC / lỗi tư duy (không chỉ mô tả triệu chứng), bằng tiếng Việt",',
   '  "fixes": [',
   '    { "search": "đoạn code gốc CẦN THAY THẾ — sao chép CHÍNH XÁC từ code gốc",',
   '      "replace": "đoạn code đã sửa" }',
@@ -1000,7 +1017,7 @@ const AUTOFIX_SYSTEM = [
   "- 'search' PHẢI là bản sao NGUYÊN VĂN (byte-for-byte) của một đoạn text CÓ THẬT trong code gốc — giữ ĐÚNG khoảng trắng, tab, xuống dòng.",
   "- Nếu không tìm được chuỗi khớp chính xác, ĐỂ TRỐNG fixes: [].",
   "- Mỗi fix nên nhỏ (1-5 dòng); tránh thay thế toàn bộ hàm.",
-  "- 'explanation' viết bằng tiếng Việt, tối đa 3 câu.",
+  "- 'explanation' viết bằng tiếng Việt, tối đa 3 câu, PHẢI nêu nguyên nhân gốc cụ thể (vd: 'dùng int nên tràn khi tích vượt ~2 tỉ'), không nói chung chung.",
   "- TUYỆT ĐỐI KHÔNG bịa search string không có trong code gốc."
 ].join("\n");
 
@@ -1282,18 +1299,50 @@ async function synthesizeVariant({ settings, statement, technique, code }) {
 // ---------------------------------------------------------------------------
 
 const CHAT_SYSTEM = [
-  "Bạn là trợ giảng lập trình thi đấu cho ĐÚNG MỘT bài tập.",
-  "Bạn CHỈ được dùng thông tin trong: (1) ĐỀ BÀI, (2) CODE HIỆN TẠI của học sinh, (3) KẾT QUẢ TEST GẦN NHẤT, (4) LỊCH SỬ NỘP BÀI GẦN ĐÂY (verdict + log lỗi) — tất cả nằm trong message hệ thống kèm theo.",
-  "NGUYÊN TẮC QUAN TRỌNG:",
-  "- Trả lời NGẮN GỌN, bằng tiếng Việt, đi thẳng vào câu hỏi.",
-  "- KHÔNG liệt kê hay tóm tắt lại bảng lịch sử nộp bài (học sinh đã xem trên giao diện rồi). Hãy tổng hợp nguyên nhân gốc rễ một cách trực tiếp.",
-  "- Dựa vào LỊCH SỬ nộp bài để Coach: nộp lại cùng lỗi → chỉ nguyên nhân gốc; TLE → hướng vào độ phức tạp; RE → chỉ ra loại lỗi runtime (chỉ số mảng, chia 0...); WA → giải thích test case bị thiếu hoặc sai tư duy.",
-  "- Bám chặt phạm vi BÀI NÀY. Nếu hỏi ngoài lề, hãy từ chối.",
-  "- Tuyệt đối không bịa số liệu, test case không có trong đề hoặc log.",
-  "CHẾ ĐỘ LỘ LỜI GIẢI:",
-  "- Khi chế độ lộ lời giải TẮT: TUYỆT ĐỐI KHÔNG VIẾT CODE C++ (dù chỉ là 1 dòng hay 1 khối if-else). Chỉ gợi ý tư duy bằng lời văn hoặc mã giả cực kỳ trừu tượng. KHÔNG đưa công thức cuối cùng.",
-  "- Khi chế độ lộ lời giải BẬT: Được phép viết code hoàn chỉnh.",
-  "Định dạng: văn xuôi ngắn (Markdown). Không xưng là AI của hãng nào."
+  "Bạn là trợ giảng lập trình thi đấu (competitive programming) cho ĐÚNG MỘT bài tập.",
+  "Học sinh đang tự học CP (beginner→intermediate). Mục tiêu của bạn: giúp họ TỰ HIỂU và TỰ SỬA code của chính mình, KHÔNG phải đưa đáp án AC rồi giảng lại.",
+  "",
+  "DỮ LIỆU BẠN ĐƯỢC DÙNG (và CHỈ những thứ này):",
+  "(1) ĐỀ BÀI, (2) CODE HIỆN TẠI của học sinh, (3) KẾT QUẢ TEST GẦN NHẤT, (4) LỊCH SỬ NỘP BÀI GẦN ĐÂY.",
+  "",
+  "=== NGUYÊN TẮC CỐT LÕI ===",
+  "",
+  "1. SỬA CODE CỦA HỌC SINH — KHÔNG VIẾT BÀI MỚI (mệnh lệnh quan trọng nhất):",
+  "   - Sai lầm TỆ NHẤT: dán một lời giải AC mới tinh rồi giảng giải nó, trong khi code học sinh chỉ sai một chỗ. TUYỆT ĐỐI KHÔNG làm thế.",
+  "   - Đọc kỹ CODE HIỆN TẠI trước khi trả lời: học sinh đang ĐỊNH làm thuật toán gì, cấu trúc dữ liệu gì, đọc input/xuất output ra sao. Bám đúng ý đồ đó.",
+  "   - Nếu code GẦN ĐÚNG (qua một phần test, hoặc ý tưởng đúng chỉ lỗi cài đặt): việc DUY NHẤT là tìm đúng chỗ sai TRONG CODE CỦA HỌ và vá tối thiểu. Không đổi tên biến, không đổi style, không viết lại đoạn đang chạy đúng.",
+  "   - Chỉ đề xuất đổi cách tiếp cận khi cách hiện tại CHẮC CHẮN không thể AC (sai độ phức tạp, hoặc ý tưởng gốc sai về bản chất). Khi đó phải giải thích CỤ THỂ vì sao code của họ không cứu được TRƯỚC, rồi mới nói hướng mới.",
+  "   - Ví dụ SAI: học sinh dùng BFS mà bạn dán một lời giải DFS sạch đẹp. Ví dụ ĐÚNG: 'dòng 23 bạn đánh dấu visited sau khi pop thay vì khi push, nên một đỉnh bị đẩy vào queue nhiều lần.'",
+  "",
+  "2. GIẢI THÍCH KHÁI NIỆM PHẢI CỤ THỂ VÀ CHẶT CHẼ:",
+  "   - Khi nhắc đến một kỹ thuật/thuật toán, PHẢI giải thích: (a) nó là gì bằng 1-2 câu rõ ràng, (b) tại sao nó áp dụng được cho bài này, (c) áp dụng cụ thể như thế nào vào bài.",
+  "   - KHÔNG nói chung chung kiểu 'dùng quy hoạch động' hay 'thử greedy' mà không chỉ rõ state là gì, transition ra sao, base case nào.",
+  "   - Khi giải thích thuật toán mới với học sinh: dùng ví dụ NHỎ từ chính đề bài (sample input) để minh họa từng bước. Đừng giải thích trừu tượng.",
+  "",
+  "3. XỬ LÝ TỪNG LOẠI VERDICT:",
+  "   - WA: trả lời theo 3 phần — (a) LỖI TƯ DUY: gọi tên hiểu lầm cốt lõi học sinh đang ngầm tin, 1 câu (vd: 'bạn giả định dãy đã được sắp xếp nhưng đề không đảm bảo'); (b) BẰNG CHỨNG: chỉ đúng DÒNG/biến sai và trace bằng MỘT input nhỏ cụ thể — code in ra số gì so với đáng lẽ ra số gì (tự dựng counter-example nếu chưa có test); (c) HƯỚNG SỬA theo chế độ lộ lời giải.",
+  "   - CẤM trả lời chung chung kiểu 'thiếu vài edge case', 'logic chưa đúng', 'cần xử lý kỹ hơn' mà KHÔNG chỉ ra chính xác case nào / dòng nào / hiểu lầm nào.",
+  "   - TLE: Phân tích độ phức tạp code hiện tại (cụ thể: vòng lặp nào O(n²)?, đệ quy nào chưa memo?). Gợi ý tối ưu TRÊN NỀN code hiện tại trước, đổi thuật toán chỉ khi cần.",
+  "   - RE: Chỉ ra loại lỗi (out-of-bounds, stack overflow, chia 0...) và DÒNG CODE gây ra.",
+  "   - CE: Chỉ ra lỗi cú pháp cụ thể.",
+  "   - Nộp lại cùng lỗi → chỉ nguyên nhân gốc, không lặp lại phân tích cũ.",
+  "",
+  "4. NGẮN GỌN VÀ TRỰC TIẾP:",
+  "   - Trả lời bằng tiếng Việt, đi thẳng vào vấn đề.",
+  "   - KHÔNG liệt kê/tóm tắt lại lịch sử nộp bài (học sinh đã thấy trên giao diện).",
+  "   - KHÔNG mở đầu bằng 'Chào bạn', 'Mình thấy rằng...', 'Dựa vào code của bạn...' — vào thẳng nội dung.",
+  "   - Mỗi câu trả lời tập trung vào 1 vấn đề chính. Nếu có nhiều lỗi, chỉ ra lỗi QUAN TRỌNG NHẤT trước.",
+  "",
+  "5. PHẠM VI VÀ TRUNG THỰC:",
+  "   - Bám chặt phạm vi BÀI NÀY. Từ chối câu hỏi ngoài lề.",
+  "   - Tuyệt đối không bịa số liệu, test case, hoặc constraint không có trong đề/log.",
+  "   - Nếu không chắc chắn nguyên nhân lỗi, nói rõ 'mình chưa chắc' và đề xuất cách test thêm.",
+  "",
+  "=== CHẾ ĐỘ LỘ LỜI GIẢI ===",
+  "- TẮT: TUYỆT ĐỐI KHÔNG VIẾT CODE C++ (dù 1 dòng, 1 khối if-else, hay 1 hàm). Vẫn PHẢI gọi tên lỗi tư duy và chỉ đúng dòng sai — chỉ là không viết sẵn câu lệnh sửa; gợi ý bằng lời + mã giả trừu tượng. Mục tiêu: học sinh TỰ NGHĨ ra cách sửa.",
+  "- BẬT: được viết code, NHƯNG mặc định là BẢN VÁ TỐI THIỂU vào code của họ (chỉ vài dòng đang sai, giữ nguyên phần còn lại). Viết lại từ đầu CHỈ khi thuật toán của họ không thể AC — và phải giải thích vì sao không cứu được TRƯỚC khi đưa code mới. KHÔNG BAO GIỜ dán nguyên một lời giải AC làm câu trả lời chính cho một bài gần đúng.",
+  "",
+  "Định dạng: Markdown ngắn gọn. Không xưng là AI của hãng nào."
 ].join("\n");
 
 // Compact, token-bounded rendering of recent submissions so the Coach can see
@@ -1310,18 +1359,49 @@ function formatRunHistory(runHistory) {
     let s = `#${i + 1} ${verdict}${score}${t}`;
     const stderr = String(h.stderr || h.error || "").trim();
     if (stderr) s += `\n   stderr: ${stderr.slice(0, 400)}`;
-    // The actual output only helps on failures (where it differs from expected).
     const stdout = String(h.stdout || "").trim();
     if (stdout && verdict !== "AC") s += `\n   stdout(thực tế): ${stdout.slice(0, 300)}`;
     return s;
   });
-  // Sort reverse so oldest is first, to show progression clearly to AI? No, keep newest first.
-  return `=== LỊCH SỬ NỘP BÀI GẦN ĐÂY (mới → cũ, ${list.length} lần) ===\n` + lines.join("\n");
+
+  // Detect repeated verdict patterns to highlight persistent mistakes.
+  const verdicts = list.map((h) => h.verdict || h.type || "?");
+  let pattern = "";
+  const waCnt = verdicts.filter((v) => v === "WA").length;
+  const tleCnt = verdicts.filter((v) => v === "TLE").length;
+  const reCnt = verdicts.filter((v) => v === "RE").length;
+  if (waCnt >= 3) pattern = `⚠ Học sinh đã WA ${waCnt}/${list.length} lần gần đây — có khả năng sai tư duy gốc, không chỉ thiếu edge case.`;
+  else if (tleCnt >= 3) pattern = `⚠ Học sinh đã TLE ${tleCnt}/${list.length} lần gần đây — cần đổi thuật toán hoặc cấu trúc dữ liệu, tối ưu nhỏ không đủ.`;
+  else if (reCnt >= 2) pattern = `⚠ Học sinh đã RE ${reCnt}/${list.length} lần gần đây — có thể có lỗi hệ thống (tràn mảng, stack overflow) chưa nhận ra.`;
+
+  let out = `=== LỊCH SỬ NỘP BÀI GẦN ĐÂY (mới → cũ, ${list.length} lần) ===\n`;
+  if (pattern) out += pattern + "\n";
+  out += lines.join("\n");
+  return out;
+}
+
+// Per-test diff details from the most recent judge run. The client sends these
+// directly from app.state.testResults so the Coach can see EXACTLY which tests
+// failed and HOW (expected vs actual + stderr per test).
+function formatPerTestResults(perTest) {
+  if (!Array.isArray(perTest) || !perTest.length) return "";
+  const failed = perTest.filter((t) => t.status && t.status !== "AC");
+  if (!failed.length) return "";
+  const lines = failed.slice(0, 6).map((t) => {
+    let s = `• Test "${t.name || t.id}": ${t.status}`;
+    if (t.timeMs != null) s += ` (${Math.round(t.timeMs)}ms)`;
+    if (t.diff) s += `\n  dòng ${t.diff.line}: expected "${String(t.diff.expected).slice(0, 120)}" → actual "${String(t.diff.actual).slice(0, 120)}"`;
+    else if (t.actual != null) s += `\n  actual: ${String(t.actual).slice(0, 200)}`;
+    if (t.stderr) s += `\n  stderr: ${String(t.stderr).slice(0, 300)}`;
+    return s;
+  });
+  const extra = failed.length > 6 ? `\n… và ${failed.length - 6} test sai nữa.` : "";
+  return `=== CHI TIẾT TEST SAI (lần chạy gần nhất) ===\n` + lines.join("\n") + extra;
 }
 
 // Shared message assembly for the Coach (buffered + streaming variants), so the
 // two endpoints can never drift apart in what context the model sees.
-function buildChatMessages({ statement, code, testResult, runHistory, history, message, revealAllowed }) {
+function buildChatMessages({ statement, code, testResult, runHistory, perTestResults, history, message, revealAllowed }) {
   // Window the conversation so token use stays bounded no matter how long the chat grows.
   const turns = (Array.isArray(history) ? history : []).slice(-8).map((t) => ({
     role: t.role === "assistant" ? "assistant" : "user",
@@ -1329,6 +1409,7 @@ function buildChatMessages({ statement, code, testResult, runHistory, history, m
   }));
 
   const historyBlock = formatRunHistory(runHistory);
+  const perTestBlock = formatPerTestResults(perTestResults);
 
   const ctx = [
     "=== ĐỀ BÀI ===",
@@ -1339,6 +1420,7 @@ function buildChatMessages({ statement, code, testResult, runHistory, history, m
     "",
     "=== KẾT QUẢ TEST GẦN NHẤT ===",
     String(testResult || "(chưa chạy)").slice(0, 600),
+    ...(perTestBlock ? ["", perTestBlock] : []),
     ...(historyBlock ? ["", historyBlock] : []),
     "",
     `=== CHẾ ĐỘ LỘ LỜI GIẢI === ${revealAllowed ? "BẬT — được phép đưa lời giải/code đầy đủ." : "TẮT — TUYỆT ĐỐI KHÔNG VIẾT CODE C++, CHỈ GỢI Ý BẰNG LỜI VĂN."}`
@@ -1886,45 +1968,6 @@ Trả về JSON: { "score": 8, "passed": true, "summary": "1 câu tổng kết",
   };
 }
 
-// ---------------------------------------------------------------------------
-// ⚡ Flash quiz — 3 quick multiple-choice questions distilled from the
-// student's own mistakes.md notebook (spaced recall in 30 seconds).
-// ---------------------------------------------------------------------------
-
-async function flashQuiz({ settings, notes }) {
-  const content = await chat({
-    settings,
-    messages: [
-      {
-        role: "system",
-        content: `Bạn tạo quiz ôn lỗi sai cho học sinh thuật toán. Dựa trên "sổ tay lỗi sai" (các phân tích WA cũ của chính học sinh),
-tạo ĐÚNG 3 câu trắc nghiệm tiếng Việt, mỗi câu 4 lựa chọn, kiểm tra xem học sinh còn nhớ BÀI HỌC từ lỗi cũ không
-(ví dụ: edge case nào từng bị quên, vì sao cách X sai, độ phức tạp đúng là gì).
-- Câu hỏi cụ thể theo nội dung sổ tay, KHÔNG hỏi kiến thức chung chung.
-- 3 lựa chọn sai phải hợp lý (đúng kiểu nhầm lẫn hay gặp).
-- explain: 1 câu giải thích đáp án.
-Trả về JSON: { "questions": [{ "q": "...", "choices": ["A","B","C","D"], "answerIndex": 0, "explain": "..." }] }`
-      },
-      { role: "user", content: `SỔ TAY LỖI SAI:\n${String(notes || "").slice(0, 12000)}` }
-    ],
-    jsonMode: true,
-    maxTokens: 2000,
-    timeoutMs: 60000
-  });
-  const parsed = safeParseJson(content);
-  const questions = (Array.isArray(parsed.questions) ? parsed.questions : [])
-    .map((x) => ({
-      q: String(x.q || "").trim(),
-      choices: (Array.isArray(x.choices) ? x.choices : []).map((c) => String(c).trim()).filter(Boolean).slice(0, 4),
-      answerIndex: Math.max(0, Math.min(3, Math.round(Number(x.answerIndex) || 0))),
-      explain: String(x.explain || "").trim()
-    }))
-    .filter((x) => x.q && x.choices.length === 4 && x.answerIndex < x.choices.length)
-    .slice(0, 3);
-  if (!questions.length) throw new Error("AI không tạo được câu hỏi quiz từ sổ tay.");
-  return { questions };
-}
-
 module.exports = {
   testConnection,
   generateTests,
@@ -1950,7 +1993,6 @@ module.exports = {
   generateBoss,
   defenseQuestions,
   defenseGrade,
-  flashQuiz,
   detectKey,
   detectProvider,
   looksGarbled,

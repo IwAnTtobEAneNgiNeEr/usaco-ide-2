@@ -24,6 +24,24 @@ bindFileKind("expected");
 bindFileKind("notes");
 bindFileKind("statement");
 bindFileKind("mistakes");
+bindFileKind("checker"); // special judge source (SPJ) — used when meta.usesChecker
+
+// GET /api/problems/:id/workspace — everything the editor needs to open a
+// problem in ONE round trip (meta + all single files + tests). The per-file
+// GETs above stay for targeted refreshes.
+router.get("/:id/workspace", requireProblem, asyncHandler(async (req, res) => {
+  const id = req.problemId;
+  const [problem, code, input, expected, notes, statement, tests] = await Promise.all([
+    problemStore.readMeta(id),
+    problemStore.getFile(id, "code"),
+    problemStore.getFile(id, "input"),
+    problemStore.getFile(id, "expected"),
+    problemStore.getFile(id, "notes"),
+    problemStore.getFile(id, "statement"),
+    problemStore.listTests(id)
+  ]);
+  res.json({ problem, code, input, expected, notes, statement, tests });
+}));
 
 // ---- Test cases ----------------------------------------------------------
 
@@ -36,6 +54,15 @@ router.get("/:id/tests", requireProblem, asyncHandler(async (req, res) => {
 router.post("/:id/tests", requireProblem, asyncHandler(async (req, res) => {
   const test = await problemStore.addTest(req.problemId, req.body || {});
   res.status(201).json({ test });
+}));
+
+// POST /api/problems/:id/tests/bulk — add many tests in one write (the .in/.out
+// folder import). Oversized/over-limit items are skipped, not fatal.
+router.post("/:id/tests/bulk", requireProblem, asyncHandler(async (req, res) => {
+  const items = req.body && Array.isArray(req.body.tests) ? req.body.tests : [];
+  if (!items.length) return res.status(400).json({ error: "No tests in payload." });
+  const { added, skipped } = await problemStore.addTests(req.problemId, items);
+  res.status(201).json({ added, skipped });
 }));
 
 // PUT /api/problems/:id/tests/:testId

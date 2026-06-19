@@ -25,9 +25,29 @@ const contestsRouter = require("./src/routes/contests");
 
 const VERSION = "2.0.0";
 
+// The API compiles and runs arbitrary C++. A malicious webpage can use DNS
+// rebinding (a domain that resolves to 127.0.0.1) to make this server a
+// same-origin target and execute code on the machine. Loopback-bound servers
+// therefore only accept requests whose Host header is a loopback name; binding
+// a non-loopback USACO_IDE_HOST is an explicit opt-out (LAN use).
+function isAllowedHost(hostHeader) {
+  if (config.HOST !== "127.0.0.1" && config.HOST !== "localhost" && config.HOST !== "::1") return true;
+  const host = String(hostHeader || "").trim().toLowerCase();
+  const name = host.startsWith("[") ? host.slice(0, host.indexOf("]") + 1) : host.split(":")[0];
+  return name === "localhost" || name === "127.0.0.1" || name === "[::1]";
+}
+
 function buildApp() {
   const app = express();
   app.disable("x-powered-by");
+  app.use((req, res, next) => {
+    console.log(`[HTTP] ${req.method} ${req.url} - Agent: ${req.headers['user-agent']}`);
+    next();
+  });
+  app.use((req, res, next) => {
+    if (isAllowedHost(req.headers.host)) return next();
+    res.status(403).json({ error: "Forbidden: bad Host header (DNS rebinding protection)." });
+  });
   app.use(express.json({ limit: "32mb" })); // large enough for base64 image/PDF OCR uploads
 
   // Health probe — also reports whether g++ is reachable.
@@ -58,6 +78,14 @@ function buildApp() {
   // Unknown API route -> JSON 404 (so the SPA fallback below never swallows it).
   app.use("/api", (req, res) => {
     res.status(404).json({ error: "API route not found." });
+  });
+
+  // Disable caching for development/live updates
+  app.use((req, res, next) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
   });
 
   // Static frontend.
@@ -111,9 +139,13 @@ async function start() {
   });
 }
 
-start().catch((error) => {
-  console.error("Failed to start USACO IDE 2.0 backend:", error);
-  process.exit(1);
-});
+// Only auto-start when run directly (node server.js) — lets tests require()
+// buildApp/isAllowedHost without binding a port.
+if (require.main === module) {
+  start().catch((error) => {
+    console.error("Failed to start USACO IDE 2.0 backend:", error);
+    process.exit(1);
+  });
+}
 
-module.exports = { buildApp };
+module.exports = { buildApp, isAllowedHost, start };

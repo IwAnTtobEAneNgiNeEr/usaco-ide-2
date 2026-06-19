@@ -1,34 +1,95 @@
 # USACO IDE 2.0
 
-![CI](https://img.shields.io/badge/tests-76%20passing-brightgreen)
+[![CI](https://github.com/<your-username>/usaco-ide-2/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/usaco-ide-2/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![C++](https://img.shields.io/badge/judge-g%2B%2B%20%C2%B7%20C%2B%2B17-00599C?logo=cplusplus&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-555)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-A standalone, feature-rich **desktop** code-and-judge workspace for competitive programming in C++. Write C++, store one file-set per problem on disk, run against your own input, and judge against multiple test cases with a real local `g++` compiler—all enriched with a gamified learning engine and an integrated AI Coach.
+A **local-first C++ IDE and judge** for competitive programming. Write C++, store one
+file-set per problem on disk, run against your own input, and judge against many test
+cases with a real local `g++` — plus a **stress-test Lab**, an **input Visualizer**, and
+an optional **AI Coach**. No account, no cloud, no telemetry: it runs entirely on your
+machine and works fully offline (AI features are the only thing that need the internet).
 
-USACO IDE 2.0 transforms competitive programming practice by blending local IDE functionality with a gamified progression system (streaks, daily quests, XP, and rank tiers), interactive test-case visualization, and targeted AI training diagnostics.
+> The interface is primarily in **Vietnamese** (the project's home audience). The judge,
+> Lab, Visualizer, and editor are language-agnostic and easy to use regardless.
 
 ---
 
-## Highlights
+## Why it exists
 
-- **Gamified Journey Dashboard** — Track your daily coding streak 🔥, earn XP for successful runs, complete 4 dynamic daily quests, level up through 30+ rank tiers, and summon the **Weekend Boss** (an AI-generated problem targeting your weakest topic).
-- **Skill Constellation (Skill Map)** — Explore a Duolingo-path SVG visualization of your curriculum lanes. Track your mastery (weighted by volume, reliability, and recency) across topics like Dynamic Programming, Graphs, and Math.
-- **AC Defense (Oral Viva)** — After getting Accepted (AC) on a problem, face the AI Examiner in a 3-question viva about your code's complexity, edge cases, and algorithm choices to verify you truly understand your solution.
-- **AI Coach & Mini-Chat** — Open the side panel to chat with the Coach about the active problem. Get non-spoiler hints across three levels (*nudge → technique → approach*), ask about CodeMirror selections (`Ctrl+Shift+E`), or request a direct code fix.
-- **Test Case Visualizer** — Automatically detect input shapes (Graphs, Trees, Char Grids, Matrices, Arrays) and render them as interactive SVGs. Includes a Whitespace Inspector to flag presentation errors (trailing spaces).
-- **Mistake Notebook & Flash Quiz** — The AI diagnoses wrong answers (WA/TLE) and records lessons to `mistakes.md`. Revise them anytime with AI-generated 3-question multiple-choice quizzes.
-- **Stress Tester & Lab** — Auto-write test generators and brute-force reference solutions to catch hidden boundary bugs and profile time/memory complexity.
-- **Editor** — CodeMirror 6 with syntax highlighting, auto-pairing, auto-indent, block Tab, and Tab snippets:
-  `fastio`, `fori`, `forj`, `rep`, `forn`, `pb`, `eb`, `all`, `vi`, `vll`, `vvi`, `pii`,
-  `pll`, `ll`, `ld`, `sortv`, `mod`, `inf`, `readn`, `yes`, `no`, `main`.
-- **Judge Console** — Verdict chips (AC/WA/CE/RE/TLE/MLE), runtime metrics, line-numbered stdin/stdout/expected, and Output/Compile/Diff tabs.
-- **Image → Statement → Tests** — Paste screenshots or upload PDFs; local OCR extracts the statement, AI summary auto-fills problem metadata, and AI test-case generation suggests edge cases.
-- **USACO File Mode** — Support USACO `freopen` inputs and outputs seamlessly with matching filename validations.
-- **History Timeline** — Review and restore code from previous runs using full-context history logs.
-- **Focus Timer** — Customizable Pomodoro timer (15/25/45/90 presets) to simulate pressure.
+Most online judges make you upload code and wait. USACO IDE 2.0 keeps the whole loop
+local and fast:
+
+- **Real compiler, real verdicts** — `g++` compile + run with AC / WA / CE / RE / TLE,
+  runtime metrics, and a side-by-side diff on Wrong Answer.
+- **Your data is just files.** Every problem is a plain folder (`main.cpp`, `tests/`,
+  `meta.json`, …) you can back up, diff, or edit by hand. Nothing is locked in a database.
+- **Fast re-runs.** Compile caching + precompiled headers make repeat judges ~9× faster.
+- **Offline.** CodeMirror and the fonts are vendored locally.
+
+---
+
+## Headline features
+
+- **🧪 Stress Lab** — auto-write (or hand-write) a test *generator* and a *brute-force*
+  reference, then hammer your solution with thousands of random cases until one disagrees.
+  The fastest way to catch the hidden boundary bug that an online judge would WA you on.
+- **🔬 Input Visualizer** — paste a test and the app detects its shape (graph, tree, grid,
+  matrix, array) and draws it as an interactive SVG, with a whitespace inspector for
+  presentation errors.
+- **🤖 AI Coach** — an optional side-panel chat that already knows the open problem, your
+  code, and your last verdict. Ask for a non-spoiler hint (*nudge → technique → approach*),
+  "why is this WA?", or highlight code and press `Ctrl+Shift+E` to ask about a selection.
+- **⚖️ Judge console** — verdict chips, runtime, line-numbered stdin/stdout/expected,
+  Output / Compile / Diff tabs, loose/strict/token/float comparison, per-problem special
+  judges (`checker.cpp`), and a live **⏹ Stop** button.
+- **📥 Problem import** — type/paste a statement, **paste a screenshot** (local OCR), or
+  upload a **PDF/DOCX** (MarkItDown). With an AI key, it can also analyze the statement and
+  suggest test cases.
+- **🏆 AI Contest Generator** — once you've solved enough of a topic, generate a brand-new
+  practice contest on it (separate from your problem list).
+- **📕 Mistake Notebook** — when you keep getting WA, the AI diagnoses the *thinking* error
+  (never rewrites your code) and records the lesson to `mistakes.md`.
+- **🗺️ Skill map & 📊 Dashboard** — track mastery per topic and a spaced-review queue.
+- **🎓 Explain Your Solution** — after an AC, the AI asks you 3 questions about your own
+  code so you can check you actually understand *why* it works.
+- **Editor** — CodeMirror 6: syntax highlight, auto-pairs, auto-indent, block Tab, and Tab
+  snippets (`fastio`, `fori`, `rep`, `vi`, `pii`, `ll`, `sortv`, `yes`, `no`, `main`, …).
+- **🏠 Journey (optional)** — a streak/XP/quests home screen if you like gamified practice;
+  it's one click away via the 🏠 chip but the app **starts you in the editor**, not a
+  dashboard.
+
+> Full per-topic guides live in [`docs/`](docs). Start with
+> **[docs/GettingStarted.md](docs/GettingStarted.md)**.
+
+---
+
+## Screenshots
+
+<!-- Replace these placeholders with real captures before publishing (see docs/media/). -->
+| Editor + Judge | Stress Lab | Visualizer |
+|---|---|---|
+| _`docs/media/editor.png`_ | _`docs/media/lab.png`_ | _`docs/media/visualizer.png`_ |
+
+A 10–15s demo GIF (`docs/media/demo.gif`) — *paste screenshot → analyze → AC* — is the
+single best thing to add here.
+
+---
+
+## Requirements
+
+| Need | For | Notes |
+|------|-----|-------|
+| **Node.js ≥ 18** | the app itself | https://nodejs.org |
+| **A C++ compiler (`g++`)** | compiling & judging | Windows: MinGW-w64 ([winlibs.com](https://winlibs.com) or MSYS2). macOS: `xcode-select --install` or `brew install gcc`. Linux: `sudo apt install g++`. Make sure `g++ --version` works, or set the full path in **Settings → Compiler**. |
+| **Python + Tesseract** *(optional)* | pasting/uploading **image** statements (local OCR) | `pip install pytesseract pillow` and install the Tesseract engine (Windows: `winget install UB-Mannheim.TesseractOCR`; for Vietnamese accents also install the `vie` language data). |
+| **MarkItDown** *(optional)* | importing **PDF/DOCX** statements | `pip install markitdown[all]` |
+| **An OpenAI-compatible API key** *(optional)* | all AI features | Entered in **Settings → AI**, stored only in `data/ai-settings.json` (gitignored). |
+
+Everything except Node and `g++` is optional — the IDE, Lab, Visualizer, and judge work
+with no Python and no API key.
 
 ---
 
@@ -39,21 +100,10 @@ git clone https://github.com/<your-username>/usaco-ide-2.git
 cd usaco-ide-2
 ```
 
-Requirements: **Node.js ≥ 18** (https://nodejs.org) and a **C++ compiler** (`g++`).
-- On Windows the easiest is **MinGW-w64** (e.g. via [winlibs.com](https://winlibs.com)
-  or MSYS2). Make sure `g++ --version` works in a terminal, or set the full path
-  to `g++.exe` in the in-app **Settings** tab.
-- On macOS: `xcode-select --install` (clang's `g++` shim works) or `brew install gcc`.
-- On Linux: `sudo apt install g++` (or your distro's equivalent).
-
 ### Windows
-Double-click **`launcher/start-usaco-ide.bat`** (or run `launcher/start-usaco-ide.ps1`
-with PowerShell). The launcher:
-- checks Node.js is installed and **≥ 18**,
-- detects whether port `5050` is free, already serving USACO IDE (then it just opens
-  the browser), or **occupied by another app** (then it tells you how to switch ports),
-- runs `npm install` automatically on first launch,
-- starts the backend and opens your default browser at `http://127.0.0.1:5050`.
+Double-click **`launcher/start-usaco-ide.bat`** (or run `launcher/start-usaco-ide.ps1`).
+It checks Node ≥ 18, runs `npm install` on first launch, starts the backend, and opens
+`http://127.0.0.1:5050`.
 
 ### macOS / Linux
 ```bash
@@ -67,159 +117,95 @@ npm start       # then open http://127.0.0.1:5050
 ```
 
 On first run with an empty workspace the app **seeds a sample problem**
-(*Tổng hai số · Sum of Two Numbers*, complete with a working solution and 3 test
-cases) so you can press **Run** and **Judge All** immediately to verify your
-compiler setup. Delete it whenever you like.
+(*Tổng hai số · Sum of Two Numbers*, with a working solution and 3 tests) so you can press
+**Run** and **Judge All** immediately to verify your compiler. Delete it whenever you like.
 
-### Create a desktop shortcut
-1. Right-click `launcher/start-usaco-ide.bat` → **Send to → Desktop (create shortcut)**.
-2. Rename it to `USACO IDE 2.0`.
-3. (Optional) Right-click the shortcut → **Properties → Change Icon…** and pick an icon.
-
-Double-clicking that shortcut now launches the app.
+### Desktop app (optional, experimental)
+A thin Electron wrapper lives in [`desktop/`](desktop) — it runs the same backend in a
+native window. See [`desktop/README.md`](desktop/README.md). Packaging to an installer
+(`npm run dist`) is experimental.
 
 ---
 
 ## Using the app
 
-Three-column desktop layout:
+Three columns:
 
-- **Left — Problems**: search, filter by source/status/difficulty, create, duplicate,
-  delete, and see each problem's last verdict + last-edited time.
-- **Middle — Editor**: the C++ editor with autosave and metadata. Shortcuts:
-  - `Ctrl+S` — save
-  - `Ctrl+Enter` — Run (compile + run against the custom Input)
-  - `Ctrl+Shift+Enter` — Judge All (run every test case)
-  - `Ctrl+N` — new problem
-- **Right — Run Console** with six tabs:
-  - **Run** — *Custom Test* (Input + Expected + Run + Save as test) over *Result*
-    (big verdict, runtime, stdout, stderr, simple diff on WA).
-  - **Tests** — the test suite as cards (name, preview, status, Run / Edit / Delete)
-    plus **✨ Generate with AI**.
-  - **Statement** — paste the problem statement; Save / Clear / Generate Test Cases.
-  - **Notes**, **History**, **Settings**.
+- **Left — Problems:** search, filter by source/status/difficulty, create, duplicate,
+  delete; each row shows the last verdict + last-edited time.
+- **Middle — Editor / Problem:** the C++ editor (autosave) with a **Problem** view for the
+  statement, analysis, and examples. Post-AC tools (🎓 Explain, 📈 Harder variant) appear
+  in the toolbar once a problem is solved.
+- **Right — Console:** **Run**, **Tests**, **Notes**, **Coach**, **History**, **Settings**.
 
-**Run** uses the custom `Input` (and optional `Expected`) in the Run tab.
-**Judge All** runs every test case under `tests/` and reports AC / WA / CE / RE / TLE.
+### Key shortcuts
+| Action | Keys |
+|---|---|
+| Command palette | `Ctrl + K` |
+| Run | `Ctrl + Enter` |
+| Judge all | `Ctrl + Shift + Enter` |
+| Save | `Ctrl + S` |
+| New problem | `Ctrl + N` |
+| Ask AI Coach | `Ctrl + ;` |
+| Ask about selection | `Ctrl + Shift + E` |
+| Toggle Explorer | `Ctrl + B` |
+| Zen focus | `Alt + Z` |
+| All shortcuts | `?` |
+
+Full list: [docs/Shortcuts.md](docs/Shortcuts.md).
 
 ### Verdicts
-| Verdict | Meaning |
-|---------|---------|
-| **AC**  | Accepted — output matches expected |
-| **WA**  | Wrong Answer |
-| **CE**  | Compile Error |
-| **RE**  | Runtime Error (non-zero exit / crash) |
+| | Meaning |
+|---|---|
+| **AC** | Accepted — output matches expected |
+| **WA** | Wrong Answer |
+| **CE** | Compile Error |
+| **RE** | Runtime Error (non-zero exit / crash) |
 | **TLE** | Time Limit Exceeded |
-| **MLE** | Memory Limit (reserved — colored throughout) |
 
-Output comparison ignores trailing spaces and the final newline by default
-(**loose** mode); switch to **strict** in Settings for exact matching.
-
-### Compiler not found?
-If `g++` isn't installed or on PATH you'll see:
-> Không tìm thấy g++. Hãy cài MinGW hoặc cấu hình đường dẫn compiler trong Settings.
-
-Set the full path to `g++.exe` in **Settings → Compiler** and click **Check compiler**.
+Output comparison ignores trailing spaces and the final newline by default (**loose**);
+switch to **strict** / **token** / **float** in Settings. (MLE is reserved/colored but not
+enforced — see [docs/LocalJudge.md](docs/LocalJudge.md).)
 
 ---
 
-## AI test generation
+## AI setup (optional)
 
-USACO IDE 2.0 can generate test cases from a pasted problem statement using any
-**OpenAI-compatible** API.
+USACO IDE 2.0 works with any **OpenAI-compatible** Chat Completions API.
 
-### 1. Add your API key
-Open **Settings → AI test generation** and fill in:
-- **API key** — your provider key. Click **Show/Hide** to reveal it while typing.
-  The key is stored locally in `data/ai-settings.json` and is **never logged or
-  committed**. The UI only ever shows whether a key is set, not the key itself.
-- **Base URL** — e.g. `https://api.openai.com/v1` (default), or any compatible endpoint.
-- **Model** — e.g. `gpt-4.1-mini`.
+1. **Settings → AI** → paste your **API key** (click **Detect** and it fills the provider /
+   base URL / model for you), or set them by hand. **Save**, then **Test connection**.
+2. Your key is stored only in `data/ai-settings.json` (gitignored, never logged). The UI
+   only ever reports *whether* a key is set.
+3. Set one or more **Fallback models** (comma-separated) and a rate-limited model rolls
+   over automatically.
 
-Click **Save AI settings**, then **Test connection** to confirm it works.
-If no key is set, any AI action tells you: *“Bạn cần nhập API key trong Settings trước.”*
+Without a key, every AI action gives a friendly *"add an API key in Settings"* message —
+never a crash. Full guide: [docs/AIConfiguration.md](docs/AIConfiguration.md).
 
-### 2. Get the statement in (text or image/PDF)
-Go to the **Statement** tab and either type/paste the problem (Markdown), or:
-- **📋 Paste** a screenshot from the clipboard, or paste it (Ctrl+V) into the box, or
-- **⤴ Image/PDF** to upload a `png/jpg/webp` or a `pdf`.
-
-Images are OCR'd by your AI model (vision); PDFs/Docs use **MarkItDown** (`pip install
-markitdown[all]`). The result fills the Statement (stored in `statement.md`).
-
-Click **🔎 Analyze** to get an AI summary + likely techniques and auto-fill empty
-metadata (source / difficulty / tags).
-
-### 3. Generate test cases
-Click **✨ Generate Test Cases** (in the Statement or Tests tab). The AI produces a mix
-of: sample tests from the statement, small/large boundary cases, corner cases, and tests
-that catch common mistakes.
-
-A preview dialog opens where you can:
-- check/uncheck which tests to keep,
-- **edit name / input / expected** before saving,
-- read each test's *reason*.
-
-Click **Apply selected** to write them into `tests/` (tagged `AI`).
-
-### ⚠ Important about correctness
-The AI may be **wrong about expected output**. When it is not confident it marks a test
-**NO EXPECTED** (input-only) and adds a warning note instead of guessing. **Always review
-and edit AI tests before applying**, and re-run a known-good solution to confirm the
-expected outputs.
-
-### Hints (no spoilers)
-The **focus timer** (top bar) offers a hint when time runs out, or you can trigger it any
-time. Hints come in three levels — *nudge → technique → approach* — and never reveal the
-full solution or code.
+> ⚠ **AI can be wrong about expected outputs.** Generated tests it isn't sure about are
+> marked *NO EXPECTED* (input-only). Always review AI tests and re-run a known-good
+> solution before trusting them.
 
 ---
 
-## AI Contest Generator
+## Configuration files
 
-Once you've solved enough problems on a topic (default **15**, status *solved* or last
-verdict *AC*, matched on a problem's `topic` or any tag), the **🏆 Contests** button in the
-top bar lets the AI build you a brand-new practice contest on that topic.
+| File | Committed? | Purpose |
+|------|------------|---------|
+| `data/settings.example.json` | ✅ | template — compiler path, limits, compare mode |
+| `data/ai-settings.example.json` | ✅ | template — AI provider, base URL, model |
+| `.env.example` | ✅ | optional ports/host overrides (**not** the API key) |
+| `data/settings.json` | ❌ gitignored | your app settings (auto-created on first run) |
+| `data/ai-settings.json` | ❌ gitignored | **your real API key — never commit this** |
+| `data/template.cpp` | ❌ gitignored | your personal C++ starter (Settings → Code template) |
+| `workspace/` | ❌ gitignored | your problems, contests, run history, compile cache |
 
-Click **🏆 Contests → + Tạo contest**, pick a topic, and the **readiness** panel shows how
-many solved problems back it. Choose **5–7** problems and a rating range, then **Generate
-with AI**. The backend prompts a strict *contest setter*: it creates fully original problems
-(it is shown your solved problems **only** to gauge level and avoid overlap — never to
-clone), ratings strictly increasing and **below 2000**, each with a statement, input/output
-format, constraints, samples, and **verified** tests. Every expected output must be
-recomputed; when the model is not certain it leaves the test out rather than fabricating an
-answer, and the contest lists those as warnings.
+The app creates the real files itself; the `.example` files only document the format.
 
-Contests live in their **own** space (`workspace/contests/<id>/`) — they are never mixed
-into the Problem Explorer. Open a contest to read each problem, write C++, and **Run /
-Judge** it like a normal problem. Everything persists to disk, so reloading the browser
-keeps your contests and submissions. AI is only ever called when you click **Generate** —
-opening the tab spends nothing. Generation needs an API key (same one as test generation);
-without it you get a friendly error, not a crash.
-
----
-
-## USACO file mode (freopen)
-
-Some judges (USACO) read/write named files instead of stdin/stdout. In **Edit info**, set
-a **File name** (e.g. `milk`) and turn on **USACO file mode**. Then code using
-`freopen("milk.in","r",stdin); freopen("milk.out","w",stdout);` is judged correctly —
-the backend feeds `milk.in` and reads `milk.out`. The editor warns if your `freopen`
-filename doesn't match the configured one.
-
----
-
-## Importing from the old DSA Tracker
-
-In **Settings → Import**, choose a JSON export from the old app. The importer reads
-`judgeData.problems`, `judgeData.attempts`, and `judgeData.testCases`, then creates one
-problem folder per problem:
-
-- Latest attempt's code → `main.cpp` (or the default template if missing).
-- `testCases` → `tests/NN.in` / `tests/NN.out`.
-- Missing fields are filled with safe defaults (it won't crash on partial data).
-
-After import everything lives in USACO IDE 2.0 — there is no "Judge Lab" concept.
+### Environment variables (all optional)
+`USACO_IDE_PORT` (default 5050) · `USACO_IDE_HOST` (default 127.0.0.1) ·
+`USACO_COMPANION_PORT` (default 10043; `0` disables). See `.env.example`.
 
 ---
 
@@ -227,117 +213,66 @@ After import everything lives in USACO IDE 2.0 — there is no "Judge Lab" conce
 
 ```
 usaco-ide-2/
-  launcher/            # launchers: .bat / .ps1 (Windows), .sh (macOS/Linux)
+  launcher/            # start scripts: .bat / .ps1 (Windows), .sh (macOS/Linux)
+  desktop/             # optional Electron wrapper (experimental)
   backend/             # Node.js + Express API + g++ judge
     server.js
     src/
       config.js        # paths, defaults, limits
-      fileStore.js     # safe filesystem helpers
+      runCpp.js        # compile / run / compare
+      judgeService.js  # parallel judge pool, SPJ, cancellation
       problemStore.js  # problem folders, meta.json, tests, history
-      runCpp.js        # compile / run / compare (TLE/RE/CE/WA/AC)
-      ai.js            # OpenAI-compatible client: tests, OCR (vision), analysis, hints
-      markitdown.js    # PDF/DOCX → Markdown via the MarkItDown Python module
-      settingsStore.js # app settings + AI settings (key never logged)
-      routes/          # problems, files, judge, settings, import, ai
-    scripts/markitdown_convert.py
-  frontend/            # vanilla ES-module desktop UI (no build step)
+      contestStore.js  # AI contest domain (workspace/contests/)
+      ai.js            # OpenAI-compatible client (chat, tests, analysis, …)
+      ocr.js           # LOCAL image OCR via Tesseract
+      markitdown.js    # PDF/DOCX -> Markdown via MarkItDown
+      progress.js      # derived XP/streak/quests (no stored state)
+      routes/          # problems, files, judge, ai, contests, settings, …
+  frontend/            # vanilla ES-module UI (no build step)
     index.html
-    src/               # main, api, editor, highlight, linenums, problems, testcases,
-                       #   runner, statement, notes, timer, hints, layout, settings
-    styles/main.css
-  workspace/
-    problems/<id>/     # main.cpp, input.txt, expected.txt, notes.md, statement.md,
-                       #   meta.json, history.json, tests/{NN.in, NN.out, meta.json}
-  data/settings.json   # app settings (created on first run; gitignored)
-  data/ai-settings.json# AI key/baseUrl/model (gitignored; created when you save)
-  data/*.example.json  # committed templates for the two files above
-  .github/workflows/   # CI — backend test suite on Ubuntu + Windows, Node 18/20/22
+    src/               # main, editor, runner, statement, features/*
+    styles/            # main, theme, polish, journey, features
+    vendor/            # CodeMirror 6 + fonts (offline)
+  workspace/           # YOUR problems/contests/history (gitignored)
+  data/                # settings + AI key (real files gitignored; *.example committed)
 ```
 
-### Configuration files
-| File | Committed? | Purpose |
-|------|------------|---------|
-| `data/settings.example.json` | ✅ | template — compiler path, limits, compare mode |
-| `data/ai-settings.example.json` | ✅ | template — AI provider, base URL, model |
-| `data/settings.json` | ❌ gitignored | your real app settings (auto-created on first run) |
-| `data/ai-settings.json` | ❌ gitignored | **your real API key — never commit this** |
-| `workspace/` | ❌ gitignored | your problems, contests, run history, compile cache |
-
-You never need to create these by hand: the app writes `data/settings.json` with
-defaults on first run, and `data/ai-settings.json` when you save AI settings in the
-UI. The `.example` files only document the format.
-
-Each problem is a self-contained folder, so your data is just files on disk — easy to
-back up, diff, or edit by hand. Reloading the app never loses anything.
-
-### Backend API
-```
-GET    /api/health
-GET    /api/problems            POST /api/problems
-GET    /api/problems/:id        PUT  /api/problems/:id      DELETE /api/problems/:id
-POST   /api/problems/:id/duplicate
-GET/PUT /api/problems/:id/code | input | expected | notes | statement
-GET    /api/problems/:id/tests  POST /api/problems/:id/tests
-PUT    /api/problems/:id/tests/:testId   DELETE /api/problems/:id/tests/:testId
-GET    /api/problems/:id/history          # run snapshots (code + stdout/stderr)
-POST   /api/problems/:id/run    POST /api/problems/:id/judge
-GET/PUT /api/settings           GET /api/settings/compiler
-GET/PUT /api/settings/ai        POST /api/ai/test-connection   POST /api/ai/generate-tests
-GET    /api/ai/capabilities     POST /api/ai/ocr   POST /api/ai/analyze   POST /api/ai/hint
-POST   /api/import
-
-# AI Contest Generator (separate domain — workspace/contests/)
-GET    /api/contests
-GET    /api/contests/readiness?topic=greedy          # eligible solved count + rating range
-POST   /api/contests/generate                        # { topic, problemCount, minRating, maxRating, force }
-GET    /api/contests/:cid       DELETE /api/contests/:cid
-GET/PUT /api/contests/:cid/problems/:pid             GET /api/contests/:cid/problems/:pid/statement
-GET/PUT /api/contests/:cid/problems/:pid/code | input | expected
-GET    /api/contests/:cid/problems/:pid/tests        POST /api/contests/:cid/problems/:pid/tests
-PUT    /api/contests/:cid/problems/:pid/tests/:testId  DELETE /api/contests/:cid/problems/:pid/tests/:testId
-POST   /api/contests/:cid/problems/:pid/run          POST /api/contests/:cid/problems/:pid/judge
-GET    /api/contests/:cid/problems/:pid/history
-```
-
-> AI features are optional. PDF/Doc OCR additionally needs `pip install markitdown[all]`;
-> image OCR works through your configured multimodal model (e.g. Gemini, GPT-4o).
+A short backend API reference lives in [docs/LocalJudge.md](docs/LocalJudge.md) and
+[docs/AIConfiguration.md](docs/AIConfiguration.md).
 
 ---
 
-## Tech stack & engineering notes
+## Engineering notes
 
-- **Backend** — Node.js + Express, a single runtime dependency. File-per-problem
-  storage (no database): every problem is a plain folder you can back up, diff, or
-  edit by hand.
-- **Judge** — real `g++` compile + run with TLE/RE/CE/WA/AC verdicts, compile
-  caching + precompiled headers (~9× faster re-runs), loose/strict/token/float
-  output comparison, and per-problem special judges (`checker.cpp`).
-- **Frontend** — vanilla ES modules, no build step, no framework. CodeMirror 6 is
-  vendored locally so the app works fully offline.
-- **AI layer** — optional, OpenAI-compatible, disk-cached, cancellable, and
-  rate-limit aware (model fallback with backoff). The app is fully usable with no
-  API key.
-- **Tests** — 76 unit tests (`node --test`, zero test dependencies) covering the
-  grader, progress/XP engine, skill map, AI prompt contracts, and first-run seeding.
-  CI runs them on Ubuntu + Windows across Node 18/20/22.
+- **Backend** — Node.js + Express, a *single* runtime dependency. File-per-problem storage,
+  no database. Atomic writes (temp + rename) and per-problem write locks so a verdict is
+  never lost to a crash or a race.
+- **Judge** — real `g++`, compile cache + PCH, a bounded parallel pool with serial TLE
+  re-confirmation (so verdicts stay trustworthy under load), loose/strict/token/float
+  comparison, and per-problem special judges.
+- **Security** — binds to `127.0.0.1` and enforces a loopback `Host` header (DNS-rebinding
+  guard), because it compiles and runs arbitrary C++. **Never expose it to the internet.**
+- **AI layer** — optional, OpenAI-compatible, disk-cached, cancellable, with model fallback
+  + backoff and friendly error messages. Fully usable with no key.
+- **Frontend** — vanilla ES modules, no framework, no build step.
+- **Tests** — backend unit tests via `node --test` (zero test deps) cover the grader, judge
+  pool + SPJ, progress engine, skill map, AI prompt contracts, and first-run seeding. CI
+  runs them on Ubuntu + Windows across Node 18 / 20 / 22.
 
-## Notes & safety
-- **Local only.** The server binds to `127.0.0.1`. It compiles and runs arbitrary C++
-  on your machine — never expose it to the public internet.
-- Builds happen in an isolated OS temp directory, so the workspace stays clean.
-- Default port is `5050` (override with the `USACO_IDE_PORT` env var — the launchers
-  pick it up too).
-- Your API key lives only in `data/ai-settings.json` (gitignored) and is never
-  logged; the UI only ever reports *whether* a key is set.
+---
 
 ## Running tests
+
 ```bash
 npm test          # from the repo root (proxies to backend)
 ```
 
 ## Contributing
-Issues and PRs are welcome. Keep the spirit of the project: local-first, zero
-build step, no heavyweight dependencies. Run `npm test` before submitting.
+
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Keep the spirit of the
+project: local-first, zero build step, no heavyweight dependencies. Run `npm test` first.
+Roadmap: [ROADMAP.md](ROADMAP.md) · Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## License
+
 [MIT](LICENSE) © 2026 Ho Thien Phuc

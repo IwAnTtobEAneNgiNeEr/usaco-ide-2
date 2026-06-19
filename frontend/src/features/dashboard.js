@@ -108,6 +108,12 @@ function render(s, review) {
       <div class="dash-section"><div class="dash-h">USACO Tier</div>${barList(s.byTier, (k) => TIER_COLORS[k] || ACCENT)}</div>
       <div class="dash-section"><div class="dash-h">CF rating</div>${barList(s.cfBuckets, () => ACCENT)}</div>
       <div class="dash-section"><div class="dash-h">Chủ đề hay gặp</div>${barList(Object.fromEntries((s.topTopics || []).map((x) => [x.name, x.count])), () => "#9b82ff")}</div>
+    </div>
+
+    <div class="dash-section">
+      <div class="dash-h">🗺️ Bản đồ kỹ năng</div>
+      <p class="muted" style="font-size:12.5px;margin:0 0 8px">Mức thành thạo từng chủ đề (theo số lượng, độ ổn định và độ mới).</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="dash-open-skills">Mở bản đồ kỹ năng đầy đủ →</button>
     </div>`;
 }
 
@@ -136,6 +142,13 @@ export function initDashboard(app) {
   // Wire the Review queue's per-row actions via delegation, so re-rendering
   // after "Đã ôn" doesn't leak listeners.
   body.addEventListener("click", async (e) => {
+    // Gateway into the full skill map — the Dashboard is the single "where am I?"
+    // hub, so the skill constellation opens from here (and from the Journey home).
+    if (e.target.closest("#dash-open-skills")) {
+      close();
+      if (app.openSkillTree) app.openSkillTree();
+      return;
+    }
     const openBtn = e.target.closest(".dash-rv-open");
     const doneBtn = e.target.closest(".dash-rv-done");
     if (openBtn) {

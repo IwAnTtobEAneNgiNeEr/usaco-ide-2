@@ -16,10 +16,32 @@ function setVerdict(app, verdict, label) {
   chip.textContent = label || verdict;
 }
 
-function setBusy(app, busy) {
-  app.el.btnRun.disabled = busy || !app.state.currentId;
-  app.el.btnJudge.disabled = busy || !app.state.currentId;
-  if (app.el.btnRunCustom) app.el.btnRunCustom.disabled = busy || !app.state.currentId;
+// While a run/judge is in flight, the triggering button turns into a live
+// ⏹ Stop control (aborts the request; the backend stops launching tests) and
+// the other actions are disabled. `which` = "run" | "judge" | null (idle).
+function setBusy(app, which) {
+  const { btnRun, btnJudge, btnRunCustom } = app.el;
+  if (app.state._btnRunHtml == null) {
+    app.state._btnRunHtml = btnRun.innerHTML;
+    app.state._btnJudgeHtml = btnJudge.innerHTML;
+  }
+  btnRun.innerHTML = app.state._btnRunHtml;
+  btnJudge.innerHTML = app.state._btnJudgeHtml;
+  btnRun.classList.remove("btn-stop");
+  btnJudge.classList.remove("btn-stop");
+  const idle = !app.state.currentId;
+  btnRun.disabled = which ? which !== "run" : idle;
+  btnJudge.disabled = which ? which !== "judge" : idle;
+  if (btnRunCustom) btnRunCustom.disabled = which ? true : idle;
+  if (which) {
+    const btn = which === "run" ? btnRun : btnJudge;
+    btn.innerHTML = "⏹ Stop";
+    btn.classList.add("btn-stop");
+    btn.title = "Dừng (hủy yêu cầu đang chạy)";
+  } else {
+    btnRun.title = "";
+    btnJudge.title = "";
+  }
 }
 
 function setOutput(app, text) {
@@ -65,7 +87,9 @@ function renderRunOutput(app, r) {
   }
 
   setRuntime(app, r.timeMs);
-  app.el.rcSummary.innerHTML = r.hasExpected ? "" : `<span class="muted">thêm Expected để tự chấm</span>`;
+  app.el.rcSummary.innerHTML = r.checkerMessage
+    ? `<span class="muted">⚖ checker: ${escapeHtml(r.checkerMessage)}</span>`
+    : (r.hasExpected ? "" : `<span class="muted">thêm Expected để tự chấm</span>`);
   setOutput(app, r.stdout);
   setStderr(app, r.stderr, r.verdict === "CE");
   // Full side-by-side diff (expected box vs actual stdout) when wrong.
@@ -106,7 +130,7 @@ function renderJudgeOutput(app, r) {
   // Full side-by-side diff for each failing test, with a switcher when >1 fails.
   app.state._diffTests = (r.results || [])
     .filter((t) => t.status === "WA")
-    .map((t) => ({ name: t.name || t.testId, expected: t.expected, actual: t.actual }));
+    .map((t) => ({ name: t.name || t.testId, expected: t.expected, actual: t.actual, checkerMessage: t.checkerMessage }));
   renderSideDiff(app, 0);
 }
 
@@ -118,25 +142,76 @@ function visWs(line) {
 }
 
 const DIFF_MAX_ROWS = 400;
+const DIFF_LCS_MAX = 400; // beyond this, fall back to cheap index alignment
 
-// Build line-aligned (by index) side-by-side rows; mismatched lines are flagged,
-// and a missing line on either side is shown as ∅.
+// Align expected/actual lines on their longest common subsequence, so one
+// inserted or missing line doesn't cascade into "everything below differs".
+// Returns rows of { e, a } line indexes (null = no line on that side); runs of
+// deletions+insertions between matches are zipped into changed-line pairs.
+function alignLines(E, A) {
+  const n = E.length, m = A.length;
+  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      dp[i][j] = E[i] === A[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const rows = [];
+  let i = 0, j = 0;
+  const flush = (delFrom, delTo, insFrom, insTo) => {
+    // Pair up changed lines side by side; leftovers become one-sided rows.
+    let d = delFrom, s = insFrom;
+    while (d < delTo && s < insTo) rows.push({ e: d++, a: s++ });
+    while (d < delTo) rows.push({ e: d++, a: null });
+    while (s < insTo) rows.push({ e: null, a: s++ });
+  };
+  while (i < n && j < m) {
+    if (E[i] === A[j]) { rows.push({ e: i, a: j }); i += 1; j += 1; continue; }
+    const delFrom = i, insFrom = j;
+    while (i < n && j < m && E[i] !== A[j]) {
+      if (dp[i + 1][j] >= dp[i][j + 1]) i += 1; else j += 1;
+    }
+    flush(delFrom, i, insFrom, j);
+  }
+  flush(i, n, j, m);
+  return rows;
+}
+
+// Build side-by-side rows. LCS-aligned when small enough (insertions/deletions
+// show ∅ on the other side); index-aligned beyond DIFF_LCS_MAX lines.
 function lineDiffRows(expected, actual) {
-  const E = String(expected == null ? "" : expected).replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-  const A = String(actual == null ? "" : actual).replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-  const max = Math.max(E.length, A.length);
-  const shown = Math.min(max, DIFF_MAX_ROWS);
+  // Trailing newlines are ignored by the comparator (loose mode, same as
+  // buildDiff), so don't flag them here — nearly every program ends with "\n"
+  // and the noise row would appear on every single WA.
+  const toLines = (s) => {
+    const lines = String(s == null ? "" : s).replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    while (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
+    return lines;
+  };
+  const E = toLines(expected);
+  const A = toLines(actual);
+  let aligned;
+  if (E.length <= DIFF_LCS_MAX && A.length <= DIFF_LCS_MAX) {
+    aligned = alignLines(E, A);
+  } else {
+    aligned = [];
+    for (let i = 0; i < Math.max(E.length, A.length); i += 1) {
+      aligned.push({ e: i < E.length ? i : null, a: i < A.length ? i : null });
+    }
+  }
+  const shown = Math.min(aligned.length, DIFF_MAX_ROWS);
   let rows = "";
-  for (let i = 0; i < shown; i += 1) {
-    const e = E[i];
-    const a = A[i];
-    const same = (e || "") === (a || "");
-    const eCell = e == null ? '<span class="diff-missing">∅</span>' : visWs(e);
-    const aCell = a == null ? '<span class="diff-missing">∅</span>' : visWs(a);
-    rows += `<div class="sdiff-row${same ? "" : " sdiff-bad"}"><span class="sdiff-ln">${i + 1}</span>` +
+  for (let r = 0; r < shown; r += 1) {
+    const { e, a } = aligned[r];
+    const same = e != null && a != null && E[e] === A[a];
+    const eCell = e == null ? '<span class="diff-missing">∅</span>' : visWs(E[e]);
+    const aCell = a == null ? '<span class="diff-missing">∅</span>' : visWs(A[a]);
+    // The line number shown is the ACTUAL output's (what the program printed).
+    const ln = a == null ? "·" : a + 1;
+    rows += `<div class="sdiff-row${same ? "" : " sdiff-bad"}"><span class="sdiff-ln">${ln}</span>` +
       `<pre class="sdiff-cell sdiff-exp">${eCell}</pre><pre class="sdiff-cell sdiff-act">${aCell}</pre></div>`;
   }
-  if (max > shown) rows += `<div class="sdiff-row"><span class="sdiff-ln">…</span><pre class="sdiff-cell" colspan="2">(${max - shown} dòng nữa bị cắt)</pre></div>`;
+  if (aligned.length > shown) rows += `<div class="sdiff-row"><span class="sdiff-ln">…</span><pre class="sdiff-cell" style="grid-column: 2 / 4">(${aligned.length - shown} dòng nữa bị cắt)</pre></div>`;
   return rows;
 }
 
@@ -153,7 +228,10 @@ function renderSideDiff(app, idx) {
   const tabs = tests.length > 1
     ? `<div class="sdiff-tabs">${tests.map((x, i) => `<button class="sdiff-tab${i === sel ? " active" : ""}" data-i="${i}">${escapeHtml(x.name || ("test " + (i + 1)))}</button>`).join("")}</div>`
     : "";
-  box.innerHTML = tabs +
+  const checkerNote = t.checkerMessage
+    ? `<div class="sdiff-checker">⚖ checker: ${escapeHtml(t.checkerMessage)}</div>`
+    : "";
+  box.innerHTML = tabs + checkerNote +
     `<div class="sdiff"><div class="sdiff-row sdiff-headrow"><span class="sdiff-ln"></span>` +
     `<span class="sdiff-cell sdiff-h">expected</span><span class="sdiff-cell sdiff-h">actual</span></div>` +
     lineDiffRows(t.expected, t.actual) + `</div>`;
@@ -286,71 +364,66 @@ export function initRunner(app) {
     });
   }
 
+  // In-flight controllers. Re-invoking (button now ⏹ Stop, or the keyboard
+  // shortcut) aborts instead of stacking a second run.
+  let runAbort = null;
+  let judgeAbort = null;
+
   app.runOne = async () => {
-    if (!app.state.currentId) return;
+    if (runAbort) { runAbort.abort(); return; }
+    if (judgeAbort || !app.state.currentId) return;
     if (app.incrementRuns) app.incrementRuns();
-    setBusy(app, true);
+    runAbort = new AbortController();
+    setBusy(app, "run");
     setVerdict(app, "running", "RUNNING…");
-    const banner = document.getElementById("contest-suggest-banner");
-    if (banner) banner.classList.add("hidden");
     app.setTab("run");
     try {
       await app.saveCodeNow();
       await app.flushIo();
-      const r = await api.run(app.state.currentId, app.getEditorValue());
+      const r = await api.run(app.state.currentId, app.getEditorValue(), { signal: runAbort.signal });
       renderRunOutput(app, r);
       await app.syncMeta();
     } catch (err) {
-      setVerdict(app, "idle", "ERROR");
-      setStderr(app, err.message);
-      app.toast(err.message, "err");
+      if (err && err.aborted) {
+        setVerdict(app, "idle", "STOPPED");
+      } else {
+        setVerdict(app, "idle", "ERROR");
+        setStderr(app, err.message);
+        app.toast(err.message, "err");
+      }
     } finally {
-      setBusy(app, false);
+      runAbort = null;
+      setBusy(app, null);
     }
   };
 
   app.judgeAll = async () => {
-    if (!app.state.currentId) return;
+    if (judgeAbort) { judgeAbort.abort(); return; }
+    if (runAbort || !app.state.currentId) return;
     if (app.incrementRuns) app.incrementRuns();
-    setBusy(app, true);
+    judgeAbort = new AbortController();
+    setBusy(app, "judge");
     setVerdict(app, "running", "JUDGING…");
     app.setTab("run");
     try {
       await app.saveCodeNow();
-      const r = await api.judge(app.state.currentId, app.getEditorValue());
+      const r = await api.judge(app.state.currentId, app.getEditorValue(), undefined, { signal: judgeAbort.signal });
       renderJudgeOutput(app, r);
       applyTestResults(app, r.results);
       await app.syncMeta();
-      
-      const banner = document.getElementById("contest-suggest-banner");
-      if (banner) banner.classList.add("hidden");
-      
-      if (r.verdict === "AC") {
-        try {
-          const stats = await api.stats();
-          if (stats && stats.solved > 0 && stats.solved % 5 === 0) {
-            const cnt = document.getElementById("cs-count");
-            if (banner && cnt) {
-               cnt.textContent = stats.solved;
-               banner.classList.remove("hidden");
-               const btn = document.getElementById("btn-suggest-contest");
-               if (btn) btn.onclick = () => {
-                 document.getElementById("btn-contests")?.click();
-                 setTimeout(() => document.getElementById("contest-new-btn")?.click(), 300);
-                 banner.classList.add("hidden");
-               };
-            }
-          }
-        } catch(e) { /* ignore network errors for stats */ }
-      }
-
       return r;
     } catch (err) {
-      setVerdict(app, "idle", "ERROR");
-      setStderr(app, err.message);
-      app.toast(err.message, "err");
+      if (err && err.aborted) {
+        setVerdict(app, "idle", "STOPPED");
+        app.toast("Đã dừng chấm.", "ok");
+      } else {
+        setVerdict(app, "idle", "ERROR");
+        setStderr(app, err.message);
+        app.toast(err.message, "err");
+      }
     } finally {
-      setBusy(app, false);
+      judgeAbort = null;
+      setBusy(app, null);
     }
   };
 

@@ -12,6 +12,10 @@ const CONTESTS_DIR = path.join(WORKSPACE_DIR, "contests");
 const DATA_DIR = path.join(PROJECT_ROOT, "data");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const AI_SETTINGS_FILE = path.join(DATA_DIR, "ai-settings.json");
+// The user's personal C++ starter for new problems (Settings → Code template).
+// A plain file (not JSON) so it can also be edited in any editor; when absent
+// or blank, DEFAULT_TEMPLATE below applies.
+const TEMPLATE_FILE = path.join(DATA_DIR, "template.cpp");
 
 const HOST = process.env.USACO_IDE_HOST || "127.0.0.1";
 const PORT = Number(process.env.USACO_IDE_PORT || process.env.PORT || 5050);
@@ -49,7 +53,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   autosaveDelayMs: 800,     // debounce for autosave
   tabSize: 4,                // editor indentation width
   theme: "dark",            // "dark" | "light"
-  accentColor: "blue"       // "blue" | "green" | "orange" | "purple" | "red"
+  accentColor: "amber"      // "amber" | "blue" | "green" | "orange" | "purple" | "red"
 });
 
 // Starter for a per-problem special judge (SPJ). The checker is compiled once
@@ -157,6 +161,7 @@ module.exports = {
   DATA_DIR,
   SETTINGS_FILE,
   AI_SETTINGS_FILE,
+  TEMPLATE_FILE,
   HOST,
   PORT,
   COMPANION_PORT,

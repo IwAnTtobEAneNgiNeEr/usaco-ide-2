@@ -230,6 +230,14 @@ async function resolveCode(contestId, pid, body) {
   return contestStore.getProblemFile(contestId, pid, "code");
 }
 
+// True once the client disconnected (Stop button / closed tab) — the judge
+// then skips the remaining tests instead of running them for nobody.
+function clientGone(res) {
+  let gone = false;
+  res.on("close", () => { if (!res.writableEnded) gone = true; });
+  return () => gone;
+}
+
 // POST run — compile + run once against the scratch input/expected.
 router.post("/:contestId/problems/:problemId/run", requireContest, requireContestProblem, asyncHandler(async (req, res) => {
   const cid = req.contestId, pid = req.cproblemId;
@@ -264,8 +272,8 @@ router.post("/:contestId/problems/:problemId/judge", requireContest, requireCont
     return res.json({ verdict: "—", compileOk: null, compile: { stderr: "", timeMs: 0 }, results: [], summary: { total: 0, passed: 0, failed: 0, timeMs: 0 }, message: "Chưa có test case nào." });
   }
 
-  const out = await judgeService.compileAndJudge({ code, settings, tests });
-  if (!single) {
+  const out = await judgeService.compileAndJudge({ code, settings, tests, shouldStop: clientGone(res) });
+  if (!single && !out.cancelled) {
     const focus = out.results.find((r) => r.status !== "AC") || out.results[out.results.length - 1];
     await contestStore.recordRun(cid, pid, {
       type: "judge", verdict: out.verdict, timeMs: out.summary.timeMs,

@@ -13,36 +13,19 @@
    ========================================================================= */
 
 :root {
-  --sans: "Geist", "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
-
+  /* Feature-only palettes (tokens proper live in main.css). */
   /* test-visualizer palette */
   --viz-wall: #33415c;
   --viz-floor: #1b2335;
-  --viz-digit: rgba(91, 155, 255, 0.28);
-  --viz-other: rgba(182, 155, 255, 0.25);
+  --viz-digit: rgba(59, 130, 246, 0.28);
+  --viz-other: rgba(167, 139, 250, 0.25);
 
-  /* skill-map tier palette (desaturated, sits inside the azure family) */
+  /* skill-map tier palette */
   --st-seed: #5b6b84;
   --st-bronze: #c98e5a;
   --st-silver: #9fb3c8;
   --st-gold: #e8c258;
   --st-diamond: #6fd2f0;
-
-  /* one elevation scale, navy-tinted */
-  --shadow-1: 0 1px 2px rgba(4, 9, 22, 0.5);
-  --shadow-2: 0 4px 14px -4px rgba(4, 9, 22, 0.55);
-  --shadow-3: 0 14px 40px -12px rgba(4, 9, 22, 0.75);
-}
-
-/* ---------------- Grain: one static SVG noise overlay ---------------- */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ---------------- Type detail ---------------- */
@@ -62,26 +45,7 @@ h1, h2, h3, .meta-title, .modal-title { letter-spacing: -0.015em; text-wrap: bal
 }
 .btn:focus-visible, .tab:focus-visible { outline-offset: 1px; }
 
-/* ---------------- Buttons: keep the mono-IDE identity, soften the edges -- */
-.btn {
-  letter-spacing: 0.35px !important;
-  border-radius: 6px !important;
-}
-.btn:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
-.btn-primary, .btn-run { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--shadow-1) !important; }
-
-/* ---------------- Top bar: hairline + brand dot ---------------- */
-.topbar {
-  background: linear-gradient(180deg, #192333 0%, var(--panel) 100%);
-  position: relative;
-}
-.topbar::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -1px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(91, 155, 255, 0.45) 18%, rgba(123, 134, 255, 0.35) 50%, transparent 85%);
-}
+/* ---------------- Top bar ---------------- */
 .brand-name { font-weight: 650; letter-spacing: -0.01em; }
 
 /* ---------------- Panel tabs: underline indicator, not pills ----------- */
@@ -104,33 +68,24 @@ h1, h2, h3, .meta-title, .modal-title { letter-spacing: -0.015em; text-wrap: bal
 .panel-tabs .tab.active::after { transform: scaleX(1); }
 
 /* ---------------- Problem explorer: verdict rail + hover lift ---------- */
-.p-item {
-  position: relative;
-  transition: background 0.12s, transform 0.12s;
-}
 .p-item::before {
   content: "";
   position: absolute;
-  left: 0; top: 6px; bottom: 6px;
-  width: 2.5px;
-  border-radius: 2px;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
   background: transparent;
   transition: background 0.15s;
 }
 .p-item:hover { transform: translateX(2px); }
-.p-item.active::before { background: var(--accent); }
+.p-item.active::before { background: #3b82f6; }
 .p-item:has(.v-AC)::before { background: var(--ac); opacity: 0.55; }
-.p-item.active:has(.v-AC)::before { background: var(--accent); opacity: 1; }
+.p-item.active:has(.v-AC)::before { background: #3b82f6; opacity: 1; }
 
-/* ---------------- Verdict chip: state glow ---------------- */
-.verdict-chip { transition: box-shadow 0.2s, background 0.2s; }
-.verdict-chip.verdict-AC, .verdict-chip.v-AC { box-shadow: 0 0 14px -2px rgba(45, 212, 126, 0.5); }
-.verdict-chip.verdict-WA, .verdict-chip.v-WA { box-shadow: 0 0 14px -2px rgba(255, 93, 108, 0.45); }
-
-/* ---------------- Cards: single light source, top-edge catchlight ------ */
+/* ---------------- Cards: quiet elevation, single light source ------ */
 .jh-card, .modal, .analysis-card, .examples-card, .gentests-card {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), var(--shadow-2);
+  box-shadow: var(--shadow-2);
 }
+.modal { box-shadow: var(--shadow-3); }
 
 /* ---------------- Modals: finite entrance ---------------- */
 .modal-overlay:not(.hidden) .modal {
@@ -247,9 +202,7 @@ h1, h2, h3, .meta-title, .modal-title { letter-spacing: -0.015em; text-wrap: bal
   min-height: 320px;
   max-height: 60vh;
   overflow: auto;
-  background:
-    radial-gradient(700px 320px at 50% 0%, rgba(91, 155, 255, 0.05), transparent 70%),
-    var(--editor-bg);
+  background: var(--editor-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
   display: grid;
@@ -351,10 +304,7 @@ h1, h2, h3, .meta-title, .modal-title { letter-spacing: -0.015em; text-wrap: bal
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background:
-    radial-gradient(900px 420px at 20% -5%, rgba(91, 155, 255, 0.06), transparent 65%),
-    radial-gradient(700px 380px at 95% 105%, rgba(155, 130, 255, 0.05), transparent 65%),
-    var(--editor-bg);
+  background: var(--editor-bg);
   padding: 18px 20px 26px;
 }
 .st-cluster { margin-bottom: 10px; }
@@ -486,3 +436,55 @@ h1, h2, h3, .meta-title, .modal-title { letter-spacing: -0.015em; text-wrap: bal
   .st-body { grid-template-columns: 1fr; }
   .st-detail { max-height: 240px; }
 }
+
+/* =========================================================================
+   💅 Premium Card & Analysis Overrides
+   ========================================================================= */
+
+.analysis-card, .examples-card, .gentests-card {
+  background: #111827 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.an-row {
+  border-bottom: 1px solid rgba(31, 41, 55, 0.6);
+  padding-bottom: 12px;
+  margin-bottom: 2px;
+}
+.an-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.tag-pill.tech {
+  background: #0f1624 !important;
+  color: #a7f3d0 !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 4px;
+}
+
+/* Difficulty/Rating chips overrides */
+.diff-chip {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+.diff-chip.tier-bronze { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1); }
+.diff-chip.tier-silver { color: #9fb3c8; border-color: rgba(159, 179, 200, 0.3); background: rgba(159, 179, 200, 0.1); }
+.diff-chip.tier-gold { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.1); }
+.diff-chip.tier-platinum { color: #22d3ee; border-color: rgba(34, 211, 238, 0.3); background: rgba(34, 211, 238, 0.1); }
+
+.diff-chip.rating.r-bronze { color: #22c55e !important; border-color: rgba(34, 197, 94, 0.3) !important; background: #052e16 !important; }
+.diff-chip.rating.r-silver { color: #60a5fa !important; border-color: rgba(96, 165, 250, 0.3) !important; background: #172554 !important; }
+.diff-chip.rating.r-gold { color: #fbbf24 !important; border-color: rgba(251, 191, 36, 0.3) !important; background: #451a03 !important; }
+.diff-chip.rating.r-hard { color: #f87171 !important; border-color: rgba(248, 113, 113, 0.3) !important; background: #450a0a !important; }
+
+.diff-chip.time-complexity, .diff-chip.space-complexity {
+  color: #a7f3d0 !important;
+  border-color: rgba(167, 243, 208, 0.3) !important;
+  background: #022c22 !important;
+}
+

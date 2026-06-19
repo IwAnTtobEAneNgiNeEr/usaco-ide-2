@@ -2,7 +2,7 @@
 
 const express = require("express");
 const problemStore = require("../problemStore");
-const { DEFAULT_TEMPLATE } = require("../config");
+const settingsStore = require("../settingsStore");
 const { asyncHandler } = require("./_util");
 
 const router = express.Router();
@@ -44,13 +44,14 @@ router.post("/", asyncHandler(async (req, res) => {
 
   const imported = [];
   const errors = [];
+  const template = await settingsStore.getCodeTemplate();
 
   for (const p of problems) {
     try {
       if (!p || typeof p !== "object") continue;
       const oldId = p.id;
       const attempt = pickLatestAttempt(attempts, oldId);
-      const code = (attempt && typeof attempt.code === "string" && attempt.code.trim()) ? attempt.code : DEFAULT_TEMPLATE;
+      const code = (attempt && typeof attempt.code === "string" && attempt.code.trim()) ? attempt.code : template;
 
       const tests = testCases
         .filter((t) => t && t.problemId === oldId)

@@ -7,11 +7,11 @@ export function initLayout(app) {
     tab.addEventListener("click", () => app.setTab(tab.dataset.tab));
   });
 
-  // Center column: Code / Problem segmented toggle.
-  const toggle = document.getElementById("view-toggle");
-  if (toggle) {
-    toggle.querySelectorAll(".view-btn").forEach((btn) => {
-      btn.addEventListener("click", () => app.setView(btn.dataset.view));
+  // Center column: Coding / Reading layout-mode segmented toggle.
+  const modeToggle = document.getElementById("layout-mode-toggle");
+  if (modeToggle) {
+    modeToggle.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => setLayoutMode(app, btn.dataset.mode));
     });
   }
 
@@ -38,14 +38,31 @@ export function setTab(app, name) {
 }
 
 // Switch the center column between the code editor and the problem reader.
+// The layout MODE follows the view: Code → Coding (editor-forward, full 3-col),
+// Problem → Reading (statement-forward; the explorer collapses and the right
+// panel narrows so the problem page gets a wide, comfortable reading measure).
 export function setView(app, name) {
+  name = name === "problem" ? "problem" : "code";
   app.state.activeView = name;
-  const toggle = document.getElementById("view-toggle");
-  if (toggle) {
-    toggle.querySelectorAll(".view-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
-  }
+
   const code = document.getElementById("view-code");
   const problem = document.getElementById("view-problem");
   if (code) code.classList.toggle("hidden", name !== "code");
   if (problem) problem.classList.toggle("hidden", name !== "problem");
+
+  const mode = name === "problem" ? "reading" : "coding";
+  app.state.layoutMode = mode;
+  const wb = document.querySelector(".workbench");
+  if (wb) {
+    wb.classList.toggle("mode-reading", mode === "reading");
+    wb.classList.toggle("mode-coding", mode === "coding");
+  }
+  const tg = document.getElementById("layout-mode-toggle");
+  if (tg) tg.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+}
+
+// Coding / Reading layout mode — a thin wrapper over setView so a single
+// control (and Ctrl+Shift+M) drives both the content and the column layout.
+export function setLayoutMode(app, mode) {
+  setView(app, mode === "reading" ? "problem" : "code");
 }

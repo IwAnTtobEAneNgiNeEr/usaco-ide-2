@@ -1,7 +1,8 @@
-// defense.js — 🎓 Bảo vệ AC (viva voce). After you AC a problem, the AI
-// examiner asks 3 questions about YOUR code; you answer in your own words and
-// get graded. Passing stamps meta.defense → the progress engine pays +25 XP.
-// The cheapest known cure for "AC nhưng không hiểu vì sao AC".
+// defense.js — 🎓 Explain Your Solution ("Giải thích lời giải"). After you AC a
+// problem, the AI asks 3 questions about YOUR code; you answer in your own words
+// and get short feedback on your understanding. No XP, no grind — purely a check
+// against "AC nhưng không hiểu vì sao AC". The trigger is a toolbar button shown
+// only once the problem has an AC.
 
 import { api } from "../api.js";
 import { escapeHtml } from "../md.js";
@@ -14,7 +15,7 @@ function buildModal() {
   overlay.className = "modal-overlay hidden";
   overlay.innerHTML = `
     <div class="modal modal-wide defense-modal">
-      <h2 class="modal-title">🎓 Bảo vệ AC <span id="defense-prob" class="defense-prob"></span></h2>
+      <h2 class="modal-title">🎓 Giải thích lời giải <span id="defense-prob" class="defense-prob"></span></h2>
       <div id="defense-body" class="defense-body"></div>
       <div class="modal-actions">
         <button type="button" id="defense-close" class="btn btn-ghost">Đóng</button>
@@ -27,12 +28,12 @@ function buildModal() {
 function introView(meta) {
   const prev = meta && meta.defense;
   const prevLine = prev && prev.passed
-    ? `<p class="defense-prev">✅ Bạn đã bảo vệ thành công bài này (<b>${prev.score}/10</b>). Làm lại để luyện thêm — XP chỉ tính lần đầu.</p>`
+    ? `<p class="defense-prev">✅ Bạn đã giải thích tốt bài này (<b>${prev.score}/10</b>). Làm lại bất cứ lúc nào để tự kiểm tra.</p>`
     : "";
   return `
     ${prevLine}
-    <p class="jh-muted">AI giám khảo sẽ đọc <b>code thật</b> của bạn và hỏi 3 câu: ý tưởng, độ phức tạp, edge case.
-    Trả lời bằng lời của chính bạn (tiếng Việt thoải mái, ngắn mà trúng là được). Đạt ≥7/10 → <b>+25 XP</b>.</p>
+    <p class="jh-muted">AI sẽ đọc <b>code thật</b> của bạn và hỏi 3 câu: ý tưởng, độ phức tạp, edge case.
+    Trả lời bằng lời của chính bạn (tiếng Việt thoải mái, ngắn mà trúng là được) để chắc chắn bạn thật sự hiểu lời giải.</p>
     <div class="jh-actions" style="margin-top:14px">
       <button type="button" id="defense-start" class="btn btn-primary">Bắt đầu vấn đáp</button>
     </div>`;
@@ -69,7 +70,7 @@ function resultView(r, questions) {
     <div class="defense-result ${cls}">
       <div class="defense-score">${r.score}<span>/10</span></div>
       <div class="defense-verdict">
-        <div class="defense-verdict-line">${r.passed ? "🎉 Bảo vệ thành công! +25 XP" : "Chưa đạt — đọc nhận xét rồi thử lại nhé."}</div>
+        <div class="defense-verdict-line">${r.passed ? "🎉 Bạn nắm vững bài này!" : "Chưa chắc — đọc nhận xét rồi thử lại nhé."}</div>
         ${r.summary ? `<div class="jh-muted">${escapeHtml(r.summary)}</div>` : ""}
       </div>
     </div>
@@ -113,8 +114,8 @@ export function initDefense(app) {
       const r = await api.defenseGrade(id, qa);
       body.innerHTML = resultView(r, questions);
       if (r.passed) {
-        if (app.playSound) app.playSound("ac");
-        // syncMeta picks up meta.defense → journey pays the +25 XP toast itself.
+        if (app.playSound) app.playSound("success");
+        // Records meta.defense so the intro shows "already explained" next time.
         if (app.syncMeta) app.syncMeta();
       } else if (app.playSound) app.playSound("wa");
     } catch (err) {
@@ -134,24 +135,25 @@ export function initDefense(app) {
     const meta = app.state.meta;
     if (!app.state.currentId || !meta) { app.toast("Mở một bài đã AC trước đã.", "err"); return; }
     const hasAc = meta.lastVerdict === "AC" || (meta.history || []).some((h) => h.verdict === "AC");
-    if (!hasAc) { app.toast("Bài này chưa AC — giải xong rồi mới bảo vệ được.", "err"); return; }
+    if (!hasAc) { app.toast("Bài này chưa AC — giải xong rồi mới giải thích được.", "err"); return; }
     probLabel.textContent = "· " + (meta.title || "");
     body.innerHTML = introView(meta);
     modal.classList.remove("hidden");
   };
 
-  // A third button on the AC banner (next to the Synthesizer's), so the
-  // invitation appears exactly when you've just earned an AC.
-  const acBanner = document.getElementById("ac-banner");
-  if (acBanner) {
-    const btn = document.createElement("button");
-    btn.id = "btn-defense";
-    btn.className = "btn btn-ai btn-sm";
-    btn.type = "button";
-    btn.style.background = "rgba(34,197,94,0.15)";
-    btn.style.color = "#4ade80";
-    btn.textContent = "🎓 Bảo vệ AC (+25 XP)";
-    btn.addEventListener("click", () => app.openDefense());
-    acBanner.appendChild(btn);
+  // Trigger lives in the editor toolbar (#btn-defense in index.html), revealed
+  // only when the open problem has an AC. We wrap refreshSynthAvail (already
+  // called on every problem load / meta sync) so our button toggles in step.
+  const defenseBtn = document.getElementById("btn-defense");
+  if (defenseBtn) {
+    defenseBtn.addEventListener("click", () => app.openDefense());
+    const prevRefresh = app.refreshSynthAvail;
+    app.refreshSynthAvail = () => {
+      if (prevRefresh) prevRefresh();
+      const meta = app.state.meta;
+      const hasAc = !!(meta && (meta.lastVerdict === "AC" ||
+        (Array.isArray(meta.history) && meta.history.some((h) => h.verdict === "AC"))));
+      defenseBtn.classList.toggle("hidden", !hasAc);
+    };
   }
 }

@@ -79,22 +79,11 @@ export function initSynthesizer(app) {
   modal.querySelector("#synth-close").addEventListener("click", close);
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
 
-  // Show the button only when the open problem has been solved (AC in history).
+  // Reveal the toolbar "📈 Bản khó hơn" button once the open problem has any AC.
   app.refreshSynthAvail = () => {
     const meta = app.state.meta;
-    const banner = document.getElementById("ac-banner");
-    if (!banner) return;
-    if (!meta || !Array.isArray(meta.history)) {
-      banner.classList.add("hidden");
-      return;
-    }
-    // Check if the FIRST AC (chronologically) was achieved within the first
-    // 5 runs. meta.history is newest-first, so walk it oldest-first; extra
-    // runs after the AC must not make the banner disappear.
-    const chrono = meta.history.slice().reverse();
-    const firstAcIdx = chrono.findIndex((h) => h.verdict === "AC");
-    const isFastAc = firstAcIdx >= 0 && firstAcIdx < 5;
-    banner.classList.toggle("hidden", !isFastAc);
+    const hasAc = !!(meta && Array.isArray(meta.history) && meta.history.some((h) => h.verdict === "AC"));
+    trigger.classList.toggle("hidden", !hasAc);
   };
 
   function setSynthStop(active) {

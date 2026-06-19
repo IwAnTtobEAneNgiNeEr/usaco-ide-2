@@ -13,34 +13,9 @@
 // and editor.js falls back to the original textarea path so the app never bricks.
 
 import { api } from "./api.js";
+import { SNIPPETS } from "./snippet-table.js";
 
 const CM_BUNDLE = "../vendor/codemirror/codemirror.js";
-
-// ---- C++ snippets (Tab-expanded). $0 marks the final caret position. -----
-const SNIPPETS = {
-  fastio: "ios::sync_with_stdio(false);\ncin.tie(nullptr);$0",
-  fori: "for (int i = 0; i < $0; i++) {\n    \n}",
-  forj: "for (int j = 0; j < $0; j++) {\n    \n}",
-  rep: "for (int i = 0; i < $0; i++) {\n    \n}",
-  forn: "for (int i = 0; i < n; i++) {\n    $0\n}",
-  pb: "push_back($0)",
-  eb: "emplace_back($0)",
-  all: "begin($0), end($0)",
-  vi: "vector<int> $0",
-  vll: "vector<long long> $0",
-  vvi: "vector<vector<int>> $0",
-  pii: "pair<int, int>$0",
-  pll: "pair<long long, long long>$0",
-  ll: "long long $0",
-  ld: "long double $0",
-  sortv: "sort($0.begin(), $0.end());",
-  mod: "const long long MOD = 1e9 + 7;$0",
-  inf: "const long long INF = 1e18;$0",
-  readn: "int n; cin >> n;$0",
-  yes: 'cout << "YES\\n";$0',
-  no: 'cout << "NO\\n";$0',
-  main: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    $0\n    return 0;\n}"
-};
 
 function debounce(fn, ms) {
   let t;
@@ -270,6 +245,8 @@ export async function mountCmEditor(app) {
 
   // ---- Tab-size compartment (settings.js can re-apply) ------------------
   const tabSizeCompartment = new CM.Compartment();
+  // ---- Word-wrap compartment (Editor Appearance toggle) -----------------
+  const wrapCompartment = new CM.Compartment();
   const startTabSize = (app.state.settings && app.state.settings.tabSize) || 4;
   const indentString = (n) => " ".repeat(n);
 
@@ -277,27 +254,29 @@ export async function mountCmEditor(app) {
   const theme = CM.EditorView.theme({
     "&": {
       height: "100%",
-      fontSize: "13.5px",
+      fontSize: "var(--code-fs)",
       backgroundColor: "transparent",
-      color: "var(--text)"
+      color: "var(--code-fg)"
     },
     ".cm-scroller": {
-      fontFamily: 'JetBrains Mono, Cascadia Code, Fira Code, Consolas, ui-monospace, monospace',
-      lineHeight: "1.55"
+      fontFamily: "var(--code-font)",
+      lineHeight: "var(--code-lh)",
+      letterSpacing: "var(--code-letter-spacing)",
+      fontWeight: "var(--code-weight)"
     },
-    ".cm-content": { padding: "12px 4px", caretColor: "var(--accent)" },
+    ".cm-content": { padding: "12px 4px", caretColor: "var(--ed-cursor)", color: "var(--code-fg)" },
     ".cm-gutters": {
-      backgroundColor: "var(--editor-bg)",
-      color: "#4b5b72",
+      backgroundColor: "var(--ed-gutter-bg)",
+      color: "var(--ed-gutter-fg)",
       border: "none",
       borderRight: "1px solid var(--border-soft)"
     },
-    ".cm-activeLineGutter": { backgroundColor: "rgba(59, 130, 246, 0.12)", color: "var(--accent)" },
-    ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.02)" },
+    ".cm-activeLineGutter": { backgroundColor: "var(--ed-active-gutter)", color: "var(--accent)" },
+    ".cm-activeLine": { backgroundColor: "var(--ed-line-highlight)" },
     ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, .cm-content ::selection": {
-      backgroundColor: "rgba(56,189,248,0.28) !important"
+      backgroundColor: "var(--ed-selection) !important"
     },
-    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--accent)" },
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--ed-cursor)" },
     ".cm-foldGutter .cm-gutterElement": { color: "#6b7c93", cursor: "pointer" },
     ".cm-tooltip": {
       backgroundColor: "var(--panel)",
@@ -379,6 +358,7 @@ export async function mountCmEditor(app) {
       tabSizeCompartment.of([
         CM.EditorState.tabSize.of(startTabSize)
       ]),
+      wrapCompartment.of([]),
       CM.keymap.of([
         saveKey,
         snippetTab,
@@ -455,6 +435,14 @@ export async function mountCmEditor(app) {
       effects: tabSizeCompartment.reconfigure([CM.EditorState.tabSize.of(size)])
     });
     shim.style.tabSize = String(size);
+  };
+
+  // Word-wrap toggle (Editor Appearance). Reconfigures a compartment so it's
+  // live and reversible; the legacy textarea fallback uses the `wrap` attribute.
+  app.setWordWrap = (on) => {
+    view.dispatch({
+      effects: wrapCompartment.reconfigure(on ? [CM.EditorView.lineWrapping] : [])
+    });
   };
 
   // Autosave path stays exactly where it was: editor.js's initEditor wires

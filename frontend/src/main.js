@@ -1,37 +1,39 @@
 // main.js — bootstraps USACO IDE 2.0, owns shared state, and wires modules.
 
-import { api } from "./api.js";
-import { initLayout, setTab, setView } from "./layout.js";
-import { initProblems, renderProblems } from "./problems.js";
-import { initEditor, renderMeta, setEditorFiles } from "./editor.js";
-import { mountCmEditor } from "./editor-cm.js";
-import { initTests, renderTests } from "./testcases.js";
-import { initRunner, renderHistory } from "./runner.js";
-import { initSettings } from "./settings.js";
-import { initStatement, loadProblemView } from "./statement.js";
-import { initTimer } from "./timer.js";
-import { initHints } from "./hints.js";
-import { initNotes } from "./notes.js";
-import { initSidebarToggle } from "./features/sidebar-toggle.js";
-import { initTopicFilter } from "./features/topic-filter.js";
-import { initDesktopShell } from "./features/desktop-launcher.js";
-import { initWaReview } from "./features/wa-review.js";
-import { initSnippets } from "./features/snippets.js";
-import { initCodeReview } from "./features/code-review.js";
-import { initLab } from "./features/lab.js";
-import { initDashboard } from "./features/dashboard.js";
-import { initMiniChat } from "./features/mini-chat.js";
-import { initSynthesizer } from "./features/synthesizer.js";
-import { initEditorial } from "./features/editorial.js";
-import { initContests } from "./features/contests.js";
-import { initJourney } from "./features/journey.js";
-import { initCommandPalette } from "./features/command-palette.js";
-import { initMistakeBook } from "./features/mistake-book.js";
-import { initBoss } from "./features/boss.js";
-import { initDefense } from "./features/defense.js";
-import { initFlashQuiz } from "./features/flash-quiz.js";
-import { initVisualizer } from "./features/visualizer.js";
-import { initSkillTree } from "./features/skilltree.js";
+import { api } from "./api.js?v=2.3";
+import { initLayout, setTab, setView, setLayoutMode } from "./layout.js?v=2.3";
+import { initProblems, renderProblems } from "./problems.js?v=2.3";
+import { initEditor, renderMeta, setEditorFiles } from "./editor.js?v=2.3";
+import { mountCmEditor } from "./editor-cm.js?v=2.3";
+import { initTests, renderTests } from "./testcases.js?v=2.3";
+import { initRunner, renderHistory } from "./runner.js?v=2.3";
+import { initSettings } from "./settings.js?v=2.3";
+import { initStatement, loadProblemView } from "./statement.js?v=2.3";
+import { initTimer } from "./timer.js?v=2.3";
+import { initHints } from "./hints.js?v=2.3";
+import { initNotes } from "./notes.js?v=2.3";
+import { initSidebarToggle } from "./features/sidebar-toggle.js?v=2.3";
+import { initTopicFilter } from "./features/topic-filter.js?v=2.3";
+import { initDesktopShell } from "./features/desktop-launcher.js?v=2.3";
+import { initWaReview } from "./features/wa-review.js?v=2.3";
+import { initSnippets } from "./features/snippets.js?v=2.3";
+import { initCodeReview } from "./features/code-review.js?v=2.3";
+import { initLab } from "./features/lab.js?v=2.3";
+import { initDashboard } from "./features/dashboard.js?v=2.3";
+import { initMiniChat } from "./features/mini-chat.js?v=2.3";
+import { initSynthesizer } from "./features/synthesizer.js?v=2.3";
+import { initContests } from "./features/contests.js?v=2.3";
+import { initJourney } from "./features/journey.js?v=2.3";
+import { initCommandPalette } from "./features/command-palette.js?v=2.3";
+import { initMistakeBook } from "./features/mistake-book.js?v=2.3";
+import { initBoss } from "./features/boss.js?v=2.3";
+import { initDefense } from "./features/defense.js?v=2.3";
+import { initVisualizer } from "./features/visualizer.js?v=2.3";
+import { initSkillTree } from "./features/skilltree.js?v=2.3";
+import { initSpj } from "./features/spj.js?v=2.3";
+import { initWelcome } from "./features/welcome.js?v=2.3";
+import { initOverflowMenus } from "./features/overflow-menu.js?v=2.3";
+import { initEditorAppearance } from "./features/editor-appearance.js?v=2.3";
 
 const $ = (id) => document.getElementById(id);
 
@@ -116,6 +118,7 @@ function collectRefs() {
 
     // statement
     statementStatus: $("statement-status"),
+    statementRendered: $("statement-rendered"),
     btnSaveStatement: $("btn-save-statement"),
     btnClearStatement: $("btn-clear-statement"),
     btnUploadImage: $("btn-upload-image"),
@@ -162,6 +165,8 @@ function collectRefs() {
 // ---------------- Shared helpers ----------------
 app.setTab = (name) => setTab(app, name);
 app.setView = (name) => setView(app, name);
+app.setLayoutMode = (m) => setLayoutMode(app, m);
+app.toggleLayoutMode = () => setLayoutMode(app, app.state.layoutMode === "reading" ? "coding" : "reading");
 app.getEditorValue = () => {
   return app.getCode ? app.getCode() : (app.el.codeEditor ? app.el.codeEditor.value : "");
 };
@@ -178,6 +183,9 @@ app.toast = (message, type = "") => {
   const el = document.createElement("div");
   el.className = `toast ${type}`;
   el.textContent = message;
+  el.title = "Bấm để đóng";
+  el.style.cursor = "pointer";
+  el.addEventListener("click", () => el.remove());
   host.appendChild(el);
   // Errors linger longer — they often carry detail (AI / compile messages) the
   // user actually needs to read before it disappears.
@@ -237,10 +245,8 @@ app.selectProblem = (id) => app.loadProblem(id);
 
 app.loadProblem = async (id) => {
   try {
-    const [{ problem }, { code }, { input }, { expected }, { notes }, { statement }, { tests }] = await Promise.all([
-      api.getProblem(id), api.getCode(id), api.getInput(id), api.getExpected(id),
-      api.getNotes(id), api.getStatement(id), api.listTests(id)
-    ]);
+    // One bundled request (meta + files + tests) instead of seven.
+    const { problem, code, input, expected, notes, statement, tests } = await api.getWorkspace(id);
     app.state.currentId = id;
     app.state.meta = problem;
     app.state.tests = tests;
@@ -264,6 +270,8 @@ app.loadProblem = async (id) => {
     if (app.refreshChat) app.refreshChat();
     if (app.refreshSynthAvail) app.refreshSynthAvail();
     renderProblems(app);
+    // Remember the last problem so the next launch reopens it (startup = editor).
+    try { localStorage.setItem("usaco2.lastProblem", id); } catch { /* private mode */ }
   } catch (err) {
     app.toast(err.message, "err");
   }
@@ -304,6 +312,7 @@ app.openMetaModal = (meta) => {
   form.status.value = meta ? meta.status : "learning";
   form.fileName.value = meta ? (meta.fileName || "") : "";
   form.usacoMode.checked = meta ? Boolean(meta.usacoMode) : false;
+  if (form.usesChecker) form.usesChecker.checked = meta ? Boolean(meta.usesChecker) : false;
   if (form.timeLimitMs) form.timeLimitMs.value = meta && meta.timeLimitMs ? meta.timeLimitMs : "";
   app.el.metaModal.classList.remove("hidden");
   setTimeout(() => form.title.focus(), 30);
@@ -323,6 +332,7 @@ function initMetaModal() {
       status: f.status.value,
       fileName: f.fileName.value.trim().replace(/\.(in|out)$/i, ""),
       usacoMode: f.usacoMode.checked,
+      usesChecker: !!(f.usesChecker && f.usesChecker.checked),
       timeLimitMs: Number(f.timeLimitMs && f.timeLimitMs.value) || 0
     };
     if (!data.title) return;
@@ -505,7 +515,7 @@ app.playSound = (type) => {
 // ---------------- Theme Applier ----------------
 app.applyTheme = (theme, accentColor) => {
   theme = theme || "dark";
-  accentColor = accentColor || "blue";
+  accentColor = accentColor || "amber";
 
   // Apply theme class
   if (theme === "light") {
@@ -514,42 +524,63 @@ app.applyTheme = (theme, accentColor) => {
     document.documentElement.classList.remove("light-theme");
   }
 
-  // Accent colors configuration
+  // Accent palette — one calm color per choice. No gradients: --accent-grad
+  // resolves to a solid so the feature CSS that references it stays flat.
+  // primary = base accent, strong = solid button fill, strongH = button hover.
   const accents = {
+    // amber-gold — the Forge identity accent and product default. strong = solid
+    // button fill that carries dark text (--on-accent); strongH = brighter hover.
+    amber: {
+      dark:  { primary: "#e6a93e", strong: "#e0a338", strongH: "#f4be59", soft: "rgba(230, 169, 62, 0.13)" },
+      light: { primary: "#b5791c", strong: "#a96f16", strongH: "#915f12", soft: "rgba(181, 121, 28, 0.10)" }
+    },
     blue: {
-      dark: { primary: "#5b9bff", strong: "#3b7bf0", soft: "rgba(91, 155, 255, 0.14)", grad: "linear-gradient(135deg, #5b9bff 0%, #7b86ff 100%)" },
-      light: { primary: "#2563eb", strong: "#1d4ed8", soft: "rgba(37, 99, 235, 0.1)", grad: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)" }
+      dark:  { primary: "#3b82f6", strong: "#2563eb", strongH: "#1d4ed8", soft: "rgba(59, 130, 246, 0.13)" },
+      light: { primary: "#2563eb", strong: "#1d4ed8", strongH: "#1e40af", soft: "rgba(37, 99, 235, 0.10)" }
     },
     green: {
-      dark: { primary: "#4ade80", strong: "#22c55e", soft: "rgba(74, 222, 128, 0.14)", grad: "linear-gradient(135deg, #4ade80 0%, #06b6d4 100%)" },
-      light: { primary: "#16a34a", strong: "#15803d", soft: "rgba(22, 163, 74, 0.1)", grad: "linear-gradient(135deg, #16a34a 0%, #0d9488 100%)" }
+      dark:  { primary: "#22c55e", strong: "#16a34a", strongH: "#15803d", soft: "rgba(34, 197, 94, 0.13)" },
+      light: { primary: "#16a34a", strong: "#15803d", strongH: "#166534", soft: "rgba(22, 163, 74, 0.10)" }
     },
     orange: {
-      dark: { primary: "#ffaa44", strong: "#f97316", soft: "rgba(255, 170, 68, 0.14)", grad: "linear-gradient(135deg, #ffaa44 0%, #ef4444 100%)" },
-      light: { primary: "#ea580c", strong: "#c2410c", soft: "rgba(234, 88, 12, 0.1)", grad: "linear-gradient(135deg, #ea580c 0%, #dc2626 100%)" }
+      dark:  { primary: "#f97316", strong: "#ea580c", strongH: "#c2410c", soft: "rgba(249, 115, 22, 0.13)" },
+      light: { primary: "#ea580c", strong: "#c2410c", strongH: "#9a3412", soft: "rgba(234, 88, 12, 0.10)" }
     },
     purple: {
-      dark: { primary: "#c084fc", strong: "#a855f7", soft: "rgba(192, 132, 252, 0.14)", grad: "linear-gradient(135deg, #c084fc 0%, #ec4899 100%)" },
-      light: { primary: "#9333ea", strong: "#7e22ce", soft: "rgba(147, 51, 234, 0.1)", grad: "linear-gradient(135deg, #9333ea 0%, #db2777 100%)" }
+      dark:  { primary: "#a78bfa", strong: "#8b5cf6", strongH: "#7c3aed", soft: "rgba(167, 139, 250, 0.14)" },
+      light: { primary: "#8b5cf6", strong: "#7c3aed", strongH: "#6d28d9", soft: "rgba(139, 92, 246, 0.10)" }
     },
     red: {
-      dark: { primary: "#f87171", strong: "#ef4444", soft: "rgba(248, 113, 113, 0.14)", grad: "linear-gradient(135deg, #f87171 0%, #f43f5e 100%)" },
-      light: { primary: "#dc2626", strong: "#b91c1c", soft: "rgba(220, 38, 38, 0.1)", grad: "linear-gradient(135deg, #dc2626 0%, #e11d48 100%)" }
+      dark:  { primary: "#f87171", strong: "#ef4444", strongH: "#dc2626", soft: "rgba(248, 113, 113, 0.13)" },
+      light: { primary: "#dc2626", strong: "#b91c1c", strongH: "#991b1b", soft: "rgba(220, 38, 38, 0.10)" }
     }
   };
 
-  const choice = accents[accentColor] || accents.blue;
+  const choice = accents[accentColor] || accents.amber;
   const colors = choice[theme] || choice.dark;
-
-  document.documentElement.style.setProperty("--accent", colors.primary);
-  document.documentElement.style.setProperty("--accent-strong", colors.strong);
-  document.documentElement.style.setProperty("--accent-soft", colors.soft);
-  document.documentElement.style.setProperty("--accent-grad", colors.grad);
-  document.documentElement.style.setProperty("--btn-primary", colors.strong);
-  document.documentElement.style.setProperty("--btn-primary-h", colors.strong === "#3b7bf0" ? "#2f6be0" : colors.primary);
-  document.documentElement.style.setProperty("--btn-run", colors.strong);
-  document.documentElement.style.setProperty("--btn-run-h", colors.strong === "#3b7bf0" ? "#2f6be0" : colors.primary);
+  const root = document.documentElement.style;
+  root.setProperty("--primary", colors.primary);
+  root.setProperty("--primary-strong", colors.strong);
+  root.setProperty("--primary-soft", colors.soft);
+  root.setProperty("--accent", colors.primary);
+  root.setProperty("--accent-strong", colors.strong);
+  root.setProperty("--accent-soft", colors.soft);
+  root.setProperty("--accent-grad", colors.primary);  // solid — no gradient
+  root.setProperty("--btn-primary", colors.strong);
+  root.setProperty("--btn-primary-h", colors.strongH);
+  root.setProperty("--btn-run", colors.strong);
+  root.setProperty("--btn-run-h", colors.strongH);
 };
+
+// ---------------- Global drop guard ----------------
+// The app invites file drag-drop (tests import, statement images). A drop that
+// misses its zone must be a no-op — by default the browser NAVIGATES to the
+// file and unloads the whole IDE. Zone handlers run first (bubble order) and
+// preventDefault themselves; this only neutralizes the misses.
+function initDropGuard() {
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+}
 
 // ---------------- Keyboard shortcuts ----------------
 function initShortcuts() {
@@ -583,11 +614,15 @@ function initShortcuts() {
 
     const mod = e.ctrlKey || e.metaKey;
     if (!mod) return;
+    // With a modal open, Run/Judge/New would act invisibly behind it — ignore
+    // them (Ctrl+S still saves; it's harmless and a reflex).
+    const modalOpen = !!document.querySelector(".modal-overlay:not(.hidden)");
     if (e.key.toLowerCase() === "e" && e.shiftKey) { e.preventDefault(); if (app.coachAskSelection) app.coachAskSelection(); }
+    else if (e.key.toLowerCase() === "m" && e.shiftKey) { e.preventDefault(); if (app.toggleLayoutMode) app.toggleLayoutMode(); }
     else if (e.key.toLowerCase() === "s") { e.preventDefault(); if (app.saveCodeNow) app.saveCodeNow(); }
-    else if (e.key === "Enter" && e.shiftKey) { e.preventDefault(); if (app.judgeAll) app.judgeAll(); }
-    else if (e.key === "Enter") { e.preventDefault(); if (app.runOne) app.runOne(); }
-    else if (e.key.toLowerCase() === "n") { e.preventDefault(); app.openMetaModal(null); }
+    else if (e.key === "Enter" && e.shiftKey) { if (modalOpen) return; e.preventDefault(); if (app.judgeAll) app.judgeAll(); }
+    else if (e.key === "Enter") { if (modalOpen) return; e.preventDefault(); if (app.runOne) app.runOne(); }
+    else if (e.key.toLowerCase() === "n") { if (modalOpen) return; e.preventDefault(); app.openMetaModal(null); }
     else if (e.key === ";") { e.preventDefault(); if (app.focusCoachInput) app.focusCoachInput(); }
   });
 }
@@ -615,6 +650,7 @@ async function boot() {
   if (!cmOk) markEditorDegraded();
   initTests(app);
   initRunner(app);
+  initSpj(app); // ⚖️ special-judge (checker.cpp) editor — appends to the Tests toolbar
   initStatement(app);
   initNotes(app);
   initTimer(app);
@@ -625,21 +661,22 @@ async function boot() {
   initLab(app);
   initDashboard(app);
   initMiniChat(app);
-  initSynthesizer(app);
-  initEditorial(app); // must be AFTER initSynthesizer — wraps its refreshSynthAvail
+  initSynthesizer(app);    // defines app.refreshSynthAvail; toggles the toolbar 📈 button
   initContests(app);
-  initDefense(app);        // wraps nothing; appends button to #ac-banner — before journey wraps syncMeta
+  initDefense(app);        // wraps refreshSynthAvail to toggle the 🎓 toolbar button — after initSynthesizer
   initJourney(app);        // wraps syncMeta/clearEditor — keep before palette
   initMistakeBook(app);    // defines app.openMistakeBook (palette + home use it)
-  initFlashQuiz(app);      // defines app.openFlashQuiz
   initBoss(app);           // listens for journey:painted to fill the boss slot
   initVisualizer(app);     // 🔬 test-case visualizer (Run console + test cards)
   initSkillTree(app);      // 🗺️ skill constellation (journey home opens it)
   initCommandPalette(app); // places its trigger next to the journey chips
+  initEditorAppearance(app); // applies saved fonts/theme/colors live; settings renders its UI
   await initSettings(app);
   initMetaModal();
   initShortcuts();
+  initDropGuard();
   initAiActivity();
+  initOverflowMenus();   // topbar "⋯ More" + editor "Tools ▾" dropdowns
 
   const btnGuide = document.getElementById("btn-guide");
   const guideModal = document.getElementById("guide-modal");
@@ -675,14 +712,29 @@ async function boot() {
   app.setTab("run");
 
   await app.refreshProblems();
-  // Boot lands on the Journey home (streak / quests / continue card) instead of
-  // auto-opening the last problem — one click on "Tiếp tục" resumes work.
-  app.clearEditor();
+  // Startup goes straight to the editor — reopen the last problem (or the most
+  // recently updated one) so power users land on code, not a dashboard. The
+  // Journey home stays one click away via the 🏠 chip. Only a truly empty
+  // workspace falls through to the home/onboarding state.
+  {
+    const list = app.state.problems || [];
+    let target = null;
+    try {
+      const lastId = localStorage.getItem("usaco2.lastProblem");
+      if (lastId && list.some((p) => p.id === lastId)) target = lastId;
+    } catch { /* private mode */ }
+    if (!target && list.length) target = list[0].id; // list is updatedAt-desc
+    if (target) await app.loadProblem(target);
+    else app.clearEditor();
+  }
 
   try {
     const health = await api.health();
     app.setCompilerPill(health.compiler);
   } catch { /* leave pill default */ }
+
+  // First-run welcome/setup (shows once; reads the health + AI-key state).
+  initWelcome(app);
 }
 
 boot();

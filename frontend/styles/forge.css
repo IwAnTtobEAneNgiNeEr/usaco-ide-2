@@ -1,0 +1,226 @@
+/* =========================================================================
+   forge.css — "Forge" redesign layer (loaded LAST, after lux.css).
+
+   Goal: kill the generic "AI dark" fingerprint (navy #0b1020 + cornflower
+   #3b82f6 + neon purple #8b5cf6 + system-font-because-Inter-never-loaded) and
+   replace it with a single, intentional identity: a warm graphite workbench
+   lit by one amber-gold accent — the colour of a desk lamp at 1am. Verdict
+   colours (AC/WA/TLE/...) stay functional because this is a judge.
+
+   This layer re-pigments the whole app through tokens (every component uses
+   var(--token), so this cascades for free) and then surgically re-points the
+   handful of places where lux.css / main.css hard-coded blue. No new !important
+   except where it must out-rank an existing one.
+   ========================================================================= */
+
+/* ----------------------------------------------------------------------- *
+   1. TOKENS — dark (default)
+ * ----------------------------------------------------------------------- */
+:root {
+  /* Surfaces: warm-neutral graphite, layered. Not navy, not pure black. */
+  --bg:         #0f0f12;
+  --bg-soft:    #16161b;
+  --panel:      #141418;
+  --panel-2:    #1b1b21;
+  --panel-3:    #24242c;
+  --border:     #2c2c35;
+  --border-soft:#212128;
+  --bg-surface: rgba(255, 255, 255, 0.022);
+
+  /* Text: warm off-white → warm grays (was blue-tinted #e5e7eb/#94a3b8). */
+  --text:       #ecebe5;
+  --text-muted: #c3c0b7;
+  --text-dim:   #8b897f;
+
+  /* Accent: amber-gold. One accent for the whole product. */
+  --primary:        #e6a93e;
+  --primary-strong: #f4be59;   /* hover = brighter on dark */
+  --primary-soft:   rgba(230, 169, 62, 0.13);
+  --accent:         var(--primary);
+  --accent-strong:  var(--primary-strong);
+  --accent-soft:    var(--primary-soft);
+  --accent-grad:    var(--primary);
+  --accent-rgb:     230, 169, 62;       /* for rgba() shadows/glows */
+  --on-accent:      #1d1606;            /* dark text that rides ON the gold */
+
+  /* Functional / verdict colours — kept legible, nudged off the accent hue. */
+  --success: #34d27e;
+  --warning: #f5b740;
+  --error:   #f0584f;
+  --ac:  #34d27e;
+  --wa:  #f0584f;
+  --tle: #fb923c;   /* pushed orange so it never reads as the gold accent */
+  --mle: #ef6c2e;
+  --re:  #b39ddb;
+  --ce:  #9b998f;
+
+  /* AI: muted dusty lavender (was neon #8b5cf6) — groups AI actions quietly. */
+  --ai:          #b39ddb;
+  --purple:      #b39ddb;
+  --purple-soft: rgba(179, 157, 219, 0.12);
+
+  /* Action buttons. Run = gold (iterate), Judge = green (commit). */
+  --btn-primary: #e6a93e;  --btn-primary-h: #f4be59;
+  --btn-run:     #e6a93e;  --btn-run-h:     #f4be59;
+  --btn-judge:   #1f9d57;  --btn-judge-h:   #18b462;
+  --btn-del:     #e0524a;  --btn-del-h:     #cf463f;
+
+  /* Editor surface: neutral near-black, a hair off the panels. */
+  --editor-bg: #121215;
+
+  /* Type: Geist actually loads now (it was vendored but listed after the
+     never-vendored "Inter", so the app silently fell back to the system UI
+     font). Mono stays JetBrains. */
+  --sans: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
+
+  /* Depth: warm-neutral black, not lux's indigo. */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .50);
+  --shadow-2: 0 6px 22px -8px rgba(0, 0, 0, .60);
+  --shadow-3: 0 28px 70px -20px rgba(0, 0, 0, .74);
+  --edge-light: inset 0 1px 0 rgba(255, 255, 255, .055);
+
+  /* Focus halo: crisp gold ring + soft bloom. */
+  --ring: 0 0 0 2px rgba(var(--accent-rgb), .6), 0 0 0 6px rgba(var(--accent-rgb), .14);
+}
+
+/* ----------------------------------------------------------------------- *
+   2. TOKENS — light theme ("warm paper" instead of cold gray)
+ * ----------------------------------------------------------------------- */
+.light-theme {
+  --bg:         #f4f1ea;
+  --bg-soft:    #ebe6db;
+  --panel:      #fbf9f4;
+  --panel-2:    #f4f1ea;
+  --panel-3:    #ece7dc;
+  --border:     #d8d1c2;
+  --border-soft:#e4ded2;
+
+  --text:       #2a2620;
+  --text-muted: #575145;
+  --text-dim:   #847d6f;
+
+  --editor-bg:  #fbf9f4;
+
+  /* Deepen the gold so it clears contrast on paper (gold-on-white is weak). */
+  --primary:        #b5791c;
+  --primary-strong: #9c6612;
+  --primary-soft:   rgba(181, 121, 28, 0.12);
+  --accent-rgb:     181, 121, 28;
+  --on-accent:      #fff8ec;
+  --btn-primary: #b5791c;  --btn-primary-h: #9c6612;
+  --btn-run:     #b5791c;  --btn-run-h:     #9c6612;
+
+  --shadow-1: 0 1px 2px rgba(60, 50, 30, .14);
+  --shadow-2: 0 6px 22px -8px rgba(60, 50, 30, .18);
+  --shadow-3: 0 28px 70px -20px rgba(60, 50, 30, .26);
+  --edge-light: inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+
+/* ----------------------------------------------------------------------- *
+   3. TYPOGRAPHY refinements
+ * ----------------------------------------------------------------------- */
+body { letter-spacing: -0.003em; }
+
+/* Tabular figures everywhere numbers carry meaning (timer, metrics, counts). */
+.timer-display, .term-metric, #rc-runtime, .pill, .vbadge,
+#problem-count, #session-keys-val, #session-runs-val,
+.dash-card, .tests-summary, .term-result-bar {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Display headings: heavier, tighter — present, not timid. */
+.meta-title, #meta-title { font-weight: 700; letter-spacing: -0.025em; }
+.modal-title { font-weight: 650; letter-spacing: -0.02em; }
+.brand-name  { font-weight: 650; letter-spacing: -0.02em; }
+
+/* Uppercase micro-labels: a touch more tracking so they read as labels. */
+.col-title, .console-label, .term-section-head, .term-key, .coach-title {
+  letter-spacing: .9px;
+}
+
+/* Reading column: cap line length so statements stay comfortable. */
+.statement-page { max-width: 72ch; }
+
+/* ----------------------------------------------------------------------- *
+   4. BRAND — re-point lux.css's blue mark to gold
+ * ----------------------------------------------------------------------- */
+.topbar {
+  background: linear-gradient(180deg, #18181d, #0f0f12);
+  box-shadow: var(--edge-light), 0 1px 0 rgba(0, 0, 0, .55);
+}
+.brand-mark {
+  color: #ffe2a6;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), .26), rgba(var(--accent-rgb), .08));
+  border: 1px solid rgba(var(--accent-rgb), .42);
+  box-shadow: var(--edge-light), 0 3px 12px -4px rgba(var(--accent-rgb), .5);
+}
+.brand-ver { color: var(--accent); }
+
+/* ----------------------------------------------------------------------- *
+   5. BUTTONS — gold gets dark text; re-tint the hero shadows
+ * ----------------------------------------------------------------------- */
+/* The two gold heroes carry dark text for legibility (white-on-gold fails). */
+.btn-primary, .btn-primary:hover:not(:disabled),
+.btn-run, .btn-run:hover:not(:disabled) {
+  color: var(--on-accent);
+  font-weight: 650;
+}
+.btn-primary { box-shadow: var(--edge-light), 0 3px 10px -4px rgba(var(--accent-rgb), .5); }
+.btn-run     { box-shadow: var(--edge-light), 0 4px 16px -6px rgba(var(--accent-rgb), .6); }
+.btn-judge   { color: #fff; box-shadow: var(--edge-light), 0 4px 16px -6px rgba(31, 157, 87, .5); }
+
+/* Ghost hover: neutral graphite, not navy #111827. */
+.btn-ghost:hover:not(:disabled) { background: #1e1e24; color: var(--text); }
+
+/* AI buttons: muted lavender, consistent resting + hover. */
+.btn-ai { color: #cdbfe8; }
+.btn-ai:hover:not(:disabled) { background: var(--purple-soft); border-color: #5a4c78; color: #e3d8f7; }
+
+/* ----------------------------------------------------------------------- *
+   6. PROBLEM LIST — gold selection signature (was blue)
+ * ----------------------------------------------------------------------- */
+.p-item:hover { background: rgba(255, 255, 255, .035); }
+.p-item.active {
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), .16), rgba(var(--accent-rgb), .045) 55%, rgba(var(--accent-rgb), 0));
+  box-shadow: var(--edge-light);
+}
+.p-item.active::before {
+  background: linear-gradient(180deg, #ffd083, var(--accent));
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), .7);
+}
+
+/* ----------------------------------------------------------------------- *
+   7. TABS — gold active indicator (was blue glow)
+ * ----------------------------------------------------------------------- */
+.tab.active { border-bottom-color: var(--accent); }
+.panel-tabs .tab.active {
+  box-shadow: inset 0 -2px 0 var(--accent), 0 2px 10px -4px rgba(var(--accent-rgb), .5);
+}
+
+/* ----------------------------------------------------------------------- *
+   8. VERDICT CHIP — neutral states ride the accent; real verdicts keep colour
+ * ----------------------------------------------------------------------- */
+.verdict-OK, .verdict-running {
+  box-shadow: var(--edge-light), 0 6px 20px -10px rgba(var(--accent-rgb), .55);
+}
+
+/* ----------------------------------------------------------------------- *
+   9. INPUTS / FOCUS — gold ring
+ * ----------------------------------------------------------------------- */
+.input:focus, .select:focus,
+.lab-code:focus, .coach-input:focus, .timer-custom:focus {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+/* ----------------------------------------------------------------------- *
+   10. SCROLLBAR — warm graphite thumb (was indigo #2f3e58)
+ * ----------------------------------------------------------------------- */
+::-webkit-scrollbar-thumb { background: #34343d; background-clip: content-box; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #45454f; background-clip: content-box; }
+
+/* ----------------------------------------------------------------------- *
+   11. EMPTY STATE — a hair warmer, with breathing room
+ * ----------------------------------------------------------------------- */
+.empty-glyph { color: var(--panel-3); text-shadow: 0 2px 24px rgba(var(--accent-rgb), .08); }
+.empty-state { gap: 18px; }

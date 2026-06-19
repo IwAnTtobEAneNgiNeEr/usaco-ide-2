@@ -138,7 +138,7 @@ body.is-desktop .problem-scroll { user-select: text; }
    ============================================================================ */
 .contest-overlay {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(8, 12, 20, .72); backdrop-filter: blur(2px);
+  background: rgba(8, 12, 20, .72);
   display: grid; place-items: center;
 }
 .contest-overlay.hidden { display: none; }
@@ -261,3 +261,85 @@ body.is-desktop .problem-scroll { user-select: text; }
 .sdiff-bad .sdiff-act { background: rgba(239, 68, 68, .14); }
 .sdiff .ws { color: var(--re, #ef4444); opacity: .7; }
 .sdiff .diff-missing { color: var(--text-dim); opacity: .6; }
+.sdiff-checker {
+  font: 12px/1.5 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--wa, #f59e0b);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 6px;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------------- Bulk test import (.in/.out drag-drop) ---------------- */
+[data-panel="tests"].drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+  background: var(--accent-soft, rgba(91, 155, 255, 0.08));
+  border-radius: var(--radius-sm, 6px);
+}
+
+/* ---------------- Settings: personal code template ---------------- */
+.template-editor {
+  font: 12.5px/1.55 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  min-height: 190px;
+  resize: vertical;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+/* ---------------- First-run welcome / setup card ---------------- */
+.welcome-modal { max-width: 720px; }
+.welcome-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+.welcome-mark {
+  font: 700 24px/1 var(--mono, ui-monospace, monospace);
+  color: var(--accent);
+  background: var(--accent-soft, rgba(91,155,255,0.14));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  flex: none;
+}
+.welcome-tag { margin: 4px 0 0; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.welcome-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+@media (max-width: 640px) { .welcome-grid { grid-template-columns: 1fr; } }
+.welcome-card {
+  background: var(--bg-surface, rgba(255,255,255,0.02));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.welcome-card h3, .welcome-setup h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text);
+  letter-spacing: .01em;
+}
+.welcome-flow, .welcome-feats { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-dim); line-height: 1.7; }
+.welcome-feats { list-style: none; padding-left: 0; }
+.welcome-feats li { margin-bottom: 4px; }
+.welcome-setup {
+  background: var(--bg-surface, rgba(255,255,255,0.02));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.welcome-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .welcome-checks { grid-template-columns: 1fr; } }
+.welcome-check { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; }
+.welcome-check-ico { font-size: 18px; line-height: 1.3; flex: none; }
+.welcome-check b { color: var(--text); }
+.welcome-check-msg { margin-top: 2px; font-size: 12px; line-height: 1.45; }
+.welcome-check-msg.ok { color: #4ade80; }
+.welcome-check-msg.warn { color: #fbbf24; }
+.welcome-actions { display: flex; align-items: center; gap: 10px; }
+.welcome-skip { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); cursor: pointer; }

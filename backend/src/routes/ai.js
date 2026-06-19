@@ -599,11 +599,13 @@ router.post("/chat", asyncHandler(async (req, res) => {
 
   const ctx = await buildChatContext(problemId, body);
 
+  const perTestResults = Array.isArray(body.perTestResults) ? body.perTestResults : undefined;
+
   try {
     const reply = await ai.chatProblem({
       settings,
       statement: ctx.statement, code: ctx.code, testResult: ctx.testResult,
-      runHistory: ctx.runHistory, history: ctx.turns, message,
+      runHistory: ctx.runHistory, perTestResults, history: ctx.turns, message,
       revealAllowed: Boolean(body.revealAllowed)
     });
     const capped = await appendChatTurn(problemId, message, reply);
@@ -644,11 +646,13 @@ router.post("/chat-stream", asyncHandler(async (req, res) => {
   const upstreamAbort = new AbortController();
   req.on("close", () => upstreamAbort.abort());
 
+  const perTestResults = Array.isArray(body.perTestResults) ? body.perTestResults : undefined;
+
   let deltasSent = 0;
   const chatArgs = {
     settings,
     statement: ctx.statement, code: ctx.code, testResult: ctx.testResult,
-    runHistory: ctx.runHistory, history: ctx.turns, message,
+    runHistory: ctx.runHistory, perTestResults, history: ctx.turns, message,
     revealAllowed: Boolean(body.revealAllowed)
   };
 
@@ -804,37 +808,6 @@ router.post("/defense-grade", asyncHandler(async (req, res) => {
       });
     }
     res.json({ ok: true, ...result });
-  } catch (error) {
-    res.status(error.code === "NO_KEY" ? 400 : 502).json({ ok: false, error: error.message });
-  }
-}));
-
-// ---------------------------------------------------------------------------
-// ⚡ Flash quiz — 3 MCQs distilled from the student's own mistakes.md files.
-// ---------------------------------------------------------------------------
-
-// POST /api/ai/flash-quiz  {} -> { questions: [{q, choices[4], answerIndex, explain}] }
-router.post("/flash-quiz", asyncHandler(async (req, res) => {
-  const settings = await settingsStore.getAiSettings();
-  if (!settings.apiKey) return noKey(res);
-  const path = require("path");
-  const fileStore = require("../fileStore");
-  const summaries = await problemStore.listProblems(); // updatedAt desc
-  const chunks = [];
-  for (const s of summaries) {
-    if (chunks.length >= 5) break; // newest 5 notebooks are plenty for 3 questions
-    const file = path.join(fileStore.problemDir(s.id), "mistakes.md");
-    if (!(await fileStore.pathExists(file))) continue;
-    const content = await fileStore.readText(file, "");
-    if (!content.trim()) continue;
-    chunks.push(`## ${s.title}\n${content.trim()}`);
-  }
-  if (!chunks.length) {
-    return res.status(400).json({ ok: false, error: "Sổ tay lỗi sai còn trống — chưa có gì để quiz. Hãy dùng 🧠 Analyze My Mistakes khi bị WA." });
-  }
-  try {
-    const out = await ai.flashQuiz({ settings, notes: chunks.join("\n\n") });
-    res.json({ ok: true, ...out });
   } catch (error) {
     res.status(error.code === "NO_KEY" ? 400 : 502).json({ ok: false, error: error.message });
   }

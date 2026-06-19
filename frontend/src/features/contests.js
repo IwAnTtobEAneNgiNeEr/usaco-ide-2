@@ -497,13 +497,19 @@ export function initContests(app) {
     finally { btn.disabled = false; }
   });
 
+  let cwJudgeAbort = null;
   $("cw-judge").addEventListener("click", async () => {
+    if (cwJudgeAbort) { cwJudgeAbort.abort(); return; } // button is ⏹ Stop mid-judge
     if (!current.pid) return;
-    const btn = $("cw-judge"); btn.disabled = true;
+    const btn = $("cw-judge");
+    const btnHtml = btn.innerHTML;
+    cwJudgeAbort = new AbortController();
+    btn.innerHTML = "⏹ Stop";
+    btn.classList.add("btn-stop");
     setVerdict("…", null);
     cwOutput.textContent = "Đang chấm toàn bộ test…";
     try {
-      const r = await api.judgeContestProblem(current.contestId, current.pid, cwCode.value);
+      const r = await api.judgeContestProblem(current.contestId, current.pid, cwCode.value, undefined, { signal: cwJudgeAbort.signal });
       setVerdict(r.verdict, r.summary && r.summary.timeMs);
       if (r.verdict === "CE") {
         cwOutput.textContent = (r.compile && r.compile.stderr) || "Compile error";
@@ -513,8 +519,15 @@ export function initContests(app) {
         cwOutput.textContent = `${r.summary.passed}/${r.summary.total} test AC\n\n${lines.join("\n")}`;
       }
       refreshProblemVerdict();
-    } catch (err) { cwOutput.textContent = err.message; setVerdict("READY", null); }
-    finally { btn.disabled = false; }
+    } catch (err) {
+      cwOutput.textContent = err && err.aborted ? "⏹ Đã dừng chấm." : err.message;
+      setVerdict("READY", null);
+    }
+    finally {
+      btn.innerHTML = btnHtml;
+      btn.classList.remove("btn-stop");
+      cwJudgeAbort = null;
+    }
   });
 
   // After a run/judge, refresh just this problem's verdict in the side list.

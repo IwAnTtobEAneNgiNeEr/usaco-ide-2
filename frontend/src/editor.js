@@ -7,32 +7,7 @@
 import { api } from "./api.js";
 import { highlightCpp } from "./highlight.js";
 import { escapeHtml } from "./md.js";
-
-// ---- C++ snippets (Tab-expanded). $0 marks the final caret position. ----
-const SNIPPETS = {
-  fastio: "ios::sync_with_stdio(false);\ncin.tie(nullptr);$0",
-  fori: "for (int i = 0; i < $0; i++) {\n    \n}",
-  forj: "for (int j = 0; j < $0; j++) {\n    \n}",
-  rep: "for (int i = 0; i < $0; i++) {\n    \n}",
-  forn: "for (int i = 0; i < n; i++) {\n    $0\n}",
-  pb: "push_back($0)",
-  eb: "emplace_back($0)",
-  all: "begin($0), end($0)",
-  vi: "vector<int> $0",
-  vll: "vector<long long> $0",
-  vvi: "vector<vector<int>> $0",
-  pii: "pair<int, int>$0",
-  pll: "pair<long long, long long>$0",
-  ll: "long long $0",
-  ld: "long double $0",
-  sortv: "sort($0.begin(), $0.end());",
-  mod: "const long long MOD = 1e9 + 7;$0",
-  inf: "const long long INF = 1e18;$0",
-  readn: "int n; cin >> n;$0",
-  yes: 'cout << "YES\\n";$0',
-  no: 'cout << "NO\\n";$0',
-  main: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    $0\n    return 0;\n}"
-};
+import { SNIPPETS } from "./snippet-table.js";
 
 const PAIRS = { "(": ")", "[": "]", "{": "}" };
 const QUOTES = new Set(['"', "'"]);
@@ -150,6 +125,7 @@ export function renderMeta(app) {
     `<span class="chip"><b>status</b> ${escapeHtml(m.status)}</span>`,
     m.timeLimitMs && `<span class="chip"><b>TL</b> ${Math.round(m.timeLimitMs)}ms</span>`,
     m.usacoMode && m.fileName && `<span class="chip chip-usaco"><b>USACO</b> ${escapeHtml(m.fileName)}.in/.out</span>`,
+    m.usesChecker && `<span class="chip chip-usaco" title="Bài này chấm bằng checker.cpp (special judge)"><b>SPJ</b> checker.cpp</span>`,
     m.lastVerdict && `<span class="chip"><b>last</b> <span class="vbadge v-${escapeHtml(m.lastVerdict)}">${escapeHtml(m.lastVerdict)}</span></span>`
   ].filter(Boolean).join("");
   app.el.metaChips.innerHTML = chips;

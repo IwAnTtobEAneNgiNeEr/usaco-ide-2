@@ -38,6 +38,7 @@ function paintCardResult(card, result) {
   time.textContent = `${Math.round(result.timeMs)}ms`;
   if (out) {
     let txt = `actual:\n${result.actual || ""}`;
+    if (result.checkerMessage) txt += `\n\n⚖ checker: ${result.checkerMessage}`;
     if (result.stderr) txt += `\n\nstderr:\n${result.stderr}`;
     if (result.diff) txt += `\n\ndiff @ line ${result.diff.line}\n  expected: ${result.diff.expected}\n  actual:   ${result.diff.actual}`;
     out.textContent = txt;
@@ -97,6 +98,64 @@ export function renderTests(app) {
   }
 }
 
+// ---- File import (.in/.out pairs) -------------------------------------------
+// USACO/Codeforces test data comes as a folder of files: 1.in + 1.out (answer
+// also seen as .ans/.expected). Pair files by stem, read them in the browser,
+// and add them through one bulk request. Anything unpaired or non-test is
+// reported, never fatal.
+
+const IMPORT_MAX_BYTES = 4 * 1024 * 1024; // mirrors backend LIMITS.maxInputBytes
+
+function pairTestFiles(files) {
+  const inputs = new Map();   // stem -> File
+  const answers = new Map();  // stem -> { ext, file } (best answer ext wins)
+  const ANSWER_RANK = { out: 0, ans: 1, expected: 2 };
+  let ignored = 0;
+  for (const f of files) {
+    const m = /^(.+)\.(in|out|ans|expected)$/i.exec(f.name);
+    if (!m) { ignored += 1; continue; }
+    const stem = m[1];
+    const ext = m[2].toLowerCase();
+    if (ext === "in") {
+      inputs.set(stem, f);
+    } else {
+      const prev = answers.get(stem);
+      if (!prev || ANSWER_RANK[ext] < ANSWER_RANK[prev.ext]) answers.set(stem, { ext, file: f });
+    }
+  }
+  const stems = [...inputs.keys()]
+    .filter((s) => answers.has(s))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const unpaired = inputs.size - stems.length;
+  return { pairs: stems.map((s) => ({ stem: s, in: inputs.get(s), out: answers.get(s).file })), unpaired, ignored };
+}
+
+async function importTestFiles(app, fileList) {
+  if (!app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
+  const { pairs, unpaired, ignored } = pairTestFiles([...fileList]);
+  if (!pairs.length) {
+    app.toast("Không tìm thấy cặp test nào — cần các file dạng 1.in + 1.out (hoặc .ans).", "err");
+    return;
+  }
+  const tests = [];
+  let oversized = 0;
+  for (const p of pairs) {
+    if (p.in.size > IMPORT_MAX_BYTES || p.out.size > IMPORT_MAX_BYTES) { oversized += 1; continue; }
+    tests.push({ name: p.stem, input: await p.in.text(), expected: await p.out.text() });
+  }
+  if (!tests.length) { app.toast("Tất cả file đều quá 4MB — không import được.", "err"); return; }
+  try {
+    const { added, skipped } = await api.addTestsBulk(app.state.currentId, tests);
+    await app.reloadTests();
+    const parts = [`Đã import ${added.length} test`];
+    const dropped = (skipped ? skipped.length : 0) + oversized;
+    if (dropped) parts.push(`${dropped} bị bỏ qua (quá giới hạn)`);
+    if (unpaired) parts.push(`${unpaired} file .in thiếu .out`);
+    if (ignored) parts.push(`${ignored} file không phải test`);
+    app.toast(parts.join(" · "), added.length ? "ok" : "err");
+  } catch (err) { app.toast(err.message, "err"); }
+}
+
 // ---- Init ------------------------------------------------------------------
 
 export function initTests(app) {
@@ -111,6 +170,43 @@ export function initTests(app) {
       renderTests(app);
     } catch (err) { app.toast(err.message, "err"); }
   });
+
+  // 📂 Import .in/.out — file picker + drag-drop onto the Tests panel.
+  const btnImport = document.getElementById("btn-import-tests");
+  const importInput = document.getElementById("import-tests-files");
+  if (btnImport && importInput) {
+    btnImport.addEventListener("click", () => {
+      if (!app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
+      importInput.click();
+    });
+    importInput.addEventListener("change", async () => {
+      if (importInput.files && importInput.files.length) await importTestFiles(app, importInput.files);
+      importInput.value = ""; // allow re-importing the same selection
+    });
+  }
+  const panel = el.testsList ? el.testsList.closest('[data-panel="tests"]') : null;
+  if (panel) {
+    let dragDepth = 0;
+    panel.addEventListener("dragenter", (e) => {
+      if (![...(e.dataTransfer ? e.dataTransfer.types : [])].includes("Files")) return;
+      e.preventDefault();
+      dragDepth += 1;
+      panel.classList.add("drop-target");
+    });
+    panel.addEventListener("dragover", (e) => { e.preventDefault(); });
+    panel.addEventListener("dragleave", () => {
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (!dragDepth) panel.classList.remove("drop-target");
+    });
+    panel.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      dragDepth = 0;
+      panel.classList.remove("drop-target");
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        await importTestFiles(app, e.dataTransfer.files);
+      }
+    });
+  }
 
   el.btnRunTests.addEventListener("click", () => app.judgeAll());
   // "Generate with AI" jumps to the Problem view and runs the inline pipeline.

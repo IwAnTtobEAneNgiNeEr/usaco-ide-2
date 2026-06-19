@@ -1,6 +1,6 @@
 "use strict";
 
-const { SETTINGS_FILE, AI_SETTINGS_FILE, DEFAULT_SETTINGS, DEFAULT_AI_SETTINGS } = require("./config");
+const { SETTINGS_FILE, AI_SETTINGS_FILE, TEMPLATE_FILE, DEFAULT_SETTINGS, DEFAULT_AI_SETTINGS, DEFAULT_TEMPLATE, LIMITS } = require("./config");
 const store = require("./fileStore");
 
 async function getSettings() {
@@ -25,9 +25,40 @@ async function saveSettings(patch = {}) {
   next.autosave = Boolean(next.autosave);
   next.tabSize = Math.min(Math.max(Number(next.tabSize) || 4, 2), 8);
   next.theme = ["dark", "light"].includes(next.theme) ? next.theme : "dark";
-  next.accentColor = ["blue", "green", "orange", "purple", "red"].includes(next.accentColor) ? next.accentColor : "blue";
+  next.accentColor = ["amber", "blue", "green", "orange", "purple", "red"].includes(next.accentColor) ? next.accentColor : "amber";
   await store.writeJson(SETTINGS_FILE, next);
   return next;
+}
+
+// ---- Personal code template (data/template.cpp) -----------------------------
+// The starter every new problem's main.cpp begins from. Stored as a real .cpp
+// file (file-per-thing, editable outside the app); blank/missing = built-in.
+
+async function getCodeTemplate() {
+  const raw = await store.readText(TEMPLATE_FILE, "");
+  return raw.trim() ? raw : DEFAULT_TEMPLATE;
+}
+
+async function readTemplateState() {
+  const raw = await store.readText(TEMPLATE_FILE, "");
+  const custom = Boolean(raw.trim());
+  return { template: custom ? raw : DEFAULT_TEMPLATE, custom };
+}
+
+// Empty/whitespace-only template = reset to the built-in starter.
+async function saveCodeTemplate(text) {
+  const s = text == null ? "" : String(text);
+  if (!s.trim()) {
+    await store.removeFile(TEMPLATE_FILE);
+    return { template: DEFAULT_TEMPLATE, custom: false };
+  }
+  if (Buffer.byteLength(s, "utf8") > LIMITS.maxCodeBytes) {
+    const err = new Error(`Template quá lớn (giới hạn ${Math.round(LIMITS.maxCodeBytes / 1024)}KB).`);
+    err.status = 400;
+    throw err;
+  }
+  await store.writeText(TEMPLATE_FILE, s);
+  return { template: s, custom: true };
 }
 
 // ---- AI settings (stored separately so the key never mixes into UI config) ----
@@ -68,4 +99,8 @@ function redactAi(settings) {
   };
 }
 
-module.exports = { getSettings, saveSettings, getAiSettings, saveAiSettings, redactAi };
+module.exports = {
+  getSettings, saveSettings,
+  getCodeTemplate, readTemplateState, saveCodeTemplate,
+  getAiSettings, saveAiSettings, redactAi
+};

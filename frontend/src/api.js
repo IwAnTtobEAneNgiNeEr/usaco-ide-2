@@ -58,7 +58,7 @@ async function request(method, url, body, opts2 = {}) {
     res = await fetch(url, opts);
   } catch (networkErr) {
     if (networkErr && networkErr.name === "AbortError") {
-      const e = new Error("Đã hủy yêu cầu AI."); e.aborted = true; e.code = "ABORTED"; throw e;
+      const e = new Error("Đã hủy yêu cầu."); e.aborted = true; e.code = "ABORTED"; throw e;
     }
     throw new Error("Không kết nối được backend. Backend USACO IDE 2.0 có đang chạy không?");
   }
@@ -88,6 +88,8 @@ export const api = {
   // Problems
   listProblems: () => get("/api/problems"),
   getProblem: (id) => get(`/api/problems/${id}`),
+  // Everything needed to open a problem (meta + files + tests) in one request.
+  getWorkspace: (id) => get(`/api/problems/${id}/workspace`),
   createProblem: (data) => post("/api/problems", data),
   updateProblem: (id, data) => put(`/api/problems/${id}`, data),
   deleteProblem: (id) => del(`/api/problems/${id}`),
@@ -111,12 +113,18 @@ export const api = {
   // Tests
   listTests: (id) => get(`/api/problems/${id}/tests`),
   addTest: (id, data) => post(`/api/problems/${id}/tests`, data),
+  addTestsBulk: (id, tests) => post(`/api/problems/${id}/tests/bulk`, { tests }),
   updateTest: (id, testId, data) => put(`/api/problems/${id}/tests/${testId}`, data),
   deleteTest: (id, testId) => del(`/api/problems/${id}/tests/${testId}`),
 
-  // Judge
-  run: (id, code) => post(`/api/problems/${id}/run`, { code }),
-  judge: (id, code, onlyTestId) => post(`/api/problems/${id}/judge`, { code, onlyTestId }),
+  // Judge — opts ({ signal }) lets the Stop button abort; the backend stops
+  // launching further tests as soon as the connection drops.
+  run: (id, code, opts) => post(`/api/problems/${id}/run`, { code }, opts),
+  judge: (id, code, onlyTestId, opts) => post(`/api/problems/${id}/judge`, { code, onlyTestId }, opts),
+
+  // SPJ checker source (checker.cpp) — used when the problem has usesChecker on.
+  getChecker: (id) => get(`/api/problems/${id}/checker`),
+  saveChecker: (id, checker) => put(`/api/problems/${id}/checker`, { checker }),
 
   // Lab (stress tester + complexity profiler) + analytics
   stress: (id, data) => post(`/api/problems/${id}/stress`, data),
@@ -127,17 +135,19 @@ export const api = {
   progress: () => get("/api/progress"),
   mistakeBook: () => get("/api/stats/mistakes"),
 
-  // ⚔️ Weekend Boss + 🎓 AC Defense + ⚡ Flash quiz
+  // ⚔️ Weekend Boss + 🎓 Explain Your Solution (defense)
   bossStatus: () => get("/api/boss"),
   bossSummon: (opts) => aiCall((s) => post("/api/boss/summon", {}, { signal: s }), opts),
   defenseQuestions: (problemId, opts) => aiCall((s) => post("/api/ai/defense-questions", { problemId }, { signal: s }), opts),
   defenseGrade: (problemId, qa, opts) => aiCall((s) => post("/api/ai/defense-grade", { problemId, qa }, { signal: s }), opts),
-  flashQuiz: (opts) => aiCall((s) => post("/api/ai/flash-quiz", {}, { signal: s }), opts),
 
   // Settings + import
   getSettings: () => get("/api/settings"),
   saveSettings: (data) => put("/api/settings", data),
   checkCompiler: () => get("/api/settings/compiler"),
+  // Personal C++ starter for new problems; blank template = reset to built-in.
+  getTemplate: () => get("/api/settings/template"),
+  saveTemplate: (template) => put("/api/settings/template", { template }),
   import: (payload) => post("/api/import", payload),
 
   // AI — long-running calls go through aiCall() so they're cancelable + tracked.
@@ -259,6 +269,6 @@ export const api = {
   getContestExpected: (cid, pid) => get(`/api/contests/${cid}/problems/${pid}/expected`),
   saveContestExpected: (cid, pid, expected) => put(`/api/contests/${cid}/problems/${pid}/expected`, { expected }),
   listContestTests: (cid, pid) => get(`/api/contests/${cid}/problems/${pid}/tests`),
-  runContestProblem: (cid, pid, code) => post(`/api/contests/${cid}/problems/${pid}/run`, { code }),
-  judgeContestProblem: (cid, pid, code, onlyTestId) => post(`/api/contests/${cid}/problems/${pid}/judge`, { code, onlyTestId })
+  runContestProblem: (cid, pid, code, opts) => post(`/api/contests/${cid}/problems/${pid}/run`, { code }, opts),
+  judgeContestProblem: (cid, pid, code, onlyTestId, opts) => post(`/api/contests/${cid}/problems/${pid}/judge`, { code, onlyTestId }, opts)
 };

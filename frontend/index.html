@@ -1,18 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <title>USACO IDE 2.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230b1220'/%3E%3Ctext%20x='16'%20y='22'%20font-size='15'%20text-anchor='middle'%20fill='%233b82f6'%20font-family='monospace'%20font-weight='bold'%3E&lt;/&gt;%3C/text%3E%3C/svg%3E" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
-  <link rel="stylesheet" href="./styles/main.css" />
-  <link rel="stylesheet" href="./styles/features.css" />
-  <link rel="stylesheet" href="./styles/v25.css" />
-  <link rel="stylesheet" href="./styles/journey.css" />
-  <link rel="stylesheet" href="./styles/v30.css" />
+  <!-- Fonts are vendored (frontend/vendor/fonts) so the app is truly offline. -->
+  <link rel="stylesheet" href="./vendor/fonts/fonts.css" />
+  <link rel="stylesheet" href="./styles/main.css?v=2.3" />
+  <link rel="stylesheet" href="./styles/features.css?v=2.3" />
+  <link rel="stylesheet" href="./styles/theme.css?v=2.3" />
+  <link rel="stylesheet" href="./styles/journey.css?v=2.3" />
+  <link rel="stylesheet" href="./styles/polish.css?v=2.3" />
+  <link rel="stylesheet" href="./styles/refine.css?v=2.4" />
+  <!-- Elevation layer: depth, sharper accent, tactile motion. -->
+  <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
+  <!-- Forge: identity re-pigment (warm graphite + amber-gold, Geist). Loaded last. -->
+  <link rel="stylesheet" href="./styles/forge.css?v=3.0" />
+  <!-- KaTeX for math rendering — vendored locally so the app stays truly offline (was a CDN dep with stale SRI hashes that broke all math). -->
+  <link rel="stylesheet" href="./vendor/katex/katex.min.css" />
+  <script defer src="./vendor/katex/katex.min.js"></script>
+  <script defer src="./vendor/katex/auto-render.min.js"></script>
 </head>
 <body>
   <!-- ===================== Top bar ===================== -->
@@ -28,37 +36,42 @@
     </div>
 
     <div class="topbar-actions">
-      <button id="btn-zen" class="btn btn-ghost btn-sm" title="Zen Focus Mode (Alt+Z)">🧘 Zen</button>
-      <button id="btn-guide" class="btn btn-ghost btn-sm" title="Hướng dẫn sử dụng IDE">📖 Hướng dẫn</button>
-      <button id="btn-shortcuts-help" class="btn btn-ghost btn-sm" title="Bảng phím tắt (?)">⌨️ Phím tắt</button>
-      <button id="btn-dashboard" class="btn btn-ghost btn-sm" title="Tiến độ &amp; thống kê">📊 Stats</button>
-      <span class="topbar-sep"></span>
       <!-- Session Stats -->
       <div id="session-stats" class="focus-timer session-stats" title="Phím đã gõ & Lượt chạy code trong phiên này">
         <span>⌨️ <b id="session-keys-val">0</b></span>
         <span class="topbar-sep" style="height:12px; margin: 0 4px;"></span>
         <span>⚙️ <b id="session-runs-val">0</b></span>
       </div>
-      <span class="topbar-sep"></span>
       <!-- Focus timer -->
       <div class="focus-timer" id="focus-timer" title="Focus timer">
         <span id="timer-display" class="timer-display">25:00</span>
         <button id="timer-toggle" class="timer-btn" title="Start/Pause">▶</button>
         <button id="timer-reset" class="timer-btn" title="Reset">↺</button>
-        <select id="timer-preset" class="timer-preset" title="Preset">
+        <select id="timer-preset" class="timer-preset" title="Thời lượng tập trung">
           <option value="15">15m</option>
           <option value="25" selected>25m</option>
           <option value="45">45m</option>
           <option value="90">90m</option>
+          <option value="custom">Tùy chọn…</option>
         </select>
-        <input id="timer-custom" class="timer-custom" type="number" min="1" max="180"
+        <input id="timer-custom" class="timer-custom" type="number" min="1" max="180" hidden
           aria-label="Số phút tùy chọn cho đồng hồ tập trung"
-          title="Số phút tùy chọn cho đồng hồ tập trung" placeholder="Phút tự chọn" />
+          title="Số phút tùy chọn cho đồng hồ tập trung" placeholder="Phút" />
       </div>
       <span class="topbar-sep"></span>
       <span id="compiler-pill" class="pill pill-muted" title="Compiler status">g++ …</span>
       <button id="btn-run" class="btn btn-run" disabled>Run <kbd>Ctrl·↵</kbd></button>
       <button id="btn-judge" class="btn btn-judge" disabled>Judge <kbd>Ctrl·⇧·↵</kbd></button>
+      <!-- Secondary tools tucked behind a single "More" menu -->
+      <div class="ov-menu" id="more-menu">
+        <button class="btn btn-ghost btn-icon btn-sm ov-trigger" title="Thêm" aria-haspopup="true">⋯</button>
+        <div class="ov-panel">
+          <button id="btn-dashboard" class="btn btn-ghost btn-sm" title="Tiến độ &amp; thống kê">📊 Thống kê</button>
+          <button id="btn-zen" class="btn btn-ghost btn-sm" title="Zen Focus Mode (Alt+Z)">🧘 Zen mode</button>
+          <button id="btn-guide" class="btn btn-ghost btn-sm" title="Hướng dẫn sử dụng IDE">📖 Hướng dẫn</button>
+          <button id="btn-shortcuts-help" class="btn btn-ghost btn-sm" title="Bảng phím tắt (?)">⌨️ Phím tắt</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -95,7 +108,7 @@
       <div id="problem-list" class="problem-list"></div>
       <div class="explorer-foot" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <span id="problem-count">0 problems</span>
-        <button id="btn-contests" class="btn btn-ghost btn-sm" title="AI Contest Generator">🏆 Contests</button>
+        <button id="btn-contests" class="btn btn-ghost btn-sm" title="AI Contest Generator"><span class="icon-trophy">🏆</span> Contests</button>
       </div>
     </aside>
 
@@ -114,11 +127,11 @@
             <div id="meta-chips" class="meta-chips"></div>
           </div>
           <div class="editor-meta-actions">
-            <div class="view-toggle" id="view-toggle">
-              <button class="view-btn active" data-view="code" type="button">Code</button>
-              <button class="view-btn" data-view="problem" type="button">Problem</button>
+            <div class="mode-toggle" id="layout-mode-toggle" title="Chế độ bố cục — Code / Problem (Ctrl+Shift+M)">
+              <button class="mode-btn active" data-mode="coding" type="button">Code</button>
+              <button class="mode-btn" data-mode="reading" type="button">Problem</button>
             </div>
-            <button id="btn-edit-meta" class="btn btn-ghost btn-sm">Edit info</button>
+            <button id="btn-edit-meta" class="btn btn-ghost btn-sm">EDIT INFO</button>
           </div>
         </div>
 
@@ -127,14 +140,23 @@
           <div class="editor-toolbar">
             <span class="file-tab">main.cpp</span>
             <button id="btn-save" class="btn btn-ghost btn-sm">Save <kbd>Ctrl·S</kbd></button>
-            <button id="btn-undo" class="btn btn-ghost btn-sm" title="Hoàn tác (Ctrl+Z)">Undo <kbd>Ctrl·Z</kbd></button>
-            <button id="btn-copy" class="btn btn-ghost btn-sm" title="Copy toàn bộ code">📋 Copy</button>
+            <button id="btn-undo" class="btn btn-icon btn-ghost btn-sm" title="Hoàn tác (Ctrl+Z)">↶</button>
+            <button id="btn-copy" class="btn btn-icon btn-ghost btn-sm" title="Copy toàn bộ code">⧉</button>
             <span id="dirty-dot" class="dirty-dot" title="Unsaved changes"></span>
             <span class="toolbar-spacer"></span>
-            <button id="btn-snippets" class="btn btn-ghost btn-sm" title="Thư viện thuật toán">⚡ Snippets</button>
             <button id="btn-review" class="btn btn-ai btn-sm" title="AI soi code hiện tại">🔍 Review</button>
-            <button id="btn-stress" class="btn btn-ghost btn-sm" title="Stress test &amp; đo độ phức tạp">🧪 Lab</button>
-            <button id="btn-open-folder" class="btn btn-ghost btn-sm" title="Mở thư mục bài này trong VS Code">📂 VS Code</button>
+            <!-- Secondary editor tools behind one "Tools" menu (post-AC tools 🎓 / 📈
+                 stay hidden until earned, then appear inside this menu). -->
+            <div class="ov-menu tool-secondary" id="tools-menu">
+              <button class="btn btn-ghost btn-sm ov-trigger" title="Công cụ" aria-haspopup="true">Tools ▾</button>
+              <div class="ov-panel">
+                <button id="btn-snippets" class="btn btn-ghost btn-sm" title="Thư viện thuật toán">⚡ Snippets</button>
+                <button id="btn-stress" class="btn btn-ghost btn-sm" title="Stress test &amp; đo độ phức tạp">🧪 Stress Lab</button>
+                <button id="btn-open-folder" class="btn btn-ghost btn-sm" title="Mở thư mục bài này trong VS Code">📂 Mở trong VS Code</button>
+                <button id="btn-defense" class="btn btn-ghost btn-sm hidden" type="button" title="AI hỏi lại để bạn tự giải thích lời giải của mình">🎓 Giải thích lời giải</button>
+                <button id="btn-synth" class="btn btn-ghost btn-sm hidden" type="button" title="AI dựng một biến thể khó hơn của bài này">📈 Bản khó hơn</button>
+              </div>
+            </div>
             <span id="editor-lang" class="lang-tag">C++17</span>
           </div>
 
@@ -156,6 +178,10 @@
             <section class="prob-block">
               <div class="prob-head">
                 <span class="prob-label">Statement</span>
+                <div class="stmt-mode-toggle" id="stmt-mode-toggle">
+                  <button class="stmt-mode-btn active" data-mode="read" type="button" title="Đọc đề (Read)">Read</button>
+                  <button class="stmt-mode-btn" data-mode="edit" type="button" title="Sửa đề (Edit / Markdown)">Edit</button>
+                </div>
                 <div class="prob-actions">
                   <button id="btn-upload-image" class="btn btn-ghost btn-sm" title="Tải ảnh hoặc PDF">⤴ Image / PDF</button>
                   <button id="btn-paste-image" class="btn btn-ghost btn-sm" title="Dán ảnh chụp màn hình">📋 Paste</button>
@@ -165,7 +191,8 @@
               </div>
               <input type="file" id="image-file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden />
               <div id="statement-status" class="prob-status">Dán ảnh (Ctrl+V), tải ảnh/PDF, hoặc gõ đề bài — AI sẽ tự phân tích &amp; tạo test.</div>
-              <textarea id="io-statement" class="prob-statement-edit" spellcheck="false"
+              <article id="statement-rendered" class="statement-page"></article>
+              <textarea id="io-statement" class="prob-statement-edit hidden" spellcheck="false"
                 placeholder="Dán đề bài ở đây (Markdown được hỗ trợ), hoặc dán ảnh chụp màn hình (Ctrl+V)…"></textarea>
               <div class="prob-actions prob-actions-run">
                 <button id="btn-ai-template" class="btn btn-ai btn-sm" type="button">📝 Sinh Template</button>
@@ -200,14 +227,6 @@
           <div id="wa-banner" class="wa-banner hidden">
             <span class="wa-banner-text">⚠ Bài này đã <b>WA</b> <b id="wa-count">0</b> lần. Để AI chỉ ra lỗi tư duy &amp; edge case còn thiếu.</span>
             <button id="btn-analyze-mistakes" class="btn btn-ai btn-sm" type="button">🧠 Analyze My Mistakes</button>
-          </div>
-          <div id="ac-banner" class="wa-banner hidden" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2);">
-            <span class="wa-banner-text" style="color: var(--text)">🎉 <b>AC xuất sắc!</b> Bạn có muốn AI nâng cấp bài này lên độ khó mới không?</span>
-            <button id="btn-synth" class="btn btn-ai btn-sm" style="background: rgba(34,197,94,0.15); color: #4ade80;" type="button">📈 Nâng cấp thuật toán</button>
-          </div>
-          <div id="contest-suggest-banner" class="wa-banner hidden" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.2);">
-            <span class="wa-banner-text" style="color: var(--text)">🏆 <b>Mốc mới đạt được!</b> Bạn đã giải thành công <b id="cs-count">15</b> bài. Nhờ AI tạo một Practice Contest để luyện tập ngay?</span>
-            <button id="btn-suggest-contest" class="btn btn-ai btn-sm" style="background: rgba(168,85,247,0.15); color: #c084fc;" type="button">⚔️ Tạo Contest</button>
           </div>
           <div class="console-block">
             <div class="console-head">
@@ -271,8 +290,10 @@
         <section class="panel-body hidden" data-panel="tests">
           <div class="tests-toolbar">
             <button id="btn-add-test" class="btn btn-ghost btn-sm">+ Add test</button>
+            <button id="btn-import-tests" class="btn btn-ghost btn-sm" title="Nhập file test (.in/.out/.ans) — hoặc kéo thả cả bộ test vào tab này">📂 Import .in/.out</button>
             <button id="btn-run-tests" class="btn btn-judge btn-sm">Run all</button>
             <button id="btn-ai-generate-tests" class="btn btn-ai btn-sm">✨ Generate with AI</button>
+            <input id="import-tests-files" type="file" multiple class="hidden" />
           </div>
           <div id="tests-summary" class="tests-summary"></div>
           <div id="tests-list" class="tests-list"></div>
@@ -295,22 +316,19 @@
         <section class="panel-body hidden" data-panel="coach">
           <div id="coach-chat" class="coach-chat">
             <div class="coach-head">
-              <span class="coach-title">AI Coach · bài đang mở</span>
-              <button id="coach-hint" class="btn btn-ghost btn-sm" type="button" title="Gợi ý theo cấp, không lộ lời giải">💡 Gợi ý</button>
+              <span class="coach-title">AI Coach</span>
+              <label class="coach-reveal-toggle" title="Mặc định AI chỉ gợi ý. Bật để cho phép lời giải đầy đủ + code.">
+                <input type="checkbox" id="coach-reveal" />
+                <span class="coach-reveal-label">Lời giải</span>
+              </label>
+              <button id="coach-clear" class="coach-clear" type="button" title="Xóa hội thoại">🗑</button>
             </div>
             <div id="coach-messages" class="coach-messages"></div>
             <div class="coach-composer">
               <div class="coach-input-row">
                 <textarea id="coach-input" class="coach-input" rows="2" spellcheck="false"
-                  placeholder="Hỏi AI về bài này…  (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+                  placeholder="Hỏi AI về bài này… (Enter gửi, Shift+Enter xuống dòng)"></textarea>
                 <button id="coach-send" class="btn btn-primary btn-sm" type="button">Gửi</button>
-              </div>
-              <div class="coach-foot">
-                <label class="coach-reveal" title="Mặc định AI chỉ gợi ý. Bật để cho phép lời giải đầy đủ.">
-                  <input type="checkbox" id="coach-reveal" /> Cho xem lời giải
-                </label>
-                <span class="coach-scope">Chỉ trả lời trong phạm vi bài này.</span>
-                <button id="coach-clear" class="coach-clear" type="button">Xóa hội thoại</button>
               </div>
             </div>
           </div>
@@ -365,6 +383,9 @@
         </div>
         <div class="form-row">
           <label>Time limit (ms) <span class="muted">(trống = mặc định)</span><input name="timeLimitMs" class="input" type="number" min="0" max="10000" step="100" placeholder="mặc định" /></label>
+          <label class="usaco-toggle" title="Chấm bằng checker.cpp (cho bài nhiều đáp án đúng / so sánh đặc biệt)"><span>Special judge (SPJ)</span>
+            <span class="switch"><input type="checkbox" name="usesChecker" /><span class="slider"></span></span>
+          </label>
         </div>
         <datalist id="source-suggest"></datalist>
         <div class="modal-actions">
@@ -439,10 +460,10 @@
           <span>Bảng lệnh nhanh (tìm bài / lệnh)</span><kbd>Ctrl + K</kbd>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
-          <span>Chạy code (Run)</span><kbd>Enter</kbd>
+          <span>Chạy code (Run)</span><kbd>Ctrl + Enter</kbd>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
-          <span>Chấm bài (Judge All)</span><kbd>Shift + Enter</kbd>
+          <span>Chấm bài (Judge All)</span><kbd>Ctrl + Shift + Enter</kbd>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
           <span>Lưu bài (Save)</span><kbd>Ctrl + S</kbd>
@@ -475,6 +496,62 @@
     </div>
   </div>
 
+  <!-- ===================== First-run Welcome / Setup ===================== -->
+  <!-- Shown once (localStorage flag). Populated by features/welcome.js. -->
+  <div id="welcome-modal" class="modal-overlay hidden">
+    <div class="modal modal-wide welcome-modal">
+      <div class="welcome-head">
+        <span class="welcome-mark">‹/›</span>
+        <div>
+          <h2 class="modal-title" style="margin:0">Chào mừng đến USACO IDE 2.0</h2>
+          <p class="welcome-tag">Một IDE C++ chạy hoàn toàn trên máy bạn — viết code, chấm bằng <code>g++</code> thật, kèm trợ lý AI. <span class="muted">A local-first C++ judge with an AI coach.</span></p>
+        </div>
+      </div>
+
+      <div class="welcome-grid">
+        <section class="welcome-card">
+          <h3>① Quy trình chính</h3>
+          <ol class="welcome-flow">
+            <li>Tạo bài → dán đề (gõ, <b>dán ảnh</b> Ctrl+V, hoặc tải <b>PDF</b>).</li>
+            <li>Viết C++ trong trình soạn thảo ở giữa.</li>
+            <li><b>Run</b> (Ctrl+Enter) với input của bạn, hoặc <b>Judge</b> (Ctrl+Shift+Enter) toàn bộ test.</li>
+          </ol>
+        </section>
+
+        <section class="welcome-card">
+          <h3>② Công cụ nổi bật</h3>
+          <ul class="welcome-feats">
+            <li>🧪 <b>Stress Lab</b> — tự sinh test &amp; brute-force để bắt bug biên.</li>
+            <li>🔬 <b>Visualizer</b> — vẽ input thành đồ thị / cây / lưới.</li>
+            <li>🤖 <b>AI Coach</b> — hỏi đáp theo từng bài, gợi ý không lộ lời giải.</li>
+            <li>🏆 <b>Contest Generator</b> · 📕 Sổ tay lỗi · 🗺️ Bản đồ kỹ năng.</li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="welcome-setup">
+        <h3>③ Kiểm tra thiết lập</h3>
+        <div class="welcome-checks">
+          <div class="welcome-check" id="welcome-gpp">
+            <span class="welcome-check-ico">⏳</span>
+            <div><b>Trình biên dịch g++</b><div class="welcome-check-msg muted">Đang kiểm tra…</div></div>
+          </div>
+          <div class="welcome-check" id="welcome-ai">
+            <span class="welcome-check-ico">🔑</span>
+            <div><b>API key cho AI</b> <span class="muted">(tùy chọn)</span><div class="welcome-check-msg muted">App vẫn dùng tốt khi chưa có key — chỉ các tính năng AI cần nó.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="modal-actions welcome-actions">
+        <label class="welcome-skip"><input type="checkbox" id="welcome-dont-show" checked /> Không hiện lại</label>
+        <span class="toolbar-spacer"></span>
+        <button type="button" id="welcome-settings" class="btn btn-ghost">⚙️ Mở Settings</button>
+        <button type="button" id="welcome-start" class="btn btn-primary">Bắt đầu →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI activity indicator — appears whenever any AI request is in flight -->
   <div id="ai-activity" class="ai-activity hidden">
     <span class="ai-activity-spinner"></span>
@@ -485,6 +562,6 @@
   <!-- Toast host -->
   <div id="toast-host" class="toast-host"></div>
 
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/main.js?v=3.0"></script>
 </body>
 </html>
