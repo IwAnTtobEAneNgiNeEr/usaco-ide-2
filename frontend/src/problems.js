@@ -47,17 +47,20 @@ export function renderProblems(app) {
   if (sourceSel.dataset.sig !== sources.join("|")) {
     sourceSel.dataset.sig = sources.join("|");
     const cur = sourceSel.value;
-    sourceSel.innerHTML = `<option value="">All sources</option>` +
+    sourceSel.innerHTML = `<option value="">Tất cả nguồn</option>` +
       sources.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
     sourceSel.value = cur;
     app.el.sourceSuggest.innerHTML = sources.map((s) => `<option value="${escapeHtml(s)}">`).join("");
   }
 
-  app.el.problemCount.textContent = `${visible.length} / ${problems.length} problem${problems.length === 1 ? "" : "s"}`;
+  const solved = problems.filter((p) => p.status === "solved" || p.lastVerdict === "AC").length;
+  app.el.problemCount.textContent = problems.length
+    ? `${visible.length}/${problems.length} · ✓ ${solved} đã giải`
+    : "0 problems";
 
   if (visible.length === 0) {
     list.innerHTML = `<div style="padding:20px 12px;color:var(--text-2);font-size:12px;text-align:center">${
-      problems.length === 0 ? "No problems yet. Click <b>+ New</b>." : "No matches."
+      problems.length === 0 ? "Chưa có bài nào. Bấm <b>+ Bài mới</b>." : "Không có kết quả."
     }</div>`;
     return;
   }
@@ -97,6 +100,24 @@ export function initProblems(app) {
   // New problem (two entry points)
   el.btnNew.addEventListener("click", () => app.openMetaModal(null));
   el.btnNew2.addEventListener("click", () => app.openMetaModal(null));
+
+  // Random-problem picker for grind sessions: prefer something not yet solved
+  // (and not the current problem); fall back to any other problem for re-practice.
+  app.openRandomProblem = () => {
+    const all = app.state.problems || [];
+    if (!all.length) { app.toast("Chưa có bài nào — bấm + New.", "err"); return; }
+    const notCurrent = (p) => p.id !== app.state.currentId;
+    const unsolved = all.filter((p) => notCurrent(p) && p.status !== "solved" && p.lastVerdict !== "AC");
+    const pool = unsolved.length ? unsolved : all.filter(notCurrent);
+    const final = pool.length ? pool : all;
+    const pick = final[Math.floor(Math.random() * final.length)];
+    if (pick) {
+      app.selectProblem(pick.id);
+      app.toast(unsolved.length ? "🎲 Bài chưa giải" : "🎲 Luyện lại", "ok");
+    }
+  };
+  const btnRandom = document.getElementById("btn-random");
+  if (btnRandom) btnRandom.addEventListener("click", () => app.openRandomProblem());
 
   // List interactions (delegated)
   el.problemList.addEventListener("click", async (e) => {

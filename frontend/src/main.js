@@ -220,7 +220,7 @@ app.clearEditor = () => {
   app.state.meta = null;
   app.el.editorShell.classList.add("hidden");
   app.el.editorEmpty.classList.remove("hidden");
-  app.el.currentTitle.textContent = "No problem selected";
+  app.el.currentTitle.textContent = "Chưa chọn bài";
   app.el.btnRun.disabled = true;
   app.el.btnJudge.disabled = true;
   if (app.refreshSynthAvail) app.refreshSynthAvail();
@@ -582,6 +582,16 @@ function initDropGuard() {
   window.addEventListener("drop", (e) => e.preventDefault());
 }
 
+// ---------------- Background animation throttle ----------------
+// Pause every running CSS animation while the tab is hidden (forge.css keys off
+// html.tab-hidden). The home's infinite shimmer/flame/xp-bar loops otherwise
+// keep repainting off-screen during a long focus timer — a pure battery drain.
+function initAnimationThrottle() {
+  const sync = () => document.documentElement.classList.toggle("tab-hidden", document.hidden);
+  document.addEventListener("visibilitychange", sync);
+  sync();
+}
+
 // ---------------- Keyboard shortcuts ----------------
 function initShortcuts() {
   document.addEventListener("keydown", (e) => {
@@ -609,6 +619,13 @@ function initShortcuts() {
     if (e.altKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       app.toggleZenMode();
+      return;
+    }
+
+    // Alt+W widens the Coach into a reading column (focus mode)
+    if (e.altKey && e.key.toLowerCase() === "w") {
+      e.preventDefault();
+      if (app.toggleCoachFocus) app.toggleCoachFocus();
       return;
     }
 
@@ -675,6 +692,7 @@ async function boot() {
   initMetaModal();
   initShortcuts();
   initDropGuard();
+  initAnimationThrottle();
   initAiActivity();
   initOverflowMenus();   // topbar "⋯ More" + editor "Tools ▾" dropdowns
 
@@ -709,7 +727,13 @@ async function boot() {
     });
   }
 
-  app.setTab("run");
+  // Restore the last panel tab the student was using (never auto-land on Settings).
+  let initialTab = "run";
+  try {
+    const saved = localStorage.getItem("usaco2.activeTab");
+    if (saved && ["run", "tests", "notes", "coach", "history"].includes(saved)) initialTab = saved;
+  } catch { /* private mode */ }
+  app.setTab(initialTab);
 
   await app.refreshProblems();
   // Startup goes straight to the editor — reopen the last problem (or the most

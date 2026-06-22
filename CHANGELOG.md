@@ -54,4 +54,4 @@ editor-first workflow.
 - Vendored CodeMirror 6 + fonts (fully offline).
 - Backend test suite (`node --test`) on CI across Ubuntu + Windows, Node 18/20/22.
 
-[2.0.0]: https://github.com/<your-username>/usaco-ide-2/releases/tag/v2.0.0
+[2.0.0]: https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/releases/tag/v2.0.0

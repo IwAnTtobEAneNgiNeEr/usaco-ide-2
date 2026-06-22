@@ -118,11 +118,13 @@ export function renderMeta(app) {
   if (!m) return;
   app.el.metaTitle.textContent = m.title;
   app.el.currentTitle.textContent = m.title;
+  const DIFF_VN = { easy: "Dễ", medium: "Vừa", hard: "Khó", unrated: "Chưa xếp" };
+  const STATUS_VN = { learning: "Đang học", review: "Cần ôn", solved: "Đã giải" };
   const chips = [
     m.source && `<span class="chip">${escapeHtml(m.source)}</span>`,
-    m.topic && `<span class="chip"><b>topic</b> ${escapeHtml(m.topic)}</span>`,
-    `<span class="chip"><b>diff</b> ${escapeHtml(m.difficulty)}</span>`,
-    `<span class="chip"><b>status</b> ${escapeHtml(m.status)}</span>`,
+    m.topic && `<span class="chip"><b>chủ đề</b> ${escapeHtml(m.topic)}</span>`,
+    `<span class="chip"><b>độ khó</b> ${escapeHtml(DIFF_VN[m.difficulty] || m.difficulty)}</span>`,
+    `<span class="chip"><b>trạng thái</b> ${escapeHtml(STATUS_VN[m.status] || m.status)}</span>`,
     m.timeLimitMs && `<span class="chip"><b>TL</b> ${Math.round(m.timeLimitMs)}ms</span>`,
     m.usacoMode && m.fileName && `<span class="chip chip-usaco"><b>USACO</b> ${escapeHtml(m.fileName)}.in/.out</span>`,
     m.usesChecker && `<span class="chip chip-usaco" title="Bài này chấm bằng checker.cpp (special judge)"><b>SPJ</b> checker.cpp</span>`,
@@ -178,6 +180,18 @@ export function initEditor(app) {
   });
   el.codeEditor.addEventListener("scroll", () => syncScroll(app));
   el.codeEditor.addEventListener("keydown", (e) => handleKeydown(app, e));
+
+  // Live cursor position readout — pairs with the Coach pointing at "dòng X".
+  const updateCursorPos = () => {
+    const ta = el.codeEditor;
+    const pos = ta.selectionStart || 0;
+    const before = ta.value.slice(0, pos);
+    const line = before.split("\n").length;
+    const col = pos - before.lastIndexOf("\n");
+    const out = document.getElementById("cursor-pos");
+    if (out) out.textContent = `Ln ${line} · Col ${col}`;
+  };
+  ["keyup", "click", "input"].forEach((ev) => el.codeEditor.addEventListener(ev, updateCursorPos));
 
   el.btnSave.addEventListener("click", () => saveCode(app));
   if (el.btnUndo) {

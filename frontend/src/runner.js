@@ -16,6 +16,20 @@ function setVerdict(app, verdict, label) {
   chip.textContent = label || verdict;
 }
 
+// After a run/judge, surface a one-click bridge to the Coach when the result is
+// something the student likely needs help with (anything but a clean pass). The
+// Coach is otherwise a separate tab, so it goes unused exactly when it's needed.
+function showCoachAsk(app, verdict) {
+  const btn = document.getElementById("btn-coach-ask");
+  if (!btn) return;
+  const v = String(verdict || "").toUpperCase();
+  const show = ["WA", "TLE", "RE", "CE"].includes(v);
+  btn.classList.toggle("hidden", !show);
+  if (!show) { btn.dataset.kind = ""; return; }
+  btn.dataset.kind = v === "WA" ? "why-wa" : v === "TLE" ? "why-tle" : "open";
+  btn.textContent = v === "WA" ? "🧠 Vì sao WA?" : v === "TLE" ? "🧠 Vì sao TLE?" : "🧠 Hỏi Coach";
+}
+
 // While a run/judge is in flight, the triggering button turns into a live
 // ⏹ Stop control (aborts the request; the backend stops launching tests) and
 // the other actions are disabled. `which` = "run" | "judge" | null (idle).
@@ -68,8 +82,21 @@ function setStderr(app, text, isCE = false) {
   }
 }
 
+// Show runtime against the problem's time limit so the student can see how close
+// they are to TLE (amber from 60%, red from 85%); plain "X ms" when no limit set.
 function setRuntime(app, ms) {
-  app.el.rcRuntime.textContent = `${Math.round(ms || 0)} ms`;
+  const el = app.el.rcRuntime;
+  const t = Math.round(ms || 0);
+  const limit = Number(app.state.meta && app.state.meta.timeLimitMs) || 0;
+  el.classList.remove("rc-runtime-warn", "rc-runtime-danger");
+  if (limit > 0) {
+    el.textContent = `${t} / ${limit} ms`;
+    const ratio = t / limit;
+    if (ratio >= 0.85) el.classList.add("rc-runtime-danger");
+    else if (ratio >= 0.6) el.classList.add("rc-runtime-warn");
+  } else {
+    el.textContent = `${t} ms`;
+  }
 }
 
 // ---- Output rendering -----------------------------------------------------
@@ -97,6 +124,7 @@ function renderRunOutput(app, r) {
     ? [{ name: "stdin run", expected: app.el.ioExpected.value, actual: r.stdout }]
     : [];
   renderSideDiff(app, 0);
+  showCoachAsk(app, r.compilerMissing ? "CE" : r.verdict);
 }
 
 function renderJudgeOutput(app, r) {
@@ -132,6 +160,11 @@ function renderJudgeOutput(app, r) {
     .filter((t) => t.status === "WA")
     .map((t) => ({ name: t.name || t.testId, expected: t.expected, actual: t.actual, checkerMessage: t.checkerMessage }));
   renderSideDiff(app, 0);
+  showCoachAsk(app, r.compilerMissing ? "CE" : r.verdict);
+  if (r.verdict === "AC") {
+    const chip = app.el.outputVerdict; // one-shot celebratory pop (reduced-motion safe)
+    chip.classList.remove("verdict-pop"); void chip.offsetWidth; chip.classList.add("verdict-pop");
+  }
 }
 
 // Make trailing whitespace + tabs visible so "looks identical" WAs are obvious.
@@ -305,6 +338,23 @@ export function initRunner(app) {
   app.el.btnJudge.addEventListener("click", () => app.judgeAll());
   app.el.btnRunCustom.addEventListener("click", () => app.runOne());
 
+  // Copy program output (stdout) to the clipboard.
+  const btnCopyStdout = document.getElementById("btn-copy-stdout");
+  if (btnCopyStdout) btnCopyStdout.addEventListener("click", () => {
+    const txt = app.el.outputStdout.textContent || "";
+    if (!txt.trim()) { app.toast("Chưa có output để copy.", "err"); return; }
+    navigator.clipboard.writeText(txt)
+      .then(() => app.toast("Đã copy output.", "ok"))
+      .catch(() => app.toast("Không copy được.", "err"));
+  });
+
+  // Failed-verdict → Coach bridge (the button only appears on WA/TLE/RE/CE).
+  const coachAskBtn = document.getElementById("btn-coach-ask");
+  if (coachAskBtn) coachAskBtn.addEventListener("click", () => {
+    const kind = coachAskBtn.dataset.kind || "";
+    if (app.coachAsk) app.coachAsk(kind === "open" ? "" : kind);
+  });
+
   app.el.btnSaveAsTest.addEventListener("click", async () => {
     if (!app.state.currentId) return;
     const input = app.el.ioInput.value;
@@ -376,6 +426,7 @@ export function initRunner(app) {
     runAbort = new AbortController();
     setBusy(app, "run");
     setVerdict(app, "running", "RUNNING…");
+    showCoachAsk(app, null);
     app.setTab("run");
     try {
       await app.saveCodeNow();
@@ -404,6 +455,7 @@ export function initRunner(app) {
     judgeAbort = new AbortController();
     setBusy(app, "judge");
     setVerdict(app, "running", "JUDGING…");
+    showCoachAsk(app, null);
     app.setTab("run");
     try {
       await app.saveCodeNow();

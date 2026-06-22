@@ -1,6 +1,6 @@
 # USACO IDE 2.0
 
-[![CI](https://github.com/<your-username>/usaco-ide-2/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/usaco-ide-2/actions/workflows/ci.yml)
+[![CI](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/actions/workflows/ci.yml/badge.svg)](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![C++](https://img.shields.io/badge/judge-g%2B%2B%20%C2%B7%20C%2B%2B17-00599C?logo=cplusplus&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-555)
@@ -68,13 +68,15 @@ local and fast:
 
 ## Screenshots
 
-<!-- Replace these placeholders with real captures before publishing (see docs/media/). -->
-| Editor + Judge | Stress Lab | Visualizer |
-|---|---|---|
-| _`docs/media/editor.png`_ | _`docs/media/lab.png`_ | _`docs/media/visualizer.png`_ |
+![USACO IDE 2.0 — a local C++ editor, a real g++ judge, and an AI Coach](docs/media/hero.png)
 
-A 10–15s demo GIF (`docs/media/demo.gif`) — *paste screenshot → analyze → AC* — is the
-single best thing to add here.
+| Editor + Judge console | Problem statement | AI Coach |
+|:--:|:--:|:--:|
+| ![Three-column editor with the judge console showing an AC verdict](docs/media/editor.png) | ![Rendered problem statement with worked examples](docs/media/statement.png) | ![AI Coach diagnosing a Wrong Answer](docs/media/coach.png) |
+
+| Test suite | Stress Lab | Input Visualizer |
+|:--:|:--:|:--:|
+| ![Per-test results in the Tests panel](docs/media/tests.png) | ![Stress Lab finding a counter-example](docs/media/lab.png) | ![Input Visualizer drawing a graph from a test](docs/media/visualizer.png) |
 
 ---
 
@@ -96,7 +98,7 @@ with no Python and no API key.
 ## Quick start
 
 ```bash
-git clone https://github.com/<your-username>/usaco-ide-2.git
+git clone https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2.git
 cd usaco-ide-2
 ```
 
@@ -254,7 +256,11 @@ A short backend API reference lives in [docs/LocalJudge.md](docs/LocalJudge.md) 
   guard), because it compiles and runs arbitrary C++. **Never expose it to the internet.**
 - **AI layer** — optional, OpenAI-compatible, disk-cached, cancellable, with model fallback
   + backoff and friendly error messages. Fully usable with no key.
-- **Frontend** — vanilla ES modules, no framework, no build step.
+- **Frontend** — vanilla ES modules, no framework, no build step. Styles load in a
+  documented cascade (tokens/grid → features → theme → polish → responsive → elevation →
+  identity; see the comment in `frontend/index.html`). The order is intentional; folding
+  these layers into a single `tokens/layout/components` set is a tracked cleanup, not an
+  accident of growth.
 - **Tests** — backend unit tests via `node --test` (zero test deps) cover the grader, judge
   pool + SPJ, progress engine, skill map, AI prompt contracts, and first-run seeding. CI
   runs them on Ubuntu + Windows across Node 18 / 20 / 22.

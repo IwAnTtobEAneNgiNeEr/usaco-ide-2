@@ -15,7 +15,7 @@ that keep it that way are very welcome.
 ## Getting set up
 
 ```bash
-git clone https://github.com/<your-username>/usaco-ide-2.git
+git clone https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2.git
 cd usaco-ide-2
 npm run setup     # installs backend deps
 npm start         # http://127.0.0.1:5050

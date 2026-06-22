@@ -138,8 +138,11 @@ body { letter-spacing: -0.003em; }
   letter-spacing: .9px;
 }
 
-/* Reading column: cap line length so statements stay comfortable. */
-.statement-page { max-width: 72ch; }
+/* Reading column: the statement CARD fills the column width (so it lines up with
+   the analysis/examples cards instead of leaving a void on the right). Line
+   length stays readable via the per-paragraph measure in main.css, not by
+   shrinking the whole card. */
+.statement-page { max-width: none; }
 
 /* ----------------------------------------------------------------------- *
    4. BRAND — re-point lux.css's blue mark to gold
@@ -224,3 +227,15 @@ body { letter-spacing: -0.003em; }
  * ----------------------------------------------------------------------- */
 .empty-glyph { color: var(--panel-3); text-shadow: 0 2px 24px rgba(var(--accent-rgb), .08); }
 .empty-state { gap: 18px; }
+
+/* ----------------------------------------------------------------------- *
+   12. BACKGROUND THROTTLE — freeze every running animation while the tab is
+   hidden. During a 25–90 min focus timer the student often alt-tabs to read
+   the statement / an editorial in another window; the infinite shimmer / flame
+   / xp-bar loops keep repainting off-screen and drain a laptop battery for no
+   benefit. main.js toggles html.tab-hidden on visibilitychange; paused
+   animations resume exactly where they left off when the tab returns.
+ * ----------------------------------------------------------------------- */
+html.tab-hidden *,
+html.tab-hidden *::before,
+html.tab-hidden *::after { animation-play-state: paused !important; }

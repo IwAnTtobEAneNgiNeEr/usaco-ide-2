@@ -38,9 +38,14 @@ const COACH_KEYWORDS = [
 const KW_RE = new RegExp("\\b(" + COACH_KEYWORDS.map((k) => k.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")).join("|") + ")\\b", "gi");
 
 const SECTIONS = [
+  // Lead punchline — first line of every answer (the conclusion, made prominent).
+  { re: /^(chẩn đoán|chan doan|kết luận|ket luan)\b/i, cls: "diag", icon: "🩺" },
+  { re: /^(trả lời nhanh|tra loi nhanh|tóm lại|tom lai|chốt lại|chốt)\b/i, cls: "sum", icon: "⚡" },
   { re: /^(hint|gợi ý|gợi y|ý tưởng|y tuong)\b/i, cls: "hint", icon: "💡" },
+  { re: /^(approach|hướng tiếp cận|cách tiếp cận|huong tiep can)\b/i, cls: "approach", icon: "🧭" },
   { re: /^(observation|nhận xét|quan sát)\b/i, cls: "obs", icon: "🔍" },
-  { re: /^(mistake|lỗi sai|lỗi|sai lầm|sai sót thường gặp|sai sót)\b/i, cls: "mistake", icon: "❌" },
+  { re: /^(mistake|lỗi sai|lỗi tư duy|lỗi|sai lầm|sai sót thường gặp|sai sót)\b/i, cls: "mistake", icon: "❌" },
+  { re: /^(bằng chứng|bang chung|ví dụ phản chứng|phản ví dụ|counter-example|counterexample)\b/i, cls: "evid", icon: "🔬" },
   { re: /^(suggested fix|cách sửa|hướng sửa|sửa lỗi|fix)\b/i, cls: "fix", icon: "✅" },
   { re: /^(next step|bước tiếp theo|tiếp theo)\b/i, cls: "next", icon: "📌" },
   { re: /^(current step|bước hiện tại)\b/i, cls: "cur", icon: "📍" },
@@ -188,13 +193,16 @@ function renderAi(text) {
 }
 
 // Set an AI bubble's content + run all DOM enhancements. Used by both the
-// streaming painter and the final/persisted render.
-function setAiContent(bubbleEl, text) {
+// streaming painter and the final/persisted render. `opts.math === false` skips
+// KaTeX rendering — during the paced reveal the LaTeX is still half-streamed, so
+// rendering it every frame both garbles output and is the most expensive step;
+// we defer math to the final, complete frame.
+function setAiContent(bubbleEl, text, opts) {
   bubbleEl.innerHTML = renderAi(text);
   try {
     highlightKeywords(bubbleEl);
     groupSectionsIntoCards(bubbleEl);
-    renderMath(bubbleEl);
+    if (!opts || opts.math !== false) renderMath(bubbleEl);
   } catch (err) {
     console.error("Enhancement failed:", err);
   }
@@ -208,6 +216,19 @@ export function initMiniChat(app) {
   const clearBtn = document.getElementById("coach-clear");
   const revealEl = document.getElementById("coach-reveal");
   if (!chatEl || !messagesEl) return;
+
+  // The Coach defaults to HINTS-ONLY every session. Non-spoiler guidance is the whole
+  // point of the tool, so revealing full solutions is a deliberate per-session opt-in
+  // (it does NOT persist on). Turning it on states the consequence explicitly — a
+  // toast, not a blocking confirm.
+  if (revealEl) {
+    revealEl.checked = false;
+    revealEl.addEventListener("change", () => {
+      if (revealEl.checked) {
+        app.toast("Đã bật Lời giải — AI có thể đưa code / đáp án đầy đủ. Tắt để quay lại chỉ gợi ý.", "ok");
+      }
+    });
+  }
 
   // Copy buttons on AI code blocks (event-delegated; survives re-renders).
   messagesEl.addEventListener("click", (e) => {
@@ -260,7 +281,7 @@ export function initMiniChat(app) {
     const header = `<div style="font-size: 11.5px; color: var(--text-dim); text-align: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--border);">🧠 Đã nắm rõ Đề bài (${hasStatement}) & Code. Kết quả gần nhất: <b>${v}</b></div>`;
 
     if (!turns || !turns.length) {
-      messagesEl.innerHTML = header + `<div class="coach-empty">Bạn cần gợi ý gì? Hỏi về hướng tư duy, vì sao code sai, edge case còn thiếu…</div>`;
+      messagesEl.innerHTML = header + `<div class="coach-empty">Bạn cần gợi ý gì? Gõ câu hỏi, hoặc bấm một nút nhanh bên dưới — <b>💡 Gợi ý nhẹ</b> · <b>🧭 Hướng tiếp cận</b> · <b>❓ Vì sao WA</b>.<br>Bật <b>Lời giải</b> ở góc trên nếu muốn AI viết/sửa code. Mẹo: <kbd>Alt+W</kbd> phóng to khung để đọc dễ hơn.</div>`;
       return;
     }
     messagesEl.innerHTML = header + turns.map((t) => {
@@ -343,17 +364,71 @@ export function initMiniChat(app) {
     appendBubble("user", renderUserText(msg));
     const thinking = appendBubble("assistant", `<span class="spinner"></span> đang nghĩ…`, "coach-thinking");
 
-    // Stream the reply into the bubble as it arrives; renderText is regex-cheap,
-    // so a requestAnimationFrame throttle keeps repaints at most once per frame.
+    // ---- Paced reveal -------------------------------------------------------
+    // Mercury (a diffusion model) often returns the whole answer almost at once.
+    // Painting it instantly makes a long reply impossible to read along with and
+    // yanks the scroll to the bottom while the student is still reading the fix.
+    // So we keep the full received text in `acc` but only DISPLAY `acc.slice(0,
+    // shown)`, advancing `shown` at a calm, readable speed each frame. The pace
+    // catches up after the stream ends; the student can click to reveal it all.
     const bubble = thinking.querySelector(".coach-bubble");
-    let acc = "";
-    let rafPending = false;
-    const paint = () => {
-      rafPending = false;
-      if (app.state.currentId !== pid) return;
-      setAiContent(bubble, acc);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let acc = "";            // everything received so far
+    let shown = 0;           // chars currently painted
+    let streamDone = false;  // upstream finished sending
+    let skip = reduceMotion; // reveal instantly for reduced-motion users
+    let rafId = 0;
+    let lastT = 0;
+
+    // Only follow the bottom if the student hasn't scrolled up to read.
+    const nearBottom = () => messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 64;
+
+    // "Reveal all now" affordance — a small pill + clicking the streaming bubble.
+    let skipPill = document.createElement("button");
+    skipPill.type = "button";
+    skipPill.className = "coach-skip";
+    skipPill.textContent = "⏭ Hiện hết";
+    skipPill.title = "Hiện toàn bộ câu trả lời ngay";
+    const revealAll = () => { skip = true; kick(); };
+    const cleanup = () => {
+      bubble.classList.remove("coach-streaming");
+      bubble.removeEventListener("click", revealAll);
+      if (skipPill) { skipPill.remove(); skipPill = null; }
     };
+    if (!skip) {
+      skipPill.addEventListener("click", revealAll);
+      messagesEl.appendChild(skipPill); // sticky pill, pinned to the scroll viewport
+      bubble.addEventListener("click", revealAll);
+    }
+
+    const pace = (now) => {
+      rafId = 0;
+      if (app.state.currentId !== pid) { cleanup(); return; }
+      if (skip) {
+        shown = acc.length;
+      } else {
+        const dt = lastT ? Math.min((now - lastT) / 1000, 0.05) : 0.016;
+        lastT = now;
+        const backlog = acc.length - shown;
+        // ~110 chars/s base, accelerating mildly so a long answer never drags.
+        const cps = 110 * (1 + Math.min(backlog / 700, 4));
+        shown = Math.min(acc.length, shown + Math.max(1, Math.ceil(cps * dt)));
+      }
+      const finished = streamDone && shown >= acc.length;
+      bubble.classList.remove("coach-thinking");
+      const wasBottom = nearBottom();
+      setAiContent(bubble, acc.slice(0, shown), { math: finished });
+      bubble.classList.toggle("coach-streaming", !finished);
+      if (wasBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (shown < acc.length) {
+        rafId = requestAnimationFrame(pace);
+      } else if (finished) {
+        cleanup();
+        if (app.playSound) app.playSound("complete");
+      }
+      // caught up but stream not done → idle until next delta re-arms via kick().
+    };
+    function kick() { if (!rafId) { lastT = 0; rafId = requestAnimationFrame(pace); } }
 
     try {
       const res = await api.aiChatStream({
@@ -366,23 +441,19 @@ export function initMiniChat(app) {
         perTestResults: currentPerTestResults()
       }, {
         signal: chatAbort.signal,
-        onDelta: (_d, full) => {
-          acc = full;
-          bubble.classList.remove("coach-thinking");
-          if (!rafPending) { rafPending = true; requestAnimationFrame(paint); }
-        }
+        onDelta: (_d, full) => { acc = full; kick(); }
       });
       // Switched problems mid-flight: don't render A's reply into B's thread.
       // The turn is already persisted to A's chat.json server-side.
-      if (app.state.currentId !== pid) return;
+      if (app.state.currentId !== pid) { cleanup(); return; }
       acc = res.reply || acc || "(không có phản hồi)";
-      setAiContent(bubble, acc);
-      bubble.classList.remove("coach-thinking");
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-      if (app.playSound) app.playSound("complete");
+      streamDone = true;
+      kick(); // let the pacer finish revealing, then it finalizes (sound, cleanup)
     } catch (err) {
+      streamDone = true;
+      cleanup();
       if (app.state.currentId !== pid) return;
-      bubble.classList.remove("coach-thinking");
+      bubble.classList.remove("coach-thinking", "coach-streaming");
       if (err && err.aborted) {
         // Keep whatever already streamed — partial reasoning is still useful.
         const partial = err.partial || acc;
@@ -411,16 +482,24 @@ export function initMiniChat(app) {
   const NUDGE_PROMPT =
     "Cho mình một cú hích NHẸ: chỉ ra quan sát mấu chốt của đề này mà mình có thể đang bỏ lỡ, hoặc một câu hỏi gợi mở để mình tự nghĩ tiếp — tối đa 2 câu, chưa nêu tên thuật toán, không viết code.";
   const APPROACH_PROMPT =
-    "Bài này quy về dạng/kỹ thuật nào? Trả lời gọn 3 ý: (1) tên kỹ thuật, (2) vì sao nó khớp với ĐÚNG ràng buộc của đề này (đừng nói chung chung), (3) minh họa nhanh bằng sample input của đề. Không viết code.";
+    "Bài này quy về dạng/kỹ thuật nào? Trả lời theo ĐÚNG định dạng nhãn in đậm:\n" +
+    "**Trả lời nhanh:** tên kỹ thuật trong 1 câu.\n" +
+    "**Hướng tiếp cận:** (a) kỹ thuật đó là gì, ngắn gọn; (b) vì sao khớp ĐÚNG ràng buộc của đề này (đừng nói chung chung); (c) minh họa nhanh bằng sample input của đề. Ưu tiên cách CƠ BẢN, dễ code. Không viết code.";
   const WHY_WA_PROMPT =
-    "Code mình đang WA. ĐỪNG viết lại bài — hãy debug đúng code mình đang có. Trả lời gọn 3 ý: (1) mình đang hiểu lầm điều gì (gọi tên lỗi tư duy trong 1 câu), (2) một input nhỏ cụ thể khiến code mình chạy sai, kèm nó in ra gì so với đáp án đúng, (3) dòng/biến nào gây ra. Không viết code sửa hộ.";
+    "Code mình đang WA. ĐỪNG viết lại bài — hãy debug đúng code mình đang có. Trả lời theo ĐÚNG định dạng nhãn in đậm:\n" +
+    "**Lỗi sai:** gọi tên lỗi tư duy mình đang mắc, 1 câu.\n" +
+    "**Bằng chứng:** một input nhỏ cụ thể khiến code mình chạy sai — nó in ra gì so với đáp án đúng — và chỉ rõ dòng/biến gây ra.\n" +
+    "**Hướng sửa:** nói bằng lời cần sửa gì. Không viết code sửa hộ.";
 
   // TLE prompt is built per click so it can carry the problem's constraints +
   // time limit (the AI then reasons complexity-vs-constraints, not vibes).
   function buildTlePrompt() {
     const meta = app.state.meta || {};
     const a = meta.analysis || {};
-    let p = "Code mình đang TLE. Đừng viết lại bài. Trả lời gọn 3 ý: (1) ước lượng độ phức tạp code hiện tại và chỉ đúng vòng lặp/đoạn nghẽn, (2) ước số phép tính theo ràng buộc của đề để cho thấy vì sao nó quá chậm, (3) độ phức tạp mục tiêu cần đạt để qua. Không viết code sửa hộ.";
+    let p = "Code mình đang TLE. Đừng viết lại bài. Trả lời theo ĐÚNG định dạng nhãn in đậm:\n" +
+      "**Chẩn đoán:** chỉ đúng vòng lặp/đoạn nghẽn + độ phức tạp code hiện tại, 1 câu.\n" +
+      "**Bằng chứng:** ước số phép tính theo ràng buộc của đề để cho thấy vì sao quá chậm.\n" +
+      "**Hướng sửa:** độ phức tạp MỤC TIÊU cần đạt và ý tưởng tối ưu (ưu tiên tối ưu trên nền code hiện tại). Không viết code sửa hộ.";
     if (a.rangBuoc) p += `\nRàng buộc đề: ${a.rangBuoc}`;
     if (Number(meta.timeLimitMs) > 0) p += `\nGiới hạn thời gian: ${meta.timeLimitMs}ms`;
     return p;
@@ -476,6 +555,19 @@ export function initMiniChat(app) {
   app.focusCoachInput = () => {
     app.setTab("coach");
     inputEl.focus();
+  };
+
+  // Fire a Coach quick-action from elsewhere in the app (e.g. the run/judge
+  // result bar after a failed verdict). Reuses the exact same send() path so the
+  // context, persistence and Stop button all behave identically.
+  app.coachAsk = (kind) => {
+    if (!app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
+    app.setTab("coach");
+    if (kind === "nudge") send(NUDGE_PROMPT);
+    else if (kind === "approach") send(APPROACH_PROMPT);
+    else if (kind === "why-wa") send(WHY_WA_PROMPT);
+    else if (kind === "why-tle") send(buildTlePrompt());
+    else inputEl.focus();
   };
 
   // Called by main.js whenever a problem loads: reload that problem's saved chat.

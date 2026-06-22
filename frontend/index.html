@@ -7,15 +7,24 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230b1220'/%3E%3Ctext%20x='16'%20y='22'%20font-size='15'%20text-anchor='middle'%20fill='%233b82f6'%20font-family='monospace'%20font-weight='bold'%3E&lt;/&gt;%3C/text%3E%3C/svg%3E" />
   <!-- Fonts are vendored (frontend/vendor/fonts) so the app is truly offline. -->
   <link rel="stylesheet" href="./vendor/fonts/fonts.css" />
+  <!-- Stylesheets load in a deliberate cascade (each later layer refines earlier ones):
+         main      base reset, design tokens, the 3-column workbench grid
+         features  feature-specific UI (Stress Lab, contests, tests, welcome, …)
+         theme     component theming (panels, Coach cards, buttons)
+         journey   the gamified Journey / Dashboard home
+         polish    cross-cutting spacing + typography refinements
+         refine    responsive breakpoints + recent component polish
+         lux       elevation pass (depth, sharper accent, tactile motion)
+         forge     identity re-pigment (warm graphite + amber-gold, Geist) — loaded last
+       The order is intentional. Consolidating these into tokens/layout/components is a
+       tracked roadmap item; see README "Frontend styling". -->
   <link rel="stylesheet" href="./styles/main.css?v=2.3" />
   <link rel="stylesheet" href="./styles/features.css?v=2.3" />
   <link rel="stylesheet" href="./styles/theme.css?v=2.3" />
   <link rel="stylesheet" href="./styles/journey.css?v=2.3" />
   <link rel="stylesheet" href="./styles/polish.css?v=2.3" />
   <link rel="stylesheet" href="./styles/refine.css?v=2.4" />
-  <!-- Elevation layer: depth, sharper accent, tactile motion. -->
   <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
-  <!-- Forge: identity re-pigment (warm graphite + amber-gold, Geist). Loaded last. -->
   <link rel="stylesheet" href="./styles/forge.css?v=3.0" />
   <!-- KaTeX for math rendering — vendored locally so the app stays truly offline (was a CDN dep with stale SRI hashes that broke all math). -->
   <link rel="stylesheet" href="./vendor/katex/katex.min.css" />
@@ -31,7 +40,7 @@
     </div>
 
     <div class="topbar-center">
-      <span id="current-title" class="current-title">No problem selected</span>
+      <span id="current-title" class="current-title">Chưa chọn bài</span>
       <span id="autosave-state" class="autosave-state"></span>
     </div>
 
@@ -81,34 +90,37 @@
     <!-- ---------- Left: Problem Explorer ---------- -->
     <aside class="col col-problems">
       <div class="col-head">
-        <span class="col-title">Problems</span>
-        <button id="btn-new" class="btn btn-ghost btn-sm" title="New problem (Ctrl+N)">+ New</button>
+        <span class="col-title">Bài tập</span>
+        <button id="btn-new" class="btn btn-ghost btn-sm" title="Tạo bài mới (Ctrl+N)">+ Bài mới</button>
       </div>
 
       <div class="explorer-filters">
-        <input id="search" class="input" type="search" placeholder="Search title / topic…" autocomplete="off" />
+        <input id="search" class="input" type="search" placeholder="Tìm theo tên / chủ đề…" autocomplete="off" />
         <div class="filter-row">
-          <select id="filter-source" class="select"><option value="">All sources</option></select>
+          <select id="filter-source" class="select"><option value="">Tất cả nguồn</option></select>
           <select id="filter-status" class="select">
-            <option value="">All status</option>
-            <option value="learning">Learning</option>
-            <option value="review">Review</option>
-            <option value="solved">Solved</option>
+            <option value="">Mọi trạng thái</option>
+            <option value="learning">Đang học</option>
+            <option value="review">Cần ôn</option>
+            <option value="solved">Đã giải</option>
           </select>
           <select id="filter-difficulty" class="select">
-            <option value="">All diff.</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-            <option value="unrated">Unrated</option>
+            <option value="">Mọi độ khó</option>
+            <option value="easy">Dễ</option>
+            <option value="medium">Vừa</option>
+            <option value="hard">Khó</option>
+            <option value="unrated">Chưa xếp</option>
           </select>
         </div>
       </div>
 
       <div id="problem-list" class="problem-list"></div>
-      <div class="explorer-foot" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div class="explorer-foot" style="display: flex; justify-content: space-between; align-items: center; gap: 6px; width: 100%;">
         <span id="problem-count">0 problems</span>
-        <button id="btn-contests" class="btn btn-ghost btn-sm" title="AI Contest Generator"><span class="icon-trophy">🏆</span> Contests</button>
+        <div style="display: flex; gap: 6px;">
+          <button id="btn-random" class="btn btn-ghost btn-sm" title="Mở một bài chưa giải ngẫu nhiên để luyện tập">🎲 Ngẫu nhiên</button>
+          <button id="btn-contests" class="btn btn-ghost btn-sm" title="AI Contest Generator"><span class="icon-trophy">🏆</span> Contests</button>
+        </div>
       </div>
     </aside>
 
@@ -129,9 +141,9 @@
           <div class="editor-meta-actions">
             <div class="mode-toggle" id="layout-mode-toggle" title="Chế độ bố cục — Code / Problem (Ctrl+Shift+M)">
               <button class="mode-btn active" data-mode="coding" type="button">Code</button>
-              <button class="mode-btn" data-mode="reading" type="button">Problem</button>
+              <button class="mode-btn" data-mode="reading" type="button">Đề bài</button>
             </div>
-            <button id="btn-edit-meta" class="btn btn-ghost btn-sm">EDIT INFO</button>
+            <button id="btn-edit-meta" class="btn btn-ghost btn-sm">Sửa thông tin</button>
           </div>
         </div>
 
@@ -157,6 +169,7 @@
                 <button id="btn-synth" class="btn btn-ghost btn-sm hidden" type="button" title="AI dựng một biến thể khó hơn của bài này">📈 Bản khó hơn</button>
               </div>
             </div>
+            <span id="cursor-pos" class="lang-tag cursor-pos" title="Vị trí con trỏ (dòng · cột)">Ln 1 · Col 1</span>
             <span id="editor-lang" class="lang-tag">C++17</span>
           </div>
 
@@ -211,6 +224,7 @@
 
     <!-- ---------- Right: Judge Console ---------- -->
     <aside class="col col-panel">
+      <div class="panel-resizer" id="panel-resizer" title="Kéo để đổi độ rộng · nhấp đúp để về mặc định" aria-hidden="true"></div>
       <nav class="panel-tabs" id="panel-tabs">
         <button class="tab" data-tab="run">Run</button>
         <button class="tab" data-tab="tests">Tests</button>
@@ -259,10 +273,14 @@
                 <span id="output-verdict" class="verdict-chip verdict-idle">READY</span>
                 <span id="rc-runtime" class="term-metric" title="Runtime">— ms</span>
                 <span id="rc-summary" class="rc-summary"></span>
+                <button id="btn-coach-ask" class="btn btn-ai btn-sm rc-coach-ask hidden" type="button" title="Hỏi AI Coach về kết quả này">🧠 Hỏi Coach</button>
               </div>
 
               <div class="term-section term-grow">
-                <div class="term-section-head">STDOUT</div>
+                <div class="term-section-head" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>STDOUT</span>
+                  <button id="btn-copy-stdout" class="btn btn-ghost btn-sm" type="button" title="Copy toàn bộ output">Copy</button>
+                </div>
                 <div class="lined lined-out">
                   <div class="lined-gutter" id="out-gutter"></div>
                   <pre id="output-stdout" class="lined-field lined-pre"></pre>
@@ -292,6 +310,7 @@
             <button id="btn-add-test" class="btn btn-ghost btn-sm">+ Add test</button>
             <button id="btn-import-tests" class="btn btn-ghost btn-sm" title="Nhập file test (.in/.out/.ans) — hoặc kéo thả cả bộ test vào tab này">📂 Import .in/.out</button>
             <button id="btn-run-tests" class="btn btn-judge btn-sm">Run all</button>
+            <button id="btn-filter-failing" class="btn btn-ghost btn-sm" title="Chỉ hiện các test đang sai (ẩn AC và chưa chạy)">👁 Chỉ test sai</button>
             <button id="btn-ai-generate-tests" class="btn btn-ai btn-sm">✨ Generate with AI</button>
             <input id="import-tests-files" type="file" multiple class="hidden" />
           </div>
@@ -321,6 +340,7 @@
                 <input type="checkbox" id="coach-reveal" />
                 <span class="coach-reveal-label">Lời giải</span>
               </label>
+              <button id="coach-expand" class="coach-expand" type="button" title="Mở rộng để đọc (phóng to khung Coach)">⤢</button>
               <button id="coach-clear" class="coach-clear" type="button" title="Xóa hội thoại">🗑</button>
             </div>
             <div id="coach-messages" class="coach-messages"></div>
@@ -355,23 +375,23 @@
       <form id="meta-form" class="modal-form">
         <label>Title<input name="title" class="input" required /></label>
         <div class="form-row">
-          <label>Source<input name="source" class="input" list="source-suggest" placeholder="USACO / Codeforces…" /></label>
-          <label>Topic<input name="topic" class="input" placeholder="dp, graphs…" /></label>
+          <label>Nguồn<input name="source" class="input" list="source-suggest" placeholder="USACO / Codeforces…" /></label>
+          <label>Chủ đề<input name="topic" class="input" placeholder="dp, graphs…" /></label>
         </div>
         <div class="form-row">
-          <label>Difficulty
+          <label>Độ khó
             <select name="difficulty" class="select">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-              <option value="unrated" selected>Unrated</option>
+              <option value="easy">Dễ</option>
+              <option value="medium">Vừa</option>
+              <option value="hard">Khó</option>
+              <option value="unrated" selected>Chưa xếp</option>
             </select>
           </label>
-          <label>Status
+          <label>Trạng thái
             <select name="status" class="select">
-              <option value="learning" selected>Learning</option>
-              <option value="review">Review</option>
-              <option value="solved">Solved</option>
+              <option value="learning" selected>Đang học</option>
+              <option value="review">Cần ôn</option>
+              <option value="solved">Đã giải</option>
             </select>
           </label>
         </div>
@@ -467,6 +487,12 @@
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
           <span>Lưu bài (Save)</span><kbd>Ctrl + S</kbd>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
+          <span>Đổi bố cục Code / Problem</span><kbd>Ctrl + Shift + M</kbd>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
+          <span>Phóng to Coach để đọc</span><kbd>Alt + W</kbd>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
           <span>Zen Focus Mode</span><kbd>Alt + Z</kbd>

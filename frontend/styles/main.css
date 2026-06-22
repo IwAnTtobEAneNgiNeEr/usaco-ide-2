@@ -256,11 +256,14 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .pill-bad { color: var(--wa); border-color: #7a3030; background: rgba(239,68,68,.12); }
 
 /* ---------------- Workbench grid ---------------- */
-.workbench { flex: 1; display: grid; grid-template-columns: 290px minmax(0, 1fr) 460px; min-height: 0; background: var(--bg); }
+/* Column widths are variable-driven so (a) the responsive rules below just set
+   defaults, and (b) the drag handle can set an inline `--panel-w` that overrides
+   every stylesheet default. Reading/zen modes set their own explicit tracks. */
+.workbench { flex: 1; display: grid; --probs-w: 290px; --panel-w: 460px; grid-template-columns: var(--probs-w) minmax(0, 1fr) var(--panel-w); min-height: 0; background: var(--bg); }
 .col { min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 .col-problems { background: #0b1020; border-right: 1px solid #1f2937; }
 .col-editor { background: #0b1020; }
-.col-panel { background: #0b1020; border-left: 1px solid #1f2937; container-type: inline-size; container-name: panel; }
+.col-panel { background: #0b1020; border-left: 1px solid #1f2937; container-type: inline-size; container-name: panel; position: relative; }
 /* The panel narrows by LAYOUT MODE (reading ~360px) as well as by viewport, so
    fit the six tabs based on the panel's own width rather than the window's. */
 @container panel (max-width: 392px) {
@@ -696,7 +699,7 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
    The raw textarea (.prob-statement-edit) is the EDIT view; .statement-page is
    the rendered READ view: wide measure, strong hierarchy, comfortable spacing.
    ========================================================================= */
-.problem-scroll { max-width: 960px; }
+.problem-scroll { max-width: 1280px; }
 
 .statement-page {
   display: flex;
@@ -753,7 +756,7 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
    the full card width. */
 .stmt-section-body p,
 .stmt-section-body > ul,
-.stmt-section-body > ol { max-width: 70ch; }
+.stmt-section-body > ol { max-width: 82ch; }
 .stmt-section-body ul, .stmt-section-body ol { margin: 0 0 12px; padding-left: 24px; }
 .stmt-section-body li { margin: 4px 0; }
 .stmt-section-body li::marker { color: #94a3b8; }
@@ -819,14 +822,14 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 /* =========================================================================
    REDESIGN v3 — Layout modes (Coding = editor-forward, Reading = statement-forward)
    ========================================================================= */
-.workbench.mode-coding { grid-template-columns: 290px minmax(0, 1fr) 460px; }
+.workbench.mode-coding { grid-template-columns: var(--probs-w) minmax(0, 1fr) var(--panel-w); }
 
 .workbench.mode-reading { grid-template-columns: 0px minmax(0, 1fr) 360px; }
 .workbench.mode-reading .col-problems {
   overflow: hidden; width: 0; min-width: 0; padding: 0;
   border: none; opacity: 0; pointer-events: none;
 }
-.workbench.mode-reading .problem-scroll { max-width: 1080px; }
+.workbench.mode-reading .problem-scroll { max-width: 1360px; }
 
 /* Tab bar [Code | Problem] */
 .mode-toggle {

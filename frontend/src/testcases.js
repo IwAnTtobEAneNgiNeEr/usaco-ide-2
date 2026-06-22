@@ -31,10 +31,12 @@ function paintCardResult(card, result) {
     badge.textContent = "—";
     time.textContent = "";
     if (out) out.textContent = "";
+    card.removeAttribute("data-status"); // un-run → hidden by the "only failing" filter
     return;
   }
   badge.className = `vbadge tc-badge v-${result.status}`;
   badge.textContent = result.status;
+  card.dataset.status = result.status;
   time.textContent = `${Math.round(result.timeMs)}ms`;
   if (out) {
     let txt = `actual:\n${result.actual || ""}`;
@@ -209,6 +211,14 @@ export function initTests(app) {
   }
 
   el.btnRunTests.addEventListener("click", () => app.judgeAll());
+
+  // "Only failing" filter — hides AC and not-yet-run tests so you can focus on
+  // what's broken (handy on USACO problems with 10-25 tests). Pure CSS toggle.
+  const btnFilterFail = document.getElementById("btn-filter-failing");
+  if (btnFilterFail) btnFilterFail.addEventListener("click", () => {
+    const on = el.testsList.classList.toggle("only-failing");
+    btnFilterFail.classList.toggle("active", on);
+  });
   // "Generate with AI" jumps to the Problem view and runs the inline pipeline.
   el.btnAiGenTests.addEventListener("click", () => {
     if (app.runStatementPipeline) app.runStatementPipeline();

@@ -706,6 +706,172 @@ html[data-smooth-scroll="on"] .code-editor { scroll-behavior: smooth; }
   --card-hdr-fg: #4ade80;
 }
 
+/* Diagnosis — the lead punchline for a code problem (Violet, emphasised) */
+.coach-card-sec-diag {
+  --card-border: rgba(167, 139, 250, 0.45);
+  --card-border-soft: rgba(167, 139, 250, 0.18);
+  --card-bg: #120f1c;
+  --card-hdr-bg: #241d3a;
+  --card-hdr-fg: #c4b5fd;
+}
+/* Quick answer — the lead punchline for a how-to / concept question (Cyan) */
+.coach-card-sec-sum {
+  --card-border: rgba(34, 211, 238, 0.42);
+  --card-border-soft: rgba(34, 211, 238, 0.16);
+  --card-bg: #0b1518;
+  --card-hdr-bg: #15303a;
+  --card-hdr-fg: #67e8f9;
+}
+/* The lead card sits slightly proud so the conclusion reads first. */
+.coach-card-sec-diag,
+.coach-card-sec-sum {
+  box-shadow: 0 6px 18px 0 rgba(0, 0, 0, 0.34) !important;
+}
+.coach-card-sec-diag .coach-card-body,
+.coach-card-sec-sum .coach-card-body {
+  font-size: 13.5px !important;
+  color: #e2e8f0 !important;
+}
+
+/* Evidence — concrete counter-example / trace (Slate, neutral) */
+.coach-card-sec-evid {
+  --card-border: rgba(148, 163, 184, 0.34);
+  --card-border-soft: rgba(148, 163, 184, 0.14);
+  --card-bg: #0f131a;
+  --card-hdr-bg: #1e2733;
+  --card-hdr-fg: #cbd5e1;
+}
+/* Approach — technique recommendation (Teal) */
+.coach-card-sec-approach {
+  --card-border: rgba(45, 212, 191, 0.38);
+  --card-border-soft: rgba(45, 212, 191, 0.15);
+  --card-bg: #0b1614;
+  --card-hdr-bg: #14302b;
+  --card-hdr-fg: #5eead4;
+}
+
+/* Paced reveal — a soft caret while the answer is still being typed out, and a
+   sticky "reveal all" pill pinned to the bottom-right of the scroll viewport. */
+.coach-bubble.coach-streaming::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  border-radius: 1px;
+  background: var(--accent, #60a5fa);
+  animation: coach-caret 1s steps(1) infinite;
+}
+@keyframes coach-caret { 50% { opacity: 0; } }
+
+.coach-skip {
+  position: sticky;
+  bottom: 8px;
+  align-self: flex-end;
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted, #cbd5e1);
+  background: var(--panel-2, #131a2a);
+  border: 1px solid var(--border, #25304a);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  opacity: 0.9;
+  transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.coach-skip:hover {
+  opacity: 1;
+  color: var(--text, #f1f5f9);
+  border-color: var(--accent, #60a5fa);
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-bubble.coach-streaming::after { animation: none; }
+}
+
+/* =========================================================================
+   Coach widen — resize handle + focus (expand) mode
+   ========================================================================= */
+/* Drag handle over the panel's left border. Widening/narrowing updates the
+   inline --panel-w on .workbench (layout.js). The grid transition is killed
+   during drag so the column tracks the cursor instead of easing behind it. */
+.panel-resizer {
+  position: absolute;
+  left: -3px; top: 0; bottom: 0;
+  width: 7px;
+  cursor: col-resize;
+  z-index: 6; /* above panel content edges, below dropdowns / modals */
+  background: transparent;
+}
+.panel-resizer::before {
+  content: "";
+  position: absolute; left: 3px; top: 0; bottom: 0;
+  width: 2px; background: transparent;
+  transition: background 0.15s ease;
+}
+.panel-resizer:hover::before,
+body.col-resizing .panel-resizer::before { background: var(--accent, #60a5fa); }
+body.col-resizing { cursor: col-resize; user-select: none; }
+body.col-resizing .workbench { transition: none !important; }
+/* The handle is meaningless when the panel is hidden (zen), fixed (reading), or
+   self-sized (focus). */
+.workbench.zen-mode .panel-resizer,
+.workbench.mode-reading .panel-resizer,
+.workbench.coach-focus .panel-resizer { display: none; }
+
+/* Expand toggle in the Coach header — matches the .coach-clear button vocabulary. */
+.coach-expand {
+  background: none; border: 1px solid var(--border-soft); color: var(--text-dim);
+  font-size: 13px; line-height: 1; cursor: pointer;
+  padding: 3px 7px; border-radius: 6px;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.coach-expand:hover { color: var(--text); border-color: var(--accent); }
+.coach-expand.active {
+  color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.12);
+}
+
+/* Focus mode — collapse the explorer and give the Coach a wide reading column,
+   while the editor stays visible so the fix can be read beside the code. */
+.workbench.coach-focus:not(.zen-mode) {
+  grid-template-columns: 0px minmax(0, 1fr) clamp(480px, 46vw, 860px);
+}
+.workbench.coach-focus:not(.zen-mode) .col-problems {
+  overflow: hidden; width: 0; min-width: 0; padding: 0; border: none;
+  opacity: 0; pointer-events: none;
+}
+/* Keep prose at a comfortable measure even when the panel is very wide. */
+.workbench.coach-focus .coach-msg-ai .coach-bubble { max-width: 760px; }
+
+/* Failed-verdict → Coach bridge button, pinned to the right of the result bar. */
+.rc-coach-ask { margin-left: auto; flex: 0 0 auto; }
+.rc-coach-ask.hidden { display: none; }
+
+/* Runtime-vs-limit coloring: amber as it nears the time limit, red when very close. */
+.rc-runtime-warn { color: var(--tle, #fbbf24) !important; font-weight: 600; }
+.rc-runtime-danger { color: var(--wa, #f87171) !important; font-weight: 700; }
+
+/* Tests "only failing" filter — hide AC and not-yet-run cards. */
+.tests-list.only-failing .tcard:not([data-status]),
+.tests-list.only-failing .tcard[data-status="AC"] { display: none; }
+#btn-filter-failing.active {
+  background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.5); color: #60a5fa;
+}
+
+/* Live cursor position readout in the editor toolbar — quiet, monospace. */
+.cursor-pos { font-family: var(--mono); color: var(--text-dim); opacity: 0.85; }
+
+/* AC celebration — a single, quick pop on the verdict chip (the CP reward). */
+@keyframes verdict-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.verdict-chip.verdict-pop { animation: verdict-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+@media (prefers-reduced-motion: reduce) { .verdict-chip.verdict-pop { animation: none; } }
+
 /* =========================================================================
    5 · RESPONSIVE — graceful degradation for smaller laptops.
    The fixed 290px + 460px side rails crush the center editor below ~1300px
@@ -720,7 +886,7 @@ html[data-smooth-scroll="on"] .code-editor { scroll-behavior: smooth; }
    ========================================================================= */
 @media (max-width: 1400px) {
   .workbench.mode-coding:not(.sb-collapsed):not(.zen-mode) {
-    grid-template-columns: 268px minmax(0, 1fr) 416px;
+    --probs-w: 268px; --panel-w: 416px;
   }
   .workbench.mode-reading:not(.zen-mode) {
     grid-template-columns: 0 minmax(0, 1fr) 360px;
@@ -733,7 +899,7 @@ html[data-smooth-scroll="on"] .code-editor { scroll-behavior: smooth; }
 
 @media (max-width: 1240px) {
   .workbench.mode-coding:not(.sb-collapsed):not(.zen-mode) {
-    grid-template-columns: 244px minmax(0, 1fr) 380px;
+    --probs-w: 244px; --panel-w: 380px;
   }
   .workbench.mode-reading:not(.zen-mode) {
     grid-template-columns: 0 minmax(0, 1fr) 340px;
@@ -748,7 +914,7 @@ html[data-smooth-scroll="on"] .code-editor { scroll-behavior: smooth; }
 
 @media (max-width: 1100px) {
   .workbench.mode-coding:not(.sb-collapsed):not(.zen-mode) {
-    grid-template-columns: 222px minmax(0, 1fr) 344px;
+    --probs-w: 222px; --panel-w: 344px;
   }
   .timer-preset { display: none; }       /* timer still runs via the ▶ / ↺ buttons */
   .jh-chips #jh-chip-home { display: none; }

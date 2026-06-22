@@ -6,7 +6,7 @@
 /* ---------------- Sidebar collapse ---------------- */
 /* NOTE: do not transition grid-template-columns — Chromium leaves the track
    interpolated and never settles on the final width. Snap instead. */
-.workbench.sb-collapsed { grid-template-columns: 46px minmax(0, 1fr) 460px; }
+.workbench.sb-collapsed { grid-template-columns: 46px minmax(0, 1fr) var(--panel-w); }
 
 .sb-toggle {
   width: 24px; height: 24px; flex: none; display: grid; place-items: center;
