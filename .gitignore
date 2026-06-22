@@ -36,3 +36,8 @@ __pycache__/
 Thumbs.db
 *.log
 .claude/
+
+# ---- Internal dev-process docs (kept local, not shipped in the public repo) ----
+.planning/
+PRODUCT.md
+README_FABEL_EVOLUTION.md
