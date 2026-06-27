@@ -1,0 +1,43 @@
+/* workspaces.css — topbar workspace switcher + policy-driven visibility.
+   Loaded after the identity layers so .ws-* utilities win. */
+.ws-switch { position: relative; display: flex; align-items: center; margin-left: 10px; }
+.ws-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg-surface);
+  color: var(--text); font-size: 12.5px; cursor: pointer;
+}
+.ws-pill:hover { border-color: var(--accent); }
+.ws-pill-caret { opacity: .6; font-size: 10px; }
+.ws-popover {
+  position: absolute; top: 34px; left: 0; z-index: 60; min-width: 210px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 6px; box-shadow: 0 12px 36px rgba(0,0,0,.35);
+}
+.ws-popover.hidden { display: none; }
+.ws-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 9px; border: 0; border-radius: 7px; background: transparent;
+  color: var(--text); font-size: 13px; cursor: pointer; text-align: left;
+}
+.ws-opt:hover { background: var(--bg-elev); }
+.ws-opt.active { background: var(--accent-soft); }
+.ws-opt kbd { margin-left: auto; opacity: .7; font-size: 10.5px; }
+.ws-opt-icon { width: 18px; text-align: center; }
+
+/* Policy-driven visibility (reversible — just classes). */
+.ws-tab-hidden { display: none !important; }
+.ws-widget-off { display: none !important; }
+.col-panel.ws-panel-off { display: none !important; }
+.coach-reveal-toggle.ws-locked { opacity: .5; pointer-events: none; }
+
+/* Focus rule: workspaces that ask for calm kill the ambient loops. */
+html.ws-reduced-motion * { animation: none !important; transition: none !important; }
+
+/* Tab attention dot — a panel has something new while you're elsewhere. */
+#panel-tabs .tab.ws-tab-attn { position: relative; }
+#panel-tabs .tab.ws-tab-attn::after {
+  content: ""; position: absolute; top: 6px; right: 6px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--bg-surface);
+}

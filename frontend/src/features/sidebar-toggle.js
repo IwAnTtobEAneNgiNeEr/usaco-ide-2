@@ -1,9 +1,10 @@
 // features/sidebar-toggle.js — collapse/expand the left Problem Explorer.
 // State is persisted in localStorage so a reload keeps it. Ctrl/Cmd+B toggles.
+// Exposes app.setSidebarCollapsed so the Workspace orchestrator can drive it.
 
 const KEY = "usaco.sidebar.collapsed";
 
-export function initSidebarToggle() {
+export function initSidebarToggle(app) {
   const workbench = document.querySelector(".workbench");
   const colHead = document.querySelector(".col-problems .col-head");
   if (!workbench || !colHead) return;
@@ -29,6 +30,7 @@ export function initSidebarToggle() {
     collapsed = v;
     try { localStorage.setItem(KEY, v ? "1" : "0"); } catch { /* ignore */ }
     apply(v);
+    if (app && app.bus) app.bus.emit("layout:changed", { source: "sidebar" });
   };
 
   toggle.addEventListener("click", () => set(!collapsed));
@@ -38,4 +40,7 @@ export function initSidebarToggle() {
       set(!collapsed);
     }
   });
+
+  // Public hook for the Workspace orchestrator.
+  if (app) app.setSidebarCollapsed = (v) => set(Boolean(v));
 }

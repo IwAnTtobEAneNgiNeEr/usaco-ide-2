@@ -433,6 +433,7 @@ export function initRunner(app) {
       await app.flushIo();
       const r = await api.run(app.state.currentId, app.getEditorValue(), { signal: runAbort.signal });
       renderRunOutput(app, r);
+      app.bus && app.bus.emit("verdict", { kind: "run", verdict: r.compilerMissing ? "CE" : r.verdict });
       await app.syncMeta();
     } catch (err) {
       if (err && err.aborted) {
@@ -462,6 +463,7 @@ export function initRunner(app) {
       const r = await api.judge(app.state.currentId, app.getEditorValue(), undefined, { signal: judgeAbort.signal });
       renderJudgeOutput(app, r);
       applyTestResults(app, r.results);
+      app.bus && app.bus.emit("verdict", { kind: "judge", verdict: r.compilerMissing ? "CE" : r.verdict, summary: r.summary });
       await app.syncMeta();
       return r;
     } catch (err) {
