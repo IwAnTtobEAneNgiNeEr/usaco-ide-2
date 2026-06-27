@@ -1,0 +1,11 @@
+{
+  "name": "usaco-ide-2-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend ESM for USACO IDE 2.0. Pure core modules are unit-tested with node:test.",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "engines": { "node": ">=18" }
+}
