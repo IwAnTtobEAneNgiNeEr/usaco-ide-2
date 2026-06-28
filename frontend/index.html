@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <title>USACO IDE 2.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230b1220'/%3E%3Ctext%20x='16'%20y='22'%20font-size='15'%20text-anchor='middle'%20fill='%233b82f6'%20font-family='monospace'%20font-weight='bold'%3E&lt;/&gt;%3C/text%3E%3C/svg%3E" />
+  <!-- Favicon mirrors the Forge identity: warm graphite tile + amber-gold ‹/› mark. -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230f0f12'/%3E%3Ctext%20x='16'%20y='22'%20font-size='15'%20text-anchor='middle'%20fill='%23e6a93e'%20font-family='monospace'%20font-weight='bold'%3E&lt;/&gt;%3C/text%3E%3C/svg%3E" />
   <!-- Fonts are vendored (frontend/vendor/fonts) so the app is truly offline. -->
   <link rel="stylesheet" href="./vendor/fonts/fonts.css" />
   <!-- Stylesheets load in a deliberate cascade (each later layer refines earlier ones):
@@ -18,14 +19,19 @@
          forge     identity re-pigment (warm graphite + amber-gold, Geist) — loaded last
        The order is intentional. Consolidating these into tokens/layout/components is a
        tracked roadmap item; see README "Frontend styling". -->
-  <link rel="stylesheet" href="./styles/main.css?v=2.3" />
+  <link rel="stylesheet" href="./styles/main.css?v=3.0" />
   <link rel="stylesheet" href="./styles/features.css?v=2.3" />
   <link rel="stylesheet" href="./styles/theme.css?v=2.3" />
   <link rel="stylesheet" href="./styles/journey.css?v=2.3" />
   <link rel="stylesheet" href="./styles/polish.css?v=2.3" />
-  <link rel="stylesheet" href="./styles/refine.css?v=2.4" />
+  <link rel="stylesheet" href="./styles/refine.css?v=2.6" />
   <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
-  <link rel="stylesheet" href="./styles/forge.css?v=3.0" />
+  <link rel="stylesheet" href="./styles/forge.css?v=3.2" />
+  <!-- tokens.css — THE design system. Loaded LAST so it is the authoritative
+       source of truth for every global --token. See docs/DESIGN-SYSTEM.md. -->
+  <link rel="stylesheet" href="./styles/tokens.css?v=1.0" />
+  <!-- Workspace switcher + policy-driven visibility (loaded after tokens so .ws-* utilities win). -->
+  <link rel="stylesheet" href="./styles/workspaces.css?v=1.0" />
   <!-- KaTeX for math rendering — vendored locally so the app stays truly offline (was a CDN dep with stale SRI hashes that broke all math). -->
   <link rel="stylesheet" href="./vendor/katex/katex.min.css" />
   <script defer src="./vendor/katex/katex.min.js"></script>
@@ -71,12 +77,12 @@
       <span id="compiler-pill" class="pill pill-muted" title="Compiler status">g++ …</span>
       <button id="btn-run" class="btn btn-run" disabled>Run <kbd>Ctrl·↵</kbd></button>
       <button id="btn-judge" class="btn btn-judge" disabled>Judge <kbd>Ctrl·⇧·↵</kbd></button>
+      <button id="btn-zen" class="btn btn-ghost btn-sm" title="Zen Focus Mode (Alt+Z)">🧘 Zen</button>
       <!-- Secondary tools tucked behind a single "More" menu -->
       <div class="ov-menu" id="more-menu">
         <button class="btn btn-ghost btn-icon btn-sm ov-trigger" title="Thêm" aria-haspopup="true">⋯</button>
         <div class="ov-panel">
           <button id="btn-dashboard" class="btn btn-ghost btn-sm" title="Tiến độ &amp; thống kê">📊 Thống kê</button>
-          <button id="btn-zen" class="btn btn-ghost btn-sm" title="Zen Focus Mode (Alt+Z)">🧘 Zen mode</button>
           <button id="btn-guide" class="btn btn-ghost btn-sm" title="Hướng dẫn sử dụng IDE">📖 Hướng dẫn</button>
           <button id="btn-shortcuts-help" class="btn btn-ghost btn-sm" title="Bảng phím tắt (?)">⌨️ Phím tắt</button>
         </div>
@@ -139,8 +145,9 @@
             <div id="meta-chips" class="meta-chips"></div>
           </div>
           <div class="editor-meta-actions">
-            <div class="mode-toggle" id="layout-mode-toggle" title="Chế độ bố cục — Code / Problem (Ctrl+Shift+M)">
+            <div class="mode-toggle" id="layout-mode-toggle" title="Chế độ bố cục — Code / Đề + Code / Đề bài (Ctrl+Shift+M để chuyển vòng)">
               <button class="mode-btn active" data-mode="coding" type="button">Code</button>
+              <button class="mode-btn" data-mode="split" type="button" title="Đề bài và code cạnh nhau — không phải mở đi mở lại đề">⊟ Đề + Code</button>
               <button class="mode-btn" data-mode="reading" type="button">Đề bài</button>
             </div>
             <button id="btn-edit-meta" class="btn btn-ghost btn-sm">Sửa thông tin</button>
@@ -219,6 +226,9 @@
             <section id="gen-tests-card" class="gentests-card hidden"></section>
           </div>
         </div>
+
+        <!-- Drag handle between the two panes in Split (Đề + Code) mode. -->
+        <div id="split-resizer" title="Kéo để đổi tỉ lệ Đề / Code · nhấp đúp để về mặc định" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -350,6 +360,8 @@
                   placeholder="Hỏi AI về bài này… (Enter gửi, Shift+Enter xuống dòng)"></textarea>
                 <button id="coach-send" class="btn btn-primary btn-sm" type="button">Gửi</button>
               </div>
+              <button id="coach-chatgpt" class="btn btn-ghost btn-sm coach-chatgpt" type="button"
+                title="Chép Đề bài + code + kết quả chấm thành 1 prompt rồi mở ChatGPT web — chỉ việc dán (Ctrl+V)">🌐 Hỏi ChatGPT <span class="coach-chatgpt-sub">(chép Đề + code + lỗi)</span></button>
             </div>
           </div>
         </section>
@@ -480,6 +492,9 @@
           <span>Bảng lệnh nhanh (tìm bài / lệnh)</span><kbd>Ctrl + K</kbd>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
+          <span>Đổi Workspace (Tự do…Tối giản)</span><kbd>Ctrl + 1…6</kbd>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
           <span>Chạy code (Run)</span><kbd>Ctrl + Enter</kbd>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--border-soft); padding-bottom:4px;">
@@ -588,6 +603,6 @@
   <!-- Toast host -->
   <div id="toast-host" class="toast-host"></div>
 
-  <script type="module" src="./src/main.js?v=3.0"></script>
+  <script type="module" src="./src/main.js?v=3.5"></script>
 </body>
 </html>

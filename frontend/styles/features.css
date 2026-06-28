@@ -34,11 +34,11 @@
   background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-sm);
   padding: 7px 10px; cursor: pointer; transition: border-color .1s, background .1s;
 }
-.tf-toggle:hover { border-color: #475569; }
+.tf-toggle:hover { border-color: var(--accent); }
 .tf-count {
   margin-left: 2px; min-width: 16px; height: 16px; padding: 0 5px; border-radius: 8px;
   font-size: 10px; font-weight: 700; display: none; place-items: center; line-height: 16px; text-align: center;
-  background: var(--accent-strong); color: #fff;
+  background: var(--accent); color: var(--on-accent);
 }
 .tf-count.on { display: inline-block; }
 .tf-caret { margin-left: auto; color: var(--text-dim); font-size: 10px; }
@@ -55,8 +55,8 @@
   border: 1px solid var(--border); border-radius: 4px; padding: 3px 9px; cursor: pointer;
   transition: background .1s, border-color .1s, color .1s;
 }
-.tf-chip:hover { border-color: #475569; color: var(--text); }
-.tf-chip.on { background: var(--accent-soft); border-color: var(--accent); color: #cfe4ff; }
+.tf-chip:hover { border-color: var(--accent); color: var(--text); }
+.tf-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 .tf-empty { font-size: 11px; color: var(--text-dim); padding: 4px; }
 .tf-foot { display: flex; justify-content: flex-end; border-top: 1px solid var(--border-soft); padding-top: 7px; }
 .tf-clear { font-size: 11px; color: var(--text-dim); background: transparent; border: none; cursor: pointer; }

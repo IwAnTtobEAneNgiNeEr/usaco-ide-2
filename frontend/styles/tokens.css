@@ -1,0 +1,211 @@
+/* =========================================================================
+   tokens.css — THE DESIGN SYSTEM. Single source of truth for USACO IDE 2.0.
+
+   WHY THIS FILE EXISTS
+   --------------------
+   Before this file, design tokens lived in SIX places (main.css :root,
+   forge.css :root + .light-theme, theme.css .light-theme, lux.css :root,
+   polish.css :root). Each page therefore inherited a slightly different
+   "truth", and a colour change meant editing several files and hoping the
+   cascade resolved the way you wanted. That is why the app read as "many
+   beautiful pages" rather than "one product".
+
+   tokens.css collapses every GLOBAL design decision into one documented
+   sheet and is loaded LAST so it is authoritative. The intentional "Forge"
+   identity (warm graphite workbench + one amber-gold accent) is preserved
+   exactly — the values below are the values the app already shipped, just
+   gathered in one home and given a real taxonomy.
+
+   RULES (for every future sprint)
+   -------------------------------
+   1. No magic numbers in component CSS. Reference a token.
+   2. New global colour / spacing / radius / shadow / motion value? Add it
+      HERE, nowhere else.
+   3. Editor-only tokens (--syn-*, --code-*, --ed-*) stay in main.css — they
+      are the editor's private contract, not app chrome.
+   4. Runtime theming (accent picker in main.js, Editor Appearance) sets a
+      few of these inline on <html>; inline always wins, by design. The
+      values here are the pre-JS defaults and the fallback if a custom theme
+      is cleared.
+
+   LAYER ORDER (see docs/DESIGN-SYSTEM.md):
+   fonts → main → features → theme → journey → polish → refine → lux → forge
+   → TOKENS (this file, last word on every --token).
+   ========================================================================= */
+
+:root {
+  /* ===================================================================== *
+     1 · SURFACES  — warm-neutral graphite, layered from back to front.
+     Named by elevation (surface-0 = furthest back). Legacy aliases kept so
+     the ~500 existing var(--bg)/var(--panel) references keep resolving.
+   * ===================================================================== */
+  --bg:          #0f0f12;   /* app background            */  --surface-0: var(--bg);
+  --bg-soft:     #16161b;   /* gutters, inset wells      */
+  --panel:       #141418;   /* cards, rails, the topbar  */  --surface-1: var(--panel);
+  --panel-2:     #1b1b21;   /* raised panels, inputs     */  --surface-2: var(--panel-2);
+  --panel-3:     #24242c;   /* hovered / popped surfaces */  --surface-3: var(--panel-3);
+  --border:      #2c2c35;   /* standard hairline         */
+  --border-soft: #212128;   /* whisper divider           */
+  --bg-surface:  rgba(255, 255, 255, 0.022);
+
+  /* Interaction states — were ad-hoc rgba()s scattered across files. */
+  --surface-hover:  rgba(255, 255, 255, 0.035);
+  --surface-active: rgba(var(--accent-rgb), 0.10);
+
+  /* ===================================================================== *
+     2 · TEXT  — warm off-white → warm grays (not blue-tinted slate).
+   * ===================================================================== */
+  --text:       #ecebe5;   /* primary copy   */
+  --text-muted: #c3c0b7;   /* secondary copy */
+  --text-dim:   #8b897f;   /* disabled / meta */
+
+  /* ===================================================================== *
+     3 · ACCENT  — ONE accent for the whole product: amber-gold (1am lamp).
+     --accent intentionally chains to --primary so the runtime accent picker
+     (main.js, inline on <html>) repaints the entire app by setting --primary.
+   * ===================================================================== */
+  --primary:        #e6a93e;
+  --primary-strong: #f4be59;                 /* hover: brighter on dark */
+  --primary-soft:   rgba(230, 169, 62, 0.13);
+  --accent:         var(--primary);
+  --accent-strong:  var(--primary-strong);
+  --accent-soft:    var(--primary-soft);
+  --accent-grad:    var(--primary);          /* solid — no gradient */
+  --accent-rgb:     230, 169, 62;            /* for rgba() glows/shadows */
+  --on-accent:      #1d1606;                 /* dark text that rides ON gold */
+
+  /* ===================================================================== *
+     4 · SEMANTIC  — status meanings. Verdict hues are a judge's vocabulary;
+     they stay functional and are nudged off the accent hue so AC/WA/TLE read
+     instantly and never get mistaken for the gold accent.
+   * ===================================================================== */
+  --success: #34d27e;
+  --warning: #f5b740;
+  --error:   #f0584f;
+  --danger:  var(--error);   /* alias: "danger" reads better on buttons */
+  --muted:   var(--text-dim);
+
+  --ac:  #34d27e;   /* Accepted              */
+  --wa:  #f0584f;   /* Wrong Answer          */
+  --tle: #fb923c;   /* Time Limit (orange)   */
+  --mle: #ef6c2e;   /* Memory Limit          */
+  --re:  #b39ddb;   /* Runtime Error         */
+  --ce:  #9b998f;   /* Compile Error (grey)  */
+
+  /* AI surfaces: muted dusty lavender — groups AI actions quietly. */
+  --ai:          #b39ddb;
+  --purple:      #b39ddb;
+  --purple-soft: rgba(179, 157, 219, 0.12);
+
+  /* ===================================================================== *
+     5 · ACTION BUTTONS  — Run = gold (iterate), Judge = green (commit).
+   * ===================================================================== */
+  --btn-primary: #e6a93e;  --btn-primary-h: #f4be59;
+  --btn-run:     #e6a93e;  --btn-run-h:     #f4be59;
+  --btn-judge:   #1f9d57;  --btn-judge-h:   #18b462;
+  --btn-del:     #e0524a;  --btn-del-h:     #cf463f;
+
+  --editor-bg: #121215;    /* editor surface: a hair off the panels */
+
+  /* ===================================================================== *
+     6 · TYPOGRAPHY
+     Families + a real, named type scale. Legacy --fs-*/--lh-* aliases keep
+     existing rules working while components migrate to the semantic names.
+   * ===================================================================== */
+  --mono: "JetBrains Mono", "Cascadia Code", "Fira Code", "Consolas", ui-monospace, monospace;
+  --sans: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
+
+  --text-display:  28px;            /* hero numbers, empty-state titles */
+  --text-h-xl:     20px;            /* page / section titles            */
+  --text-h-l:      16px;            /* card titles, modal titles        */
+  --text-h-m:      14px;            /* sub-headings, tab labels         */
+  --text-body:     13.5px;          /* default reading size             */
+  --text-caption:  12px;            /* secondary / helper text          */
+  --text-badge:    11px;            /* pills, uppercase micro-labels     */
+  --text-code:     var(--code-fs, 13.5px);
+
+  /* Legacy aliases (== the scale above; do not diverge). */
+  --fs-h1: var(--text-h-xl);  --fs-h2: var(--text-h-l);  --fs-title: var(--text-h-m);
+  --fs-body: var(--text-body);  --fs-sm: var(--text-caption);  --fs-label: var(--text-badge);
+
+  --lh-tight: 1.3;   --lh-body: 1.6;   --lh-read: 1.7;
+
+  /* ===================================================================== *
+     7 · SPACING  — 4-based scale. Use --space-*; --s* kept as aliases.
+   * ===================================================================== */
+  --space-4:  4px;   --s1: var(--space-4);
+  --space-8:  8px;   --s2: var(--space-8);
+  --space-12: 12px;  --s3: var(--space-12);
+  --space-16: 16px;  --s4: var(--space-16);
+  --space-20: 20px;                          /* the missing step */
+  --space-24: 24px;  --s5: var(--space-24);
+  --space-32: 32px;  --s6: var(--space-32);
+
+  /* ===================================================================== *
+     8 · RADIUS
+   * ===================================================================== */
+  --radius-sm: 6px;
+  --radius-md: 8px;   --radius: var(--radius-md);   /* legacy alias */
+  --radius-lg: 12px;
+
+  /* ===================================================================== *
+     9 · ELEVATION  — warm-neutral black, plus a "lit from above" edge.
+     Named by intent (sm / md / floating); --shadow-1/2/3 kept as aliases.
+   * ===================================================================== */
+  --shadow-sm:       0 1px 2px rgba(0, 0, 0, .50);
+  --shadow-md:       0 6px 22px -8px rgba(0, 0, 0, .60);
+  --shadow-floating: 0 28px 70px -20px rgba(0, 0, 0, .74);
+  --shadow-1: var(--shadow-sm);
+  --shadow-2: var(--shadow-md);
+  --shadow-3: var(--shadow-floating);
+  --shadow:   var(--shadow-sm);
+  --edge-light: inset 0 1px 0 rgba(255, 255, 255, .055);
+
+  /* Focus halo: crisp gold ring + soft bloom. ONE focus signature app-wide. */
+  --ring: 0 0 0 2px rgba(var(--accent-rgb), .6), 0 0 0 6px rgba(var(--accent-rgb), .14);
+
+  /* ===================================================================== *
+     10 · MOTION  — three durations + one shared easing. Was only in lux.css.
+   * ===================================================================== */
+  --ease:       cubic-bezier(.22, 1, .36, 1);   /* ease-out-quint */
+  --dur-fast:   120ms;   --lux-fast: var(--dur-fast);   /* legacy alias */
+  --dur-normal: 200ms;   --lux:      var(--dur-normal);  /* legacy alias */
+  --dur-slow:   320ms;
+}
+
+/* ========================================================================= *
+   LIGHT THEME — "warm paper" instead of cold gray. Only the tokens that must
+   change for legibility are overridden; everything else inherits :root.
+   The gold deepens because gold-on-white is weak at the dark-theme value.
+ * ========================================================================= */
+.light-theme {
+  --bg:          #f4f1ea;   --surface-0: var(--bg);
+  --bg-soft:     #ebe6db;
+  --panel:       #fbf9f4;   --surface-1: var(--panel);
+  --panel-2:     #f4f1ea;   --surface-2: var(--panel-2);
+  --panel-3:     #ece7dc;   --surface-3: var(--panel-3);
+  --border:      #d8d1c2;
+  --border-soft: #e4ded2;
+
+  --text:        #2a2620;
+  --text-muted:  #575145;
+  --text-dim:    #847d6f;
+
+  --surface-hover:  rgba(60, 50, 30, 0.05);
+  --surface-active: rgba(var(--accent-rgb), 0.12);
+
+  --editor-bg:   #fbf9f4;
+
+  --primary:        #b5791c;
+  --primary-strong: #9c6612;
+  --primary-soft:   rgba(181, 121, 28, 0.12);
+  --accent-rgb:     181, 121, 28;
+  --on-accent:      #fff8ec;
+  --btn-primary: #b5791c;  --btn-primary-h: #9c6612;
+  --btn-run:     #b5791c;  --btn-run-h:     #9c6612;
+
+  --shadow-sm:       0 1px 2px rgba(60, 50, 30, .14);
+  --shadow-md:       0 6px 22px -8px rgba(60, 50, 30, .18);
+  --shadow-floating: 0 28px 70px -20px rgba(60, 50, 30, .26);
+  --edge-light:      inset 0 1px 0 rgba(255, 255, 255, .6);
+}

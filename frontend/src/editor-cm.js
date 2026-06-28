@@ -355,6 +355,9 @@ export async function mountCmEditor(app) {
       CM.syntaxHighlighting(hl, { fallback: true }),
       CM.syntaxHighlighting(CM.defaultHighlightStyle, { fallback: true }),
       CM.cpp(),
+      createRainbowBrackets(CM),
+      createIndentationGuides(CM),
+      createStdLibHighlighter(CM),
       tabSizeCompartment.of([
         CM.EditorState.tabSize.of(startTabSize)
       ]),
@@ -452,4 +455,218 @@ export async function mountCmEditor(app) {
 
   return true;
 }
+
+// ---- Custom Extensions for editor features ---------------------------------
+
+function createRainbowBrackets(CM) {
+  return CM.ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = this.getDecorations(view);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.getDecorations(update.view);
+      }
+    }
+    getDecorations(view) {
+      const builder = new CM.RangeSetBuilder();
+      const tree = CM.syntaxTree(view.state);
+      let depth = 0;
+      
+      tree.iterate({
+        from: 0,
+        to: view.viewport.to,
+        enter: (node) => {
+          const name = node.name;
+          if (name === "(" || name === "[" || name === "{") {
+            const currentDepth = depth;
+            depth++;
+            if (node.from >= view.viewport.from && node.to <= view.viewport.to) {
+              builder.add(node.from, node.to, CM.Decoration.mark({
+                class: `rainbow-bracket-depth-${currentDepth % 3}`
+              }));
+            }
+          } else if (name === ")" || name === "]" || name === "}") {
+            depth = Math.max(0, depth - 1);
+            if (node.from >= view.viewport.from && node.to <= view.viewport.to) {
+              builder.add(node.from, node.to, CM.Decoration.mark({
+                class: `rainbow-bracket-depth-${depth % 3}`
+              }));
+            }
+          }
+        }
+      });
+      return builder.finish();
+    }
+  }, {
+    decorations: v => v.decorations
+  });
+}
+
+function createIndentationGuides(CM) {
+  const indentationMark = CM.Decoration.mark({ class: "cm-indentation-guide" });
+
+  class IndentationWidget extends CM.WidgetType {
+    constructor(indents) {
+      super();
+      this.indents = indents;
+    }
+    static create(indents) {
+      return CM.Decoration.widget({
+        widget: new IndentationWidget(indents),
+        side: 1,
+      });
+    }
+    toDOM() {
+      const wrap = document.createElement("span");
+      wrap.className = "cm-indentation-widget";
+      for (const indent of this.indents) {
+        const marker = wrap.appendChild(document.createElement("span"));
+        marker.className = "cm-indentation-guide";
+        marker.textContent = " ".repeat(indent);
+      }
+      return wrap;
+    }
+  }
+
+  const SPACES = /^\s*/;
+  function getCodeStart(text) {
+    return (text.match(SPACES) || [""])[0].length;
+  }
+
+  function makeIndentationMark(from, to, totalIndent, tabSize, builder) {
+    let indentPos = from + tabSize;
+    const toMark = to - from;
+    const upTo = Math.min(to - (toMark % tabSize), from + totalIndent);
+    while (indentPos <= upTo) {
+      builder.add(indentPos - 1, indentPos, indentationMark);
+      indentPos += tabSize;
+    }
+  }
+
+  function makeIndentationWidget(from, to, totalIndent, tabSize, builder) {
+    const alreadyMarked = to - from;
+    if (totalIndent <= alreadyMarked) {
+      return;
+    }
+    const indentsToMark = [];
+    const toMark = totalIndent - alreadyMarked;
+    const indentationMarkToComplete = toMark % tabSize;
+    if (indentationMarkToComplete) {
+      indentsToMark.push(indentationMarkToComplete);
+    }
+    const numRemainingIndents = (toMark - indentationMarkToComplete) / tabSize;
+    indentsToMark.push(...Array(numRemainingIndents).fill(tabSize));
+    builder.add(to, to, IndentationWidget.create(indentsToMark));
+  }
+
+  function makeIndentationDecorators(view) {
+    const builder = new CM.RangeSetBuilder();
+    const tabSize = Number(view.state.tabSize) || 4;
+    const doc = view.state.doc;
+    const spaceOnlyLines = [];
+    let currentIndent = 0;
+    
+    for (const { from: visibleFrom, to: visibleTo } of view.visibleRanges) {
+      let to = visibleFrom - 1;
+      let pos, from, length, text;
+      while ((pos = to + 1) <= visibleTo) {
+        const line = doc.lineAt(pos);
+        from = line.from;
+        to = line.to;
+        length = line.length;
+        text = line.text;
+        
+        const codeStartsAt = getCodeStart(text);
+        const isAllSpaces = codeStartsAt === length;
+        const skipIndent = codeStartsAt < tabSize;
+        const isComment = text.trim().startsWith("//") || text.trim().startsWith("#");
+        
+        if (isAllSpaces) {
+          spaceOnlyLines.push({ from, to });
+          continue;
+        } else if (skipIndent) {
+          spaceOnlyLines.length = 0;
+          continue;
+        }
+        
+        const indent = codeStartsAt - (codeStartsAt % tabSize);
+        if (!isComment) {
+          currentIndent = indent;
+        }
+        
+        for (const sol of spaceOnlyLines) {
+          makeIndentationMark(sol.from, sol.to, currentIndent, tabSize, builder);
+          makeIndentationWidget(sol.from, sol.to, currentIndent, tabSize, builder);
+        }
+        spaceOnlyLines.length = 0;
+        
+        makeIndentationMark(from, to, indent, tabSize, builder);
+      }
+    }
+    return builder.finish();
+  }
+
+  return CM.ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = makeIndentationDecorators(view);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = makeIndentationDecorators(update.view);
+      }
+    }
+  }, {
+    decorations: v => v.decorations
+  });
+}
+
+function createStdLibHighlighter(CM) {
+  const CXX_STD_LIB = new Set([
+    "vector", "set", "map", "unordered_map", "unordered_set", "multiset", "multimap", 
+    "priority_queue", "queue", "stack", "deque", "pair", "string", "tuple", "bitset", "array", "list",
+    "sort", "stable_sort", "reverse", "unique", "min", "max", "swap", "abs", 
+    "lower_bound", "upper_bound", "binary_search", "next_permutation", "prev_permutation", 
+    "memset", "fill", "accumulate", "gcd", "lcm", "min_element", "max_element", "iota", 
+    "__builtin_popcount", "__builtin_popcountll", "__builtin_clz", "__builtin_ctz", 
+    "make_pair", "make_tuple", "tie", "get", "push_back", "pop_back", "insert", "erase", 
+    "find", "count", "size", "empty", "clear", "begin", "end", "rbegin", "rend", 
+    "front", "back", "push", "pop", "top", "push_front", "pop_front",
+    "cin", "cout", "cerr", "endl", "stdin", "stdout", "printf", "scanf", "sscanf", "sprintf"
+  ]);
+
+  const stdLibMark = CM.Decoration.mark({ class: "cm-std-library" });
+
+  return CM.ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = this.getDecorations(view);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.getDecorations(update.view);
+      }
+    }
+    getDecorations(view) {
+      const builder = new CM.RangeSetBuilder();
+      const tree = CM.syntaxTree(view.state);
+      
+      tree.iterate({
+        from: view.viewport.from,
+        to: view.viewport.to,
+        enter: (node) => {
+          if (node.name === "VariableName" || node.name === "Type" || node.name === "Identifier" || node.name === "NamespaceMemberName" || node.name === "FieldIdentifier") {
+            const text = view.state.doc.sliceString(node.from, node.to);
+            if (CXX_STD_LIB.has(text)) {
+              builder.add(node.from, node.to, stdLibMark);
+            }
+          }
+        }
+      });
+      return builder.finish();
+    }
+  }, {
+    decorations: v => v.decorations
+  });
+}
+
 

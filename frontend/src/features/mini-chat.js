@@ -224,6 +224,7 @@ export function initMiniChat(app) {
   if (revealEl) {
     revealEl.checked = false;
     revealEl.addEventListener("change", () => {
+      if (revealEl.disabled) { revealEl.checked = false; return; } // locked by Contest workspace
       if (revealEl.checked) {
         app.toast("Đã bật Lời giải — AI có thể đưa code / đáp án đầy đủ. Tắt để quay lại chỉ gợi ý.", "ok");
       }
@@ -346,6 +347,62 @@ export function initMiniChat(app) {
     return results.length ? results : undefined;
   }
 
+  // ---- ChatGPT-web bridge ---------------------------------------------------
+  // The in-app Coach is API-key-gated and (per the student) weaker than just
+  // pasting into ChatGPT. So this assembles the SAME rich context the Coach
+  // sends — statement + constraints + current code + latest verdict/per-test
+  // diffs/errors — into one ready-to-paste Vietnamese prompt, entirely client
+  // side (no API call, no key, no cost). `userQuestion` is whatever is typed in
+  // the composer; empty falls back to a sensible "find my bug" ask.
+  function buildChatGptPrompt(userQuestion) {
+    const meta = app.state.meta || {};
+    const a = meta.analysis || {};
+    const statement = (app.el.ioStatement.value || app.state.savedStatement || "").trim();
+    const code = (app.getEditorValue() || "").trim();
+    const verdict = latestVerdict();
+    const perTest = currentPerTestResults();
+    const runs = recentRunHistory();
+
+    const parts = [];
+    parts.push(
+      "Bạn là một huấn luyện viên lập trình thi đấu (competitive programming) giỏi và thẳng thắn. " +
+      "Hãy giúp mình bài dưới đây: phân tích code mình ĐANG CÓ, chỉ ra lỗi tư duy / edge case còn thiếu và cách sửa. " +
+      "Đi thẳng vào vấn đề, ưu tiên cách cơ bản dễ hiểu, có ví dụ phản chứng nếu được."
+    );
+
+    if (statement) parts.push("## Đề bài\n" + statement);
+
+    const limits = [];
+    if (a.rangBuoc) limits.push("- Ràng buộc: " + a.rangBuoc);
+    if (Number(meta.timeLimitMs) > 0) limits.push("- Giới hạn thời gian: " + meta.timeLimitMs + " ms");
+    if (a.doPhucTapYeuCauTime) limits.push("- Độ phức tạp mục tiêu (ước lượng): " + a.doPhucTapYeuCauTime);
+    if (limits.length) parts.push("## Ràng buộc\n" + limits.join("\n"));
+
+    parts.push("## Code hiện tại của mình (C++)\n```cpp\n" + (code || "// (chưa có code)") + "\n```");
+
+    const resultLines = ["Verdict gần nhất: " + verdict];
+    if (perTest && perTest.length) {
+      for (const r of perTest.filter((x) => x.status !== "AC").slice(0, 4)) {
+        let line = "- Test " + (r.name || r.id) + ": " + r.status;
+        if (r.diff) line += ` (dòng ${r.diff.line}: cần "${r.diff.expected}", code in "${r.diff.actual}")`;
+        else if (r.actual) line += ` (code in: "${r.actual}")`;
+        if (r.stderr) line += " | stderr: " + r.stderr;
+        resultLines.push(line);
+      }
+    }
+    for (const r of (runs || []).filter((x) => x.error).slice(0, 2)) {
+      resultLines.push("- " + (r.verdict || "Lỗi") + ": " + r.error);
+    }
+    if (verdict !== "(chưa chạy)" || resultLines.length > 1) {
+      parts.push("## Kết quả chấm gần nhất\n" + resultLines.join("\n"));
+    }
+
+    const q = (userQuestion || "").trim();
+    parts.push("## Câu hỏi của mình\n" + (q || "Code mình sai / chưa xong ở đâu? Chỉ ra lỗi và hướng sửa giúp mình."));
+
+    return parts.join("\n\n");
+  }
+
   // `textOverride` lets quick-action buttons send a canned prompt through the
   // exact same path (same context, persistence and Stop button) as typed input.
   async function send(textOverride) {
@@ -425,6 +482,7 @@ export function initMiniChat(app) {
       } else if (finished) {
         cleanup();
         if (app.playSound) app.playSound("complete");
+        if (app.bus) app.bus.emit("coach:reply");
       }
       // caught up but stream not done → idle until next delta re-arms via kick().
     };
@@ -597,6 +655,22 @@ export function initMiniChat(app) {
   inputEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   });
+
+  // "Hỏi ChatGPT" — copy the full problem context (+ whatever's typed) and open
+  // ChatGPT web. ChatGPT blocks iframes and can't be prefilled via URL, so the
+  // realistic flow is clipboard → open → paste.
+  const chatgptBtn = document.getElementById("coach-chatgpt");
+  if (chatgptBtn) chatgptBtn.addEventListener("click", async () => {
+    if (!app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
+    const prompt = buildChatGptPrompt(inputEl.value);
+    let copied = false;
+    try { await navigator.clipboard.writeText(prompt); copied = true; } catch { /* fall through */ }
+    app.toast(copied
+      ? "Đã chép Đề + code + lỗi. Mở ChatGPT rồi dán (Ctrl+V)."
+      : "Không tự chép được — bôi đen prompt trong app hoặc thử lại.", copied ? "ok" : "err");
+    window.open("https://chatgpt.com/", "_blank", "noopener");
+  });
+
   if (clearBtn) clearBtn.addEventListener("click", async () => {
     if (!app.state.currentId) return;
     if (!confirm("Xóa toàn bộ hội thoại AI Coach của bài này?")) return;

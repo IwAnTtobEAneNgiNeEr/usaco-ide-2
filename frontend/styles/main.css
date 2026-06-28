@@ -10,55 +10,14 @@
    redefine these tokens. No gradients, no glow shadows, no neon.
    ========================================================================= */
 :root {
-  /* ---- Surfaces (premium dark indigo) ---- */
-  --bg: #0b1020;
-  --bg-soft: #111827;
-  --panel: #111827;
-  --panel-2: #151c2b;
-  --panel-3: #1a2336;
-  --border: #243042;
-  --border-soft: #1f2937;
-  --bg-surface: rgba(255, 255, 255, 0.02);
-
-  /* ---- Text ---- */
-  --text: #e5e7eb;
-  --text-muted: #cbd5e1;
-  --text-dim: #94a3b8;
-
-  /* ---- Accent: primary blue ---- */
-  --primary: #3b82f6;
-  --primary-strong: #2563eb;
-  --primary-soft: rgba(59, 130, 246, 0.12);
-  --accent: var(--primary);
-  --accent-strong: var(--primary-strong);
-  --accent-soft: var(--primary-soft);
-  --accent-grad: var(--primary);
-
-  /* ---- Semantic ---- */
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --error: #ef4444;
-
-  /* ---- AI: premium purple ---- */
-  --ai: #8b5cf6;
-  --purple: #8b5cf6;
-  --purple-soft: rgba(139, 92, 246, 0.12);
-
-  /* ---- Action buttons ---- */
-  --btn-primary: #3b82f6;  --btn-primary-h: #2563eb;
-  --btn-run: #3b82f6;      --btn-run-h: #2563eb;
-  --btn-judge: #16a34a;    --btn-judge-h: #15803d;
-  --btn-del: #ef4444;      --btn-del-h: #dc2626;
-
-  /* ---- Verdicts ---- */
-  --ac:  #22c55e;
-  --wa:  #ef4444;
-  --tle: #f59e0b;
-  --mle: #f97316;
-  --re:  #8b5cf6;
-  --ce:  #94a3b8;
-
-  --editor-bg: #0b1220;
+  /* =======================================================================
+     GLOBAL TOKENS MOVED → styles/tokens.css (the design system, loaded last).
+     Surfaces, text, accent, semantic/verdict, buttons, type families + scale,
+     spacing, radius, elevation and the focus ring now have ONE home so the
+     whole app inherits the same truth. main.css keeps only the EDITOR's
+     private tokens below — syntax colours and the CodeMirror appearance vars
+     that the Editor Appearance panel writes to at runtime.
+     ======================================================================= */
 
   /* ---- Syntax (One Dark) ---- */
   --syn-cmt: #5c6370;
@@ -68,26 +27,6 @@
   --syn-fn: #61afef;
   --syn-num: #d19a66;
   --syn-str: #98c379;
-
-  /* ---- Type ---- */
-  --mono: "JetBrains Mono", "Cascadia Code", "Fira Code", "Consolas", ui-monospace, monospace;
-  --sans: "Inter", "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
-  --fs-h1: 20px;  --fs-h2: 16px;  --fs-title: 14px;
-  --fs-body: 13.5px;  --fs-sm: 12px;  --fs-label: 11px;
-  --lh-tight: 1.3;  --lh-body: 1.6;  --lh-read: 1.7;
-
-  /* ---- Space ---- */
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
-
-  /* ---- Radius / elevation / focus ring ---- */
-  --radius: 8px;
-  --radius-sm: 6px;
-  --radius-lg: 12px;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, .28);
-  --shadow-2: 0 2px 10px -2px rgba(0, 0, 0, .35);
-  --shadow-3: 0 16px 48px -12px rgba(0, 0, 0, .55);
-  --shadow: var(--shadow-1);
-  --ring: 0 0 0 2px #3b82f6;
 
   /* ---- Editor appearance ---- */
   --code-font: var(--mono);
@@ -102,6 +41,12 @@
   --ed-active-gutter: rgba(59, 130, 246, .12);
   --ed-gutter-bg: var(--bg-soft);
   --ed-gutter-fg: #6b7c98; /* line numbers: ~3.9:1 (readable secondary), was #4b5b72 at 2.57:1 */
+
+  --syn-bracket-0: #ffd700;
+  --syn-bracket-1: #da70d6;
+  --syn-bracket-2: #179fff;
+  --indent-guide-color: rgba(255, 255, 255, 0.08);
+  --syn-std-lib: #56b6c2;
 }
 
 * { box-sizing: border-box; }
@@ -125,8 +70,8 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
   gap: 14px;
   height: 48px;
   padding: 0 16px;
-  background: #0b1020;
-  border-bottom: 1px solid #1f2937;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
   flex: none;
 }
 .brand { display: flex; align-items: center; gap: 8px; min-width: 200px; }
@@ -140,42 +85,42 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .autosave-state.saved { color: var(--ac); }
 .topbar-actions { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
 .topbar-sep { width: 1px; height: 24px; background: var(--border); }
-
+ 
 /* Topbar pills & badges */
 .topbar .pill, .topbar .focus-timer, .topbar .session-stats, .jh-chip {
-  background: #1f2937 !important;
-  border: 1px solid #243042 !important;
-  color: #cbd5e1 !important;
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
   border-radius: 999px;
 }
 .topbar .pill b, .topbar .focus-timer b, .topbar .session-stats b, .jh-chip b {
-  color: #ffffff !important;
+  color: var(--text) !important;
 }
-
+ 
 /* Specific buttons inside topbar */
 .topbar .btn-run {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
-  color: #ffffff !important;
+  background: var(--btn-run) !important;
+  border-color: var(--btn-run) !important;
+  color: var(--on-accent) !important;
   border-radius: 8px !important;
   padding: 6px 10px !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 .topbar .btn-run:hover:not(:disabled) {
-  background: #2563eb !important;
-  border-color: #2563eb !important;
+  background: var(--btn-run-h) !important;
+  border-color: var(--btn-run-h) !important;
 }
 .topbar .btn-judge {
-  background: #16a34a !important;
-  border-color: #16a34a !important;
+  background: var(--btn-judge) !important;
+  border-color: var(--btn-judge) !important;
   color: #ffffff !important;
   border-radius: 8px !important;
   padding: 6px 10px !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 .topbar .btn-judge:hover:not(:disabled) {
-  background: #15803d !important;
-  border-color: #15803d !important;
+  background: var(--btn-judge-h) !important;
+  border-color: var(--btn-judge-h) !important;
 }
 
 /* Focus timer */
@@ -198,8 +143,8 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
   font-weight: 500;
   line-height: 1.2;
   color: var(--text);
-  background: #111827;
-  border: 1px solid #243042;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;
@@ -208,8 +153,8 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
   transition: all 130ms ease;
 }
 .btn:hover:not(:disabled) {
-  background: #1f2937;
-  border-color: #243042;
+  background: var(--panel-3);
+  border-color: var(--border);
   color: #ffffff;
 }
 .btn:active:not(:disabled) {
@@ -217,7 +162,7 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 }
 .btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px var(--accent);
 }
 .btn:disabled {
   opacity: .45;
@@ -229,7 +174,7 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .btn-icon.btn-sm { width: 26px; height: 26px; }
 
 .btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
-.btn-ghost:hover:not(:disabled) { background: #111827; border-color: transparent; color: var(--text); }
+.btn-ghost:hover:not(:disabled) { background: var(--panel-2); border-color: transparent; color: var(--text); }
 
 .btn-primary { background: var(--btn-primary); border-color: var(--btn-primary); color: #fff; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: var(--btn-primary-h); border-color: var(--btn-primary-h); color: #fff; }
@@ -261,9 +206,9 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
    every stylesheet default. Reading/zen modes set their own explicit tracks. */
 .workbench { flex: 1; display: grid; --probs-w: 290px; --panel-w: 460px; grid-template-columns: var(--probs-w) minmax(0, 1fr) var(--panel-w); min-height: 0; background: var(--bg); }
 .col { min-height: 0; min-width: 0; display: flex; flex-direction: column; }
-.col-problems { background: #0b1020; border-right: 1px solid #1f2937; }
-.col-editor { background: #0b1020; }
-.col-panel { background: #0b1020; border-left: 1px solid #1f2937; container-type: inline-size; container-name: panel; position: relative; }
+.col-problems { background: var(--panel); border-right: 1px solid var(--border); }
+.col-editor { background: var(--editor-bg); }
+.col-panel { background: var(--panel); border-left: 1px solid var(--border); container-type: inline-size; container-name: panel; position: relative; }
 /* The panel narrows by LAYOUT MODE (reading ~360px) as well as by viewport, so
    fit the six tabs based on the panel's own width rather than the window's. */
 @container panel (max-width: 392px) {
@@ -284,11 +229,11 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .filter-row .select { font-size: 11px; padding: 6px 18px 6px 8px; }
 .problem-list { flex: 1; overflow-y: auto; padding: 8px; }
-.explorer-foot { padding: 8px 14px; border-top: 1px solid #1f2937; font-size: 11px; color: var(--text-dim); flex: none; background: #0b1020; }
+.explorer-foot { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); flex: none; background: var(--panel); }
 .p-item { position: relative; padding: 12px 14px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; margin-bottom: 3px; transition: all 130ms ease; }
-.p-item:hover { background: #121a2b; }
-.p-item.active { background: #172238; border-color: transparent; }
-.p-item.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #3b82f6; border-radius: 0 3px 3px 0; }
+.p-item:hover { background: var(--panel-2); }
+.p-item.active { background: var(--panel-3); border-color: transparent; }
+.p-item.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 0 3px 3px 0; }
 .p-row { display: flex; align-items: center; gap: 8px; }
 .p-title { font-weight: 600; font-size: 12.5px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .p-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -301,42 +246,42 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 
 /* Left Sidebar specific inputs, selects, and topic selector */
 .explorer-filters .input {
-  background: #111827 !important;
-  border: 1px solid #243042 !important;
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
-  color: #cbd5e1 !important;
+  color: var(--text-muted) !important;
   padding-left: 28px !important;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'></circle><line x1='21' y1='21' x2='16.65' y2='16.65'></line></svg>") !important;
   background-repeat: no-repeat !important;
   background-position: 8px center !important;
 }
 .explorer-filters .select {
-  background-color: #111827 !important;
-  border: 1px solid #243042 !important;
+  background-color: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
-  color: #cbd5e1 !important;
+  color: var(--text-muted) !important;
 }
 .topic-filter .tf-toggle {
-  background: #111827 !important;
-  border: 1px solid #243042 !important;
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
-  color: #cbd5e1 !important;
+  color: var(--text-muted) !important;
 }
 .topic-filter .tf-panel {
-  background: #111827 !important;
-  border: 1px solid #243042 !important;
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
 }
 .topic-filter .tf-chip {
-  background: #0f1624 !important;
-  border: 1px solid #243042 !important;
+  background: var(--panel-3) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 6px !important;
-  color: #cbd5e1 !important;
+  color: var(--text-muted) !important;
 }
 .topic-filter .tf-chip.on {
   background: var(--accent-soft) !important;
   border-color: var(--accent) !important;
-  color: #cfe4ff !important;
+  color: var(--text) !important;
 }
 .explorer-foot .icon-trophy {
   color: #f59e0b;
@@ -345,7 +290,7 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 
 /* ---------------- Verdict badges (shared) ---------------- */
 .vbadge { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--text-dim); }
-.v-AC  { color: #22c55e;  border-color: #14532d;   background: #064e3b; border-radius: 6px; padding: 2px 6px; font-size: 10px; }
+.v-AC  { color: var(--ac);  border-color: rgba(34,197,94,.5);   background: rgba(34,197,94,.13); border-radius: 6px; padding: 2px 6px; font-size: 10px; }
 .v-WA  { color: var(--wa);  border-color: rgba(239,68,68,.5);   background: rgba(239,68,68,.13); }
 .v-RE  { color: #c4b5fd;    border-color: rgba(139,92,246,.5);  background: rgba(139,92,246,.16); }
 .v-CE  { color: #cbd5e1;    border-color: rgba(148,163,184,.5); background: rgba(148,163,184,.14); }
@@ -413,6 +358,52 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 /* --- CodeMirror 6 host (injected by editor-cm.js) --- */
 .cm-editor-host { width: 100%; height: 100%; overflow: hidden; }
 .cm-editor-host .cm-editor { height: 100%; }
+
+/* Rainbow brackets styling */
+.rainbow-bracket-depth-0, .rainbow-bracket-depth-0 * { color: var(--syn-bracket-0) !important; font-weight: bold; }
+.rainbow-bracket-depth-1, .rainbow-bracket-depth-1 * { color: var(--syn-bracket-1) !important; font-weight: bold; }
+.rainbow-bracket-depth-2, .rainbow-bracket-depth-2 * { color: var(--syn-bracket-2) !important; font-weight: bold; }
+
+/* Enhanced bracket matching highlighting */
+.cm-editor-host .cm-matchingBracket,
+.cm-editor-host .cm-matchingBracket * {
+  background-color: rgba(34, 197, 94, 0.2) !important;
+  color: #22c55e !important;
+  font-weight: bold !important;
+  border-bottom: 2px solid #22c55e !important;
+}
+.cm-editor-host .cm-nonmatchingBracket,
+.cm-editor-host .cm-nonmatchingBracket * {
+  background-color: rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+  font-weight: bold !important;
+  border-bottom: 2px solid #ef4444 !important;
+}
+
+/* Indentation guides */
+.cm-indentation-guide {
+  position: relative;
+  display: inline-block;
+  height: 100%;
+}
+.cm-indentation-guide::after {
+  position: absolute;
+  content: "";
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--indent-guide-color);
+  pointer-events: none;
+}
+.cm-indentation-widget {
+  display: inline-block;
+}
+
+/* Standard library highlighting */
+.cm-std-library, .cm-std-library * {
+  color: var(--syn-std-lib) !important;
+  font-weight: 550;
+}
 
 /* ---------------- Right panel tabs ---------------- */
 .panel-tabs { display: flex; gap: 2px; padding: 7px 10px 0; border-bottom: 1px solid var(--border); flex: none; overflow-x: auto; background: var(--panel); }
@@ -554,11 +545,12 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .tag-pill { font-size: 11px; color: var(--text-muted); background: var(--bg-soft); border: 1px solid var(--border); border-radius: 4px; padding: 2px 9px; }
 .tag-pill.tech { color: #c4b5fd; border-color: #5e4b8f; background: var(--purple-soft); }
 
-/* ---- Examples (samples) ---- */
+/* ---- Examples (samples) — same recessed "code sheet" read as the statement's
+   sample I/O, so the whole problem column feels like one system. ---- */
 .ex-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.ex-col { display: flex; flex-direction: column; gap: 4px; }
-.ex-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-dim); }
-.ex-pre { font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--text); background: var(--editor-bg); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 9px 11px; margin: 0; white-space: pre; overflow: auto; max-height: 160px; }
+.ex-col { display: flex; flex-direction: column; gap: 6px; }
+.ex-head { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-dim); }
+.ex-pre { font-family: var(--mono); font-size: 12px; line-height: 1.55; color: var(--text); background: var(--editor-bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--edge-light); padding: 11px 13px; margin: 0; white-space: pre; overflow: auto; max-height: 180px; }
 .ex-explain-row { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
 .ex-explain-body { font-size: 13px; line-height: 1.6; color: var(--text-muted); background: var(--bg-soft); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 12px 14px; }
 .ex-explain-body h1, .ex-explain-body h2, .ex-explain-body h3, .ex-explain-body h4 { color: var(--text); margin: 10px 0 4px; font-size: 13px; }
@@ -695,115 +687,279 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 ::-webkit-scrollbar-corner { background: transparent; }
 
 /* =========================================================================
-   REDESIGN v3 — Statement reading page (a real CP problem page).
-   The raw textarea (.prob-statement-edit) is the EDIT view; .statement-page is
-   the rendered READ view: wide measure, strong hierarchy, comfortable spacing.
+   REDESIGN v4 — Statement reading view ("the sheet").
+   A premium competitive-programming problem page (Codeforces / LeetCode /
+   USACO Guide feel). The raw textarea (.prob-statement-edit) is the EDIT
+   source of truth; .statement-page is the rendered READ view.
+
+   Design: ONE calm reading sheet. Structure is carried by confident section
+   headers + generous vertical rhythm, NOT by boxing every block. Only the
+   blocks that earn it — sample I/O, constraints, notes/quotes — take a single,
+   light surface (Notion-style). Everything is token-driven so the Forge
+   palette AND the light theme cascade for free. No hardcoded hues here (the
+   old layer hardcoded blue #60a5fa / grey #e5e7eb, which fought both Forge and
+   the light theme), and no >1px side-stripe accents.
    ========================================================================= */
-.problem-scroll { max-width: 1280px; }
+.problem-scroll { max-width: 940px; }
 
 .statement-page {
   display: flex;
   flex-direction: column;
-  gap: var(--s4);
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-  padding: 20px 24px;
+  gap: 26px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1), var(--edge-light);
+  padding: 26px 30px 30px;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
 }
+/* Figures in code chips, sample I/O and tables line up (tabular). */
+.stmt-section-body code,
+.stmt-section-body pre.md-pre,
+.stmt-section-body table.md-table td { font-variant-numeric: tabular-nums; }
 .statement-page.hidden { display: none; }
 
 .stmt-empty {
-  color: var(--text-dim); font-size: var(--fs-body); line-height: var(--lh-body);
+  color: var(--text-dim); font-size: var(--fs-body); line-height: var(--lh-read);
+  text-align: center;
   border: 1px dashed var(--border); border-radius: var(--radius);
-  padding: 22px 20px; background: var(--bg-soft);
+  padding: 30px 26px; background: var(--bg-surface);
 }
 .stmt-empty b { color: var(--text-muted); font-weight: 600; }
 
-.stmt-section { display: flex; flex-direction: column; gap: var(--s3); }
+.stmt-section { display: flex; flex-direction: column; gap: 11px; }
+
+/* Header cadence:  [icon] LABEL ─────────────────── (editorial / Codeforces).
+   The trailing hairline is what separates one section from the next, so the
+   sheet never reads as one flat wall of text. */
 .stmt-section-label {
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 600;
-  color: #cbd5e1 !important;
-  margin: 18px 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #1f2937;
   display: flex;
   align-items: center;
-  gap: 6px;
-  text-transform: none;
+  gap: 9px;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-dim);
 }
-.stmt-description .stmt-section-label { color: #60a5fa !important; }
+.stmt-section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+/* The description (main) section reads one notch louder than the rest. */
+.stmt-description .stmt-section-label { color: var(--text-muted); }
 
-/* Section icons */
-.stmt-description .stmt-section-label::before { content: "📝"; font-size: 14px; }
-.stmt-input .stmt-section-label::before { content: "📥"; font-size: 14px; }
-.stmt-output .stmt-section-label::before { content: "📤"; font-size: 14px; }
-.stmt-constraints .stmt-section-label::before { content: "⚙️"; font-size: 14px; }
-.stmt-examples .stmt-section-label::before { content: "💡"; font-size: 14px; }
-.stmt-notes .stmt-section-label::before { content: "📓"; font-size: 14px; }
-.stmt-subtasks .stmt-section-label::before { content: "📊"; font-size: 14px; }
+/* Section icons — kept, but quieted so the type carries the hierarchy. */
+.stmt-section-label::before { font-size: 13px; line-height: 1; opacity: .9; }
+.stmt-description .stmt-section-label::before { content: "📝"; }
+.stmt-input       .stmt-section-label::before { content: "📥"; }
+.stmt-output      .stmt-section-label::before { content: "📤"; }
+.stmt-constraints .stmt-section-label::before { content: "⚙️"; }
+.stmt-examples    .stmt-section-label::before { content: "💡"; }
+.stmt-notes       .stmt-section-label::before { content: "📓"; }
+.stmt-subtasks    .stmt-section-label::before { content: "📊"; }
 
-.stmt-section-body { font-size: 14px; line-height: 1.7; color: #e5e7eb; }
+/* ---- Prose -------------------------------------------------------------- */
+.stmt-section-body { font-size: 14.5px; line-height: 1.75; color: var(--text); }
 .stmt-section-body > :first-child { margin-top: 0; }
 .stmt-section-body > :last-child { margin-bottom: 0; }
-.stmt-section-body h1 { font-size: var(--fs-h1); color: var(--text); margin: 0 0 10px; font-weight: 650; letter-spacing: -.01em; }
-.stmt-section-body h2 { font-size: var(--fs-h2); color: var(--text); margin: 18px 0 8px; font-weight: 650; }
-.stmt-section-body h3 { font-size: 14px; color: var(--text); margin: 16px 0 6px; font-weight: 600; }
-.stmt-section-body p { margin: 0 0 12px; }
-/* Cap the prose measure (~70ch) so statement text stays readable in the wide
-   reading column. Tables, code blocks and examples below are exempt and keep
-   the full card width. */
+.stmt-section-body h1,
+.stmt-section-body h2,
+.stmt-section-body h3 { color: var(--text); font-weight: 650; letter-spacing: -.01em; text-wrap: balance; }
+.stmt-section-body h1 { font-size: 17px;   margin: 4px 0 8px; }
+.stmt-section-body h2 { font-size: 15px;   margin: 18px 0 8px; }
+.stmt-section-body h3 { font-size: 13.5px; margin: 16px 0 6px; }
+.stmt-section-body p { margin: 0 0 13px; text-wrap: pretty; }
+/* Cap the prose measure (~70ch) so statement text stays comfortable to read in
+   the wide reading column. Tables, code blocks and callouts are exempt — they
+   keep the full sheet width. */
 .stmt-section-body p,
 .stmt-section-body > ul,
-.stmt-section-body > ol { max-width: 82ch; }
-.stmt-section-body ul, .stmt-section-body ol { margin: 0 0 12px; padding-left: 24px; }
-.stmt-section-body li { margin: 4px 0; }
-.stmt-section-body li::marker { color: #94a3b8; }
-.stmt-section-body a { color: var(--accent); text-decoration: none; }
-.stmt-section-body a:hover { text-decoration: underline; }
-.stmt-section-body hr { border: none; border-top: 1px solid var(--border-soft); margin: 16px 0; }
+.stmt-section-body > ol { max-width: 70ch; }
+.stmt-section-body ul, .stmt-section-body ol { margin: 0 0 13px; padding-left: 22px; }
+.stmt-section-body li { margin: 5px 0; padding-left: 2px; }
+.stmt-section-body li::marker { color: var(--accent); }
+.stmt-section-body strong { color: var(--text); font-weight: 650; }
+/* Underline grows in on hover instead of toggling on — calmer, no layout jump. */
+.stmt-section-body a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .12s; }
+.stmt-section-body a:hover { border-bottom-color: currentColor; }
+.stmt-section-body hr { border: none; border-top: 1px solid var(--border-soft); margin: 20px 0; }
 
-.stmt-constraints code, .stmt-section-body code {
+/* Inline code — a quiet monospace chip, never a coloured token (statements are
+   full of a_i / n_max where a loud accent would be noise). */
+.stmt-section-body code {
   font-family: var(--mono);
-  background: #0f1624 !important;
-  border: 1px solid #243042 !important;
-  color: #a7f3d0 !important;
-  border-radius: 6px !important;
-  padding: 3px 6px !important;
+  font-size: .88em;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.5px 6px;
+}
+/* Operation / constant tokens (PUSHFRONT, NONE, YES…) auto-detected in prose —
+   tinted with the accent so they scan as the commands they are, not flat text. */
+.stmt-section-body code.stmt-cmd {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), .09);
+  border-color: rgba(var(--accent-rgb), .26);
+  font-weight: 600;
+}
+/* Sub-labels inside the Examples section (bold "Input 01" / "Output 01"). */
+.stmt-examples .stmt-section-body p > strong:only-child {
+  display: inline-block;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 2px;
 }
 
+/* Operation reference table — the command contract of the problem, the thing a
+   solver scans first. A clean two-column spec: mono command ↔ description. */
+.stmt-ops {
+  display: flex; flex-direction: column;
+  margin: 4px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.stmt-op {
+  display: grid;
+  grid-template-columns: minmax(92px, max-content) 1fr;
+  gap: 16px;
+  padding: 11px 15px;
+  align-items: baseline;
+}
+.stmt-op + .stmt-op { border-top: 1px solid var(--border-soft); }
+.stmt-op:hover { background: rgba(var(--accent-rgb), .04); }
+.stmt-op-cmd {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), .1);
+  border: 1px solid rgba(var(--accent-rgb), .28);
+  border-radius: 6px; padding: 3px 9px;
+  white-space: nowrap; letter-spacing: .01em;
+}
+.stmt-op-desc { color: var(--text); font-size: 13.5px; line-height: 1.6; max-width: 64ch; }
+.stmt-op-desc p { margin: 0; }
+.stmt-op-desc p + p { margin-top: 4px; }
+
+/* Input-format ↔ Output-format as a balanced 2-column row (collapses to 1 col
+   when the column gets narrow — split mode / small windows). */
+.stmt-io-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px 26px;
+}
+.stmt-io-grid > .stmt-section { gap: 11px; }
+
+/* Sample I/O — Input and Output side by side, each a monospace box with copy. */
+.stmt-samples { display: flex; flex-direction: column; gap: 16px; }
+.stmt-sample {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.stmt-sample-col { display: flex; flex-direction: column; }
+.stmt-sample-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-dim); margin: 0 2px 6px;
+}
+.stmt-sample-pre {
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  color: var(--text); background: var(--editor-bg);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--edge-light);
+  padding: 12px 14px; margin: 0; white-space: pre; overflow: auto;
+}
+.stmt-copy {
+  font-family: var(--mono); font-size: 12px; line-height: 1;
+  color: var(--text-dim); background: transparent;
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 7px; cursor: pointer; transition: color .12s, border-color .12s, background .12s;
+}
+.stmt-copy:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.stmt-copy.done { color: var(--ac); border-color: rgba(52, 210, 126, .5); }
+.light-theme .stmt-sample-pre { background: var(--bg-soft); }
+
+/* Sample I/O — a recessed "code sheet": darker than the page, hairline framed. */
 .stmt-section-body pre.md-pre {
-  font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
   background: var(--editor-bg); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 14px; margin: 0 0 12px;
+  border-radius: var(--radius); box-shadow: var(--edge-light);
+  padding: 13px 15px; margin: 0 0 13px;
   overflow: auto; color: var(--text); white-space: pre;
 }
-.stmt-section-body pre.md-pre code { background: none !important; border: none !important; padding: 0 !important; font-size: inherit; color: var(--text) !important; }
-.stmt-section-body blockquote { margin: 0 0 12px; padding: 4px 14px; color: var(--text-dim); border-left: 3px solid var(--border); }
+.stmt-section-body pre.md-pre code { background: none; border: none; padding: 0; border-radius: 0; font-size: inherit; color: inherit; }
 
-/* Example table */
+/* Notes / quotes — a soft callout with a full border (no side-stripe). */
+.stmt-section-body blockquote {
+  position: relative;
+  margin: 0 0 13px;
+  padding: 11px 15px 11px 42px;
+  color: var(--text-muted);
+  background: var(--primary-soft);
+  border: 1px solid rgba(var(--accent-rgb), .28);
+  border-radius: var(--radius);
+}
+.stmt-section-body blockquote::before {
+  content: "💡";
+  position: absolute; left: 15px; top: 11px;
+  font-size: 13px; line-height: 1.6; opacity: .9;
+}
+.stmt-section-body blockquote > :last-child { margin-bottom: 0; }
+
+/* Tables — rounded, hairline, monospace data cells (clipped corners via the
+   collapse/overflow trick since border-radius can't clip collapsed borders). */
 .stmt-section-body table.md-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 12px 0;
-  font-size: 13px;
-  border: 1px solid #1f2937;
+  border-collapse: separate; border-spacing: 0;
+  width: auto; min-width: min(100%, 280px); max-width: 100%;
+  margin: 0 0 13px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
 }
 .stmt-section-body table.md-table th {
-  background: #0f1624;
-  color: #cbd5e1;
-  font-weight: 600;
-  border: 1px solid #1f2937;
-  padding: 8px 12px;
+  background: var(--panel-2); color: var(--text-muted);
+  font-weight: 650; text-align: left;
+  padding: 8px 13px; border-bottom: 1px solid var(--border);
 }
 .stmt-section-body table.md-table td {
-  background: #0b1220;
-  color: #e5e7eb;
-  border: 1px solid #1f2937;
-  padding: 8px 12px;
-  font-family: var(--mono);
+  background: var(--editor-bg); color: var(--text);
+  font-family: var(--mono); font-size: 12.5px;
+  padding: 8px 13px; border-bottom: 1px solid var(--border-soft);
 }
+.stmt-section-body table.md-table tr:last-child td { border-bottom: none; }
+.stmt-section-body table.md-table th + th,
+.stmt-section-body table.md-table td + td { border-left: 1px solid var(--border-soft); }
+
+/* Constraints & subtasks — scannable reference panels (single light surface,
+   so the "limits" read like a spec box, not body prose). */
+.stmt-constraints .stmt-section-body,
+.stmt-subtasks    .stmt-section-body {
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+}
+.stmt-constraints .stmt-section-body p,
+.stmt-constraints .stmt-section-body > ul,
+.stmt-constraints .stmt-section-body > ol,
+.stmt-subtasks    .stmt-section-body p,
+.stmt-subtasks    .stmt-section-body > ul,
+.stmt-subtasks    .stmt-section-body > ol { max-width: none; }
+.stmt-constraints .stmt-section-body > :last-child,
+.stmt-subtasks    .stmt-section-body > :last-child { margin-bottom: 0; }
+
+/* Sample I/O code blocks blend into the warm-paper sheet in the light theme
+   (editor-bg == panel there); drop them to the next surface down so they keep
+   their "code sheet" read. */
+.light-theme .stmt-section-body pre.md-pre,
+.light-theme .stmt-section-body table.md-table td { background: var(--bg-soft); }
 
 
 /* Edit view: a comfortable, full-width Markdown textarea. */
@@ -819,6 +975,20 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .stmt-mode-btn:hover { color: var(--text); }
 .stmt-mode-btn.active { color: var(--text); background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--border); }
 
+/* Sticky statement toolbar — Read/Edit + Image/Paste/Save/Clear stay reachable
+   while reading a long statement. The reading column sits on --editor-bg, so
+   the bar wears that colour: invisible at rest, a clean mask once content
+   scrolls beneath it. Header and sheet share the same content width, so the
+   scroll padding gutters stay empty and nothing leaks past the bar. */
+.problem-view .prob-head {
+  position: sticky; top: -4px; z-index: 3;   /* -4px hides the scroll's 4px top padding so no sliver leaks above the pinned bar */
+  background: var(--editor-bg);
+  padding: 11px 0 9px;
+  box-shadow: 0 1px 0 var(--border-soft);
+}
+/* Reading mode is a focused, comfortably-measured single column (was 1360px,
+   which ran the prose far too wide). */
+
 /* =========================================================================
    REDESIGN v3 — Layout modes (Coding = editor-forward, Reading = statement-forward)
    ========================================================================= */
@@ -829,13 +999,72 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
   overflow: hidden; width: 0; min-width: 0; padding: 0;
   border: none; opacity: 0; pointer-events: none;
 }
-.workbench.mode-reading .problem-scroll { max-width: 1360px; }
+.workbench.mode-reading .problem-scroll { max-width: 960px; }
+
+/* -------------------------------------------------------------------------
+   Split (Đề + Code) — statement and editor SIDE BY SIDE in the center column.
+   The explorer collapses (a problem is already chosen) and the editor-shell
+   becomes a 2-pane grid so the student reads the đề while coding, never
+   toggling Code ⇄ Đề bài. The Judge console stays as the right column.
+   ------------------------------------------------------------------------- */
+.workbench.mode-split { grid-template-columns: 0px minmax(0, 1fr) var(--panel-w); }
+.workbench.mode-split .col-problems {
+  overflow: hidden; width: 0; min-width: 0; padding: 0;
+  border: none; opacity: 0; pointer-events: none;
+}
+.workbench.mode-split .editor-shell {
+  display: grid;
+  grid-template-columns: var(--split-pw, 1.05fr) 6px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+.workbench.mode-split .editor-meta { grid-column: 1 / -1; grid-row: 1; }
+.workbench.mode-split #view-problem {
+  grid-column: 1; grid-row: 2; min-width: 0;
+  border-right: 1px solid var(--border);
+}
+.workbench.mode-split #view-code { grid-column: 3; grid-row: 2; min-width: 0; }
+/* The reading-measure cap (920/1280px) would waste the narrower split pane. */
+.workbench.mode-split .problem-scroll { max-width: none; padding: 4px 16px 22px; }
+
+/* Divider between the panes — hidden unless we're in split mode. */
+#split-resizer { display: none; }
+.workbench.mode-split #split-resizer {
+  display: block; grid-column: 2; grid-row: 2;
+  position: relative; cursor: col-resize; background: transparent;
+}
+.workbench.mode-split #split-resizer::before {
+  content: ""; position: absolute; inset: 0 2px;
+  background: var(--border); border-radius: 2px; transition: background 130ms ease;
+}
+.workbench.mode-split #split-resizer:hover::before,
+body.col-resizing .workbench.mode-split #split-resizer::before { background: var(--accent); }
+
+/* Split-mode toolbar fit. Each center pane is only ~half width, but the per-pane
+   toolbars were sized for a full-width pane — so they wrapped into ragged
+   two-line rows (the "kì" look). Trim side padding + gaps and shed the two
+   lowest-value chrome items per bar so each toolbar sits on one tidy line. */
+.workbench.mode-split .editor-toolbar { gap: 7px; padding: 2px 12px 8px; }
+.workbench.mode-split .editor-toolbar #btn-save kbd { display: none; }
+.workbench.mode-split .editor-toolbar .file-tab { padding-left: 9px; padding-right: 9px; }
+.workbench.mode-split .prob-head { gap: 7px; }
+.workbench.mode-split .prob-head .prob-actions { gap: 6px; }
+/* When the panes get genuinely cramped (narrow windows), shed the lowest-value
+   chrome so the toolbars never wrap into ragged two-line rows. Full-width
+   windows keep every label. */
+@media (max-width: 1480px) {
+  .workbench.mode-split .editor-toolbar #editor-lang,
+  .workbench.mode-split .editor-toolbar #cursor-pos,
+  .workbench.mode-split .prob-head .prob-label { display: none; }
+  .workbench.mode-split .editor-toolbar .btn-sm,
+  .workbench.mode-split .prob-head .btn-sm { padding-left: 7px; padding-right: 7px; }
+}
 
 /* Tab bar [Code | Problem] */
 .mode-toggle {
   display: inline-flex;
-  background: #0b1020;
-  border-bottom: 1px solid #1f2937;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
   border-radius: 0;
   padding: 0;
   gap: 16px;

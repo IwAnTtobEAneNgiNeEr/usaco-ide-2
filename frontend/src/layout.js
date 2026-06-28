@@ -17,6 +17,8 @@ export function initLayout(app) {
 
   // Coach width controls: a draggable panel edge + an expand (focus) toggle.
   initPanelResize(app);
+  // Split (Đề + Code) mode: draggable divider between the two center panes.
+  initSplitResize(app);
   const expandBtn = document.getElementById("coach-expand");
   if (expandBtn) {
     expandBtn.addEventListener("click", () => app.toggleCoachFocus());
@@ -52,6 +54,7 @@ export function setTab(app, name) {
   });
   // Focus mode is a Coach reading state; leaving the Coach tab restores layout.
   if (name !== "coach") setCoachFocus(false);
+  if (app.bus) app.bus.emit("layout:changed", { source: "tab", tab: name });
 }
 
 // Expand the Coach into a wide reading column (explorer collapses, editor stays
@@ -114,32 +117,107 @@ function initPanelResize(app) {
   app.resetPanelWidth = reset;
 }
 
-// Switch the center column between the code editor and the problem reader.
-// The layout MODE follows the view: Code → Coding (editor-forward, full 3-col),
-// Problem → Reading (statement-forward; the explorer collapses and the right
-// panel narrows so the problem page gets a wide, comfortable reading measure).
-export function setView(app, name) {
-  name = name === "problem" ? "problem" : "code";
-  app.state.activeView = name;
+// Three layout modes drive both WHAT the center column shows and HOW the
+// workbench columns are sized:
+//   coding  — editor-forward, full 3-col (explorer | editor | judge)
+//   reading — statement-forward; explorer collapses, panel narrows, wide measure
+//   split   — Đề + Code side by side in the center so the student reads the
+//             statement WHILE coding, without toggling Code ⇄ Đề bài repeatedly
+const LAYOUT_MODES = ["coding", "split", "reading"];
+const LAYOUT_KEY = "usaco2.layoutMode";
+
+export function getSavedLayoutMode() {
+  let m = "coding";
+  try { m = localStorage.getItem(LAYOUT_KEY) || "coding"; } catch { /* private mode */ }
+  return LAYOUT_MODES.includes(m) ? m : "coding";
+}
+
+// Single source of truth for the layout. Manages the visible view(s), the
+// workbench mode classes, the segmented toggle, persistence, and a CM re-measure
+// for editors that were just un-hidden from display:none.
+export function setLayoutMode(app, mode) {
+  if (!LAYOUT_MODES.includes(mode)) mode = "coding";
+  app.state.layoutMode = mode;
+  // activeView mirrors the dominant content so palette / older callers stay valid.
+  app.state.activeView = mode === "reading" ? "problem" : "code";
+  try { localStorage.setItem(LAYOUT_KEY, mode); } catch { /* private mode */ }
 
   const code = document.getElementById("view-code");
   const problem = document.getElementById("view-problem");
-  if (code) code.classList.toggle("hidden", name !== "code");
-  if (problem) problem.classList.toggle("hidden", name !== "problem");
+  // In split, BOTH panes are visible; otherwise only the active one.
+  if (code) code.classList.toggle("hidden", mode === "reading");
+  if (problem) problem.classList.toggle("hidden", mode === "coding");
 
-  const mode = name === "problem" ? "reading" : "coding";
-  app.state.layoutMode = mode;
   const wb = document.querySelector(".workbench");
   if (wb) {
-    wb.classList.toggle("mode-reading", mode === "reading");
     wb.classList.toggle("mode-coding", mode === "coding");
+    wb.classList.toggle("mode-split", mode === "split");
+    wb.classList.toggle("mode-reading", mode === "reading");
   }
   const tg = document.getElementById("layout-mode-toggle");
   if (tg) tg.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+
+  // The editor may have been display:none (reading mode). CodeMirror measures
+  // lazily, so nudge it to recompute its viewport now that it is on screen.
+  if (mode !== "reading" && app.editorView && typeof app.editorView.requestMeasure === "function") {
+    requestAnimationFrame(() => { try { app.editorView.requestMeasure(); } catch { /* ignore */ } });
+  }
+  if (app.bus) app.bus.emit("layout:changed", { source: "layout", mode });
 }
 
-// Coding / Reading layout mode — a thin wrapper over setView so a single
-// control (and Ctrl+Shift+M) drives both the content and the column layout.
-export function setLayoutMode(app, mode) {
-  setView(app, mode === "reading" ? "problem" : "code");
+// Back-compat view switch (command palette, problem-open). "problem" → reading,
+// "code" → coding. Split is reachable only via the toggle / Ctrl+Shift+M cycle.
+export function setView(app, name) {
+  setLayoutMode(app, name === "problem" ? "reading" : "coding");
+}
+
+// Ctrl+Shift+M cycles coding → split → reading → coding.
+export function cycleLayoutMode(app) {
+  const i = LAYOUT_MODES.indexOf(app.state.layoutMode || "coding");
+  setLayoutMode(app, LAYOUT_MODES[(i + 1) % LAYOUT_MODES.length]);
+}
+
+// Draggable divider between the problem pane and the editor pane in Split mode.
+// Sets an inline --split-pw (problem-pane width) on #editor-shell that the
+// split grid reads; persists it; double-click resets to the default ratio.
+function initSplitResize(app) {
+  const shell = document.getElementById("editor-shell");
+  const handle = document.getElementById("split-resizer");
+  if (!shell || !handle) return;
+  const KEY = "usaco2.splitPw";
+
+  const saved = parseInt(localStorage.getItem(KEY) || "", 10);
+  if (saved >= 240 && saved <= 1200) shell.style.setProperty("--split-pw", saved + "px");
+
+  let dragging = false;
+  const onMove = (e) => {
+    if (!dragging) return;
+    const rect = shell.getBoundingClientRect();
+    // Keep both panes usable: ≥240px for the statement, ≥300px for the editor.
+    const w = Math.max(240, Math.min(e.clientX - rect.left, rect.width - 300));
+    shell.style.setProperty("--split-pw", w + "px");
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.classList.remove("col-resizing");
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+    const w = parseInt(shell.style.getPropertyValue("--split-pw"), 10);
+    if (w) { try { localStorage.setItem(KEY, String(w)); } catch { /* ignore */ } }
+    if (app.editorView && app.editorView.requestMeasure) {
+      try { app.editorView.requestMeasure(); } catch { /* ignore */ }
+    }
+  };
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    dragging = true;
+    document.body.classList.add("col-resizing");
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  });
+  handle.addEventListener("dblclick", () => {
+    shell.style.removeProperty("--split-pw");
+    try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+  });
 }

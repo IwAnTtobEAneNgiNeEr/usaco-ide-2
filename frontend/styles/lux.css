@@ -29,7 +29,7 @@
 
 /* ---- Top bar: a touch of depth + a brand mark that reads as a real logo ---- */
 .topbar {
-  background: linear-gradient(180deg, #0e1428, #0b1020);
+  background: linear-gradient(180deg, var(--panel), var(--bg));
   box-shadow: var(--edge-light), 0 1px 0 rgba(0, 0, 0, .5);
 }
 .brand-mark {

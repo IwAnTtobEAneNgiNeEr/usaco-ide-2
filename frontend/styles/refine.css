@@ -28,21 +28,21 @@
 .coach-msg-ai .coach-bubble {
   max-width: 100%;
   width: 100%;
-  background: #0b0f19 !important;
-  border: 1px solid rgba(59, 130, 246, 0.15) !important;
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 12px !important;
   padding: 14px 16px;
   font-size: 13.5px;
   line-height: 1.65;
-  color: #cbd5e1 !important;
+  color: var(--text) !important;
   box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 .coach-msg-me .coach-bubble {
   max-width: 86%;
-  background: #1e3a8a !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
-  color: #f1f5f9 !important;
+  background: var(--accent-soft) !important;
+  border: 1px solid var(--accent) !important;
+  color: var(--text) !important;
   border-radius: 12px !important;
   border-bottom-right-radius: 4px !important;
   padding: 10px 14px;
@@ -65,21 +65,21 @@
 .coach-msg-ai .coach-bubble ul,
 .coach-msg-ai .coach-bubble ol { margin: 6px 0 10px; padding-left: 20px; }
 .coach-msg-ai .coach-bubble li { margin: 4px 0; }
-.coach-msg-ai .coach-bubble strong { color: #f8fafc; font-weight: 650; }
-.coach-msg-ai .coach-bubble a { color: #60a5fa; text-decoration: underline; }
+.coach-msg-ai .coach-bubble strong { color: var(--text); font-weight: 650; }
+.coach-msg-ai .coach-bubble a { color: var(--accent); text-decoration: underline; }
 .coach-msg-ai .coach-bubble table {
   border-collapse: collapse; width: 100%; margin: 6px 0 10px; font-size: 12px;
 }
 .coach-msg-ai .coach-bubble th,
-.coach-msg-ai .coach-bubble td { border: 1px solid #1e293b; padding: 6px 10px; text-align: left; }
-.coach-msg-ai .coach-bubble th { background: #1e293b; color: #f8fafc; }
-
+.coach-msg-ai .coach-bubble td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+.coach-msg-ai .coach-bubble th { background: var(--panel-3); color: var(--text); }
+ 
 /* Section labels: a heading that names a phase becomes a colored card label. */
 .coach-sec {
   display: flex; align-items: center; gap: 7px;
   padding: 8px 0; margin: 18px 0 10px;
   border-left: none !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid var(--border) !important;
   border-radius: 0;
   background: transparent !important;
   font-size: 11px !important; font-weight: 700 !important;
@@ -108,7 +108,7 @@
 .coach-sec-inline::before { content: attr(data-icon); margin-right: 4px; }
 .coach-sec-inline { font-weight: 700; }
 
-.coach-sec-hint    { border-bottom-color: rgba(59, 130, 246, 0.3) !important; color: #60a5fa !important; }
+.coach-sec-hint    { border-bottom-color: rgba(var(--accent-rgb), 0.3) !important; color: var(--accent) !important; }
 .coach-sec-obs     { border-bottom-color: rgba(245, 158, 11, 0.3) !important; color: #f59e0b !important; }
 .coach-sec-mistake { border-bottom-color: rgba(239, 68, 68, 0.3) !important; color: #f87171 !important; }
 .coach-sec-fix     { border-bottom-color: rgba(34, 197, 94, 0.3) !important; color: #4ade80 !important; }
@@ -116,7 +116,7 @@
 .coach-sec-cur     { border-bottom-color: rgba(249, 115, 22, 0.3) !important; color: #fb923c !important; }
 .coach-sec-goal    { border-bottom-color: rgba(34, 197, 94, 0.3) !important; color: #4ade80 !important; }
 
-.coach-sec-inline.coach-sec-hint    { color: #60a5fa; }
+.coach-sec-inline.coach-sec-hint    { color: var(--accent); }
 .coach-sec-inline.coach-sec-mistake { color: #f87171; }
 .coach-sec-inline.coach-sec-fix     { color: #4ade80; }
 
@@ -148,91 +148,94 @@
 .coach-badge.conf-med  { color: var(--tle); border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.1); }
 .coach-badge.conf-low  { color: var(--text-dim); border-color: var(--border);   background: var(--bg-soft); }
 
-/* Code block: header bar (lang + copy) + highlighted body. */
+/* Code block: header bar (lang + copy) + highlighted body. Token-driven so it
+   rides the warm-graphite Forge palette (was hardcoded cool navy). */
 .coach-code {
   margin: 10px 0 12px;
-  border: 1px solid #1e293b;
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  background: #090d16;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--editor-bg);
+  box-shadow: var(--shadow-1);
 }
 .coach-code-bar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 6px 8px 6px 12px;
-  background: #111827;
-  border-bottom: 1px solid #1e293b;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
 }
 .coach-code-lang {
   font-family: var(--mono); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
 }
 .coach-copy {
   font-family: var(--sans); font-size: 10.5px; font-weight: 600;
-  color: #94a3b8; background: transparent;
-  border: 1px solid #1e293b; border-radius: 5px;
+  color: var(--text-dim); background: transparent;
+  border: 1px solid var(--border); border-radius: 5px;
   padding: 2px 9px; cursor: pointer; transition: all .12s ease;
 }
-.coach-copy:hover { color: #fff; border-color: #475569; background: #1f2937; }
-.coach-copy.done { color: #4ade80; border-color: rgba(34,197,94,.5); background: rgba(34,197,94,0.1); }
+.coach-copy:hover { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.coach-copy.done { color: var(--ac); border-color: rgba(52,210,126,.5); background: rgba(52,210,126,.12); }
 .coach-code-pre {
   margin: 0; padding: 12px 14px; overflow: auto; max-height: 340px;
   font-family: var(--mono); font-size: 12px; line-height: 1.55;
-  color: #e2e8f0; white-space: pre; tab-size: 4;
+  color: var(--text); white-space: pre; tab-size: 4;
 }
 .coach-code-pre code { font: inherit; background: none; border: none; padding: 0; }
 
-/* Layout adjustments for the coach panel elements */
+/* Coach panel chrome — re-pigmented onto Forge tokens (was a cool-navy island
+   with a blue accent; now warm graphite + the one amber accent, and it finally
+   adapts to the light theme instead of staying dark). */
 .coach-head {
-  background: #0f172a !important;
-  border-bottom: 1px solid #1e293b !important;
+  background: var(--bg-soft) !important;
+  border-bottom: 1px solid var(--border) !important;
   padding: 10px 14px !important;
 }
 .coach-title {
-  color: #3b82f6 !important;
+  color: var(--accent) !important;
   font-size: 11.5px !important;
   font-weight: 750 !important;
   letter-spacing: 0.08em !important;
 }
 .coach-reveal-toggle {
-  background: #0f172a !important;
-  border-color: #334155 !important;
-  color: #94a3b8 !important;
+  background: var(--bg-soft) !important;
+  border-color: var(--border) !important;
+  color: var(--text-dim) !important;
 }
 .coach-reveal-toggle:hover {
-  border-color: #3b82f6 !important;
-  color: #e2e8f0 !important;
+  border-color: var(--accent) !important;
+  color: var(--text) !important;
 }
 .coach-reveal-toggle:has(input:checked) {
-  background: rgba(59, 130, 246, .15) !important;
-  border-color: rgba(59, 130, 246, .55) !important;
-  color: #60a5fa !important;
+  background: var(--accent-soft) !important;
+  border-color: rgba(var(--accent-rgb), .55) !important;
+  color: var(--accent) !important;
 }
 .coach-clear {
-  background: #0f172a !important;
-  border-color: #334155 !important;
+  background: var(--bg-soft) !important;
+  border-color: var(--border) !important;
 }
 .coach-clear:hover {
-  color: #ef4444 !important;
-  border-color: rgba(239, 68, 68, .45) !important;
-  background: rgba(239, 68, 68, .1) !important;
+  color: var(--error) !important;
+  border-color: rgba(240, 88, 79, .45) !important;
+  background: rgba(240, 88, 79, .1) !important;
 }
 .coach-actions {
   display: flex !important;
   flex-wrap: wrap !important;
   gap: 6px !important;
   padding: 10px 14px !important;
-  background: #090d16 !important;
-  border-top: 1px solid #1e293b !important;
-  border-bottom: 1px solid #1e293b !important;
+  background: var(--bg) !important;
+  border-top: 1px solid var(--border) !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 .coach-actions .btn {
   font-size: 12px !important;
   padding: 5px 10px !important;
   border-radius: 6px !important;
-  background: #1e293b !important;
-  border: 1px solid #334155 !important;
-  color: #cbd5e1 !important;
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
   transition: all 0.15s ease !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -240,35 +243,57 @@
   cursor: pointer !important;
 }
 .coach-actions .btn:hover {
-  background: #334155 !important;
-  color: #fff !important;
-  border-color: #475569 !important;
+  background: var(--panel-3) !important;
+  color: var(--text) !important;
+  border-color: var(--accent) !important;
   transform: translateY(-0.5px);
 }
 .coach-actions .btn.coach-qa-active {
-  background: rgba(59, 130, 246, .18) !important;
-  border-color: rgba(59, 130, 246, .55) !important;
-  color: #60a5fa !important;
+  background: var(--accent-soft) !important;
+  border-color: rgba(var(--accent-rgb), .55) !important;
+  color: var(--accent) !important;
   font-weight: 650 !important;
 }
 .coach-composer {
-  background: #0b0f19 !important;
-  border-top: 1px solid #1e293b !important;
+  background: var(--bg) !important;
+  border-top: 1px solid var(--border) !important;
   padding: 12px 14px !important;
 }
 .coach-input {
-  border: 1px solid #334155 !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
-  background: #090d16 !important;
-  color: #fff !important;
+  background: var(--editor-bg) !important;
+  color: var(--text) !important;
   padding: 9px 12px !important;
   font-size: 13px !important;
   transition: all 0.15s ease !important;
 }
 .coach-input:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.3) !important;
 }
+
+/* "Hỏi ChatGPT" bridge — full-width secondary action under the composer. A calm
+   but present amber treatment (a hint of accent on hover, not a loud CTA), since
+   the student prefers ChatGPT web over the in-app Coach. NB: the composer is
+   force-styled dark in BOTH themes by the rule above (refine !important), so the
+   colours here are fixed light-on-dark — theme-aware tokens would flip to dark
+   text on the still-dark composer in light mode and become unreadable. */
+.coach-composer .coach-chatgpt {
+  width: 100%;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  border-color: rgba(var(--accent-rgb), .4);
+  background: rgba(var(--accent-rgb), .07);
+}
+.coach-composer .coach-chatgpt:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.coach-chatgpt-sub { color: var(--text-dim); font-weight: 400; }
 
 /* =========================================================================
    2 · EDITOR APPEARANCE — settings UI
@@ -281,11 +306,11 @@
 .ea-slider input[type=range], .ea-toggles input[type=range] { width: 100%; }
 input[type=range] {
   -webkit-appearance: none; appearance: none; height: 5px; border-radius: 3px;
-  background: #1f2937 !important; outline: none; cursor: pointer;
+  background: var(--border) !important; outline: none; cursor: pointer;
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none; width: 14px; height: 14px;
-  border-radius: 50%; background: #ffffff !important; border: 2.5px solid #3b82f6 !important;
+  border-radius: 50%; background: #ffffff !important; border: 2.5px solid var(--accent) !important;
   box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.4) !important;
   transition: transform 0.1s ease, border-color 0.1s ease;
 }
@@ -294,7 +319,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 input[type=range]::-moz-range-thumb {
   width: 14px; height: 14px; border-radius: 50%; background: #ffffff !important;
-  border: 2.5px solid #3b82f6 !important;
+  border: 2.5px solid var(--accent) !important;
   box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -643,13 +668,13 @@ html[data-smooth-scroll="on"] .code-editor { scroll-behavior: smooth; }
 
 /* Specific theme color configurations */
 
-/* Idea/Hint (Blue) */
+/* Idea/Hint (Amber — the brand accent; was a stray blue) */
 .coach-card-sec-hint {
-  --card-border: rgba(59, 130, 246, 0.35);
-  --card-border-soft: rgba(59, 130, 246, 0.15);
-  --card-bg: #0d1320;
-  --card-hdr-bg: #1e293b;
-  --card-hdr-fg: #60a5fa;
+  --card-border: rgba(var(--accent-rgb), 0.35);
+  --card-border-soft: rgba(var(--accent-rgb), 0.15);
+  --card-bg: rgba(var(--accent-rgb), 0.05);
+  --card-hdr-bg: rgba(var(--accent-rgb), 0.14);
+  --card-hdr-fg: var(--accent);
 }
 
 /* Observation (Amber) */
@@ -891,6 +916,7 @@ body.col-resizing .workbench { transition: none !important; }
   .workbench.mode-reading:not(.zen-mode) {
     grid-template-columns: 0 minmax(0, 1fr) 360px;
   }
+  .workbench.mode-split:not(.zen-mode) { --panel-w: 380px; }
   /* Shed the two lowest-value topbar widgets first. Ctrl+K still opens the
      command palette without its button; the session counters return wider. */
   #btn-cmdk,
@@ -904,6 +930,7 @@ body.col-resizing .workbench { transition: none !important; }
   .workbench.mode-reading:not(.zen-mode) {
     grid-template-columns: 0 minmax(0, 1fr) 340px;
   }
+  .workbench.mode-split:not(.zen-mode) { --panel-w: 340px; }
   /* The centered file title duplicates the <h1> directly below it. Drop it when
      space is contested so it never truncates to "[..."; push actions right. */
   .topbar-center { display: none; }

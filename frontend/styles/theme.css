@@ -338,6 +338,12 @@
   --syn-fn: #4271ae;
   --syn-num: #c2410c;
   --syn-str: #4d7c0f;
+
+  --syn-bracket-0: #b58900;
+  --syn-bracket-1: #d33682;
+  --syn-bracket-2: #268bd2;
+  --indent-guide-color: rgba(0, 0, 0, 0.08);
+  --syn-std-lib: #0184bc;
 }
 
 /* Specific light theme fine-tuning rules */

@@ -59,7 +59,7 @@ export function renderProblems(app) {
     : "0 problems";
 
   if (visible.length === 0) {
-    list.innerHTML = `<div style="padding:20px 12px;color:var(--text-2);font-size:12px;text-align:center">${
+    list.innerHTML = `<div style="padding:20px 12px;color:var(--text-dim);font-size:12px;text-align:center">${
       problems.length === 0 ? "Chưa có bài nào. Bấm <b>+ Bài mới</b>." : "Không có kết quả."
     }</div>`;
     return;
@@ -74,7 +74,7 @@ export function renderProblems(app) {
           <span class="p-title">${escapeHtml(p.title)}</span>
           ${v}
         </div>
-        <div class="p-sub">${sub || "<span style='color:var(--text-2)'>no source</span>"}
+        <div class="p-sub">${sub || "<span style='color:var(--text-dim)'>no source</span>"}
           <span class="p-dot"></span><span>${relTime(p.updatedAt)}</span>
         </div>
         <div class="p-actions">

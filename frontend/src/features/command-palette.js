@@ -3,6 +3,7 @@
 // Built as a .modal-overlay so the global Esc handler closes it for free.
 
 import { escapeHtml } from "../md.js";
+import { listWorkspaces } from "../core/workspace-policy.js";
 
 // Strip Vietnamese diacritics + lowercase, so "chm bai", "cham bai" and
 // "chấm bài" all hit "Chấm bài".
@@ -52,6 +53,13 @@ function buildActions(app) {
   const has = () => Boolean(app.state.currentId);
   return [
     { icon: "🏠", label: "Về trang chủ Hành trình", kw: "home journey trang chu hanh trinh", kbd: "", run: () => app.goHome && app.goHome() },
+    ...listWorkspaces().map((w, i) => ({
+      icon: w.icon, label: `Workspace: ${w.name}`,
+      kw: `workspace khong gian moi truong ${w.name} ${w.id} che do lam viec`,
+      kbd: `Ctrl·${i + 1}`,
+      run: () => app.workspace && app.workspace.switchTo(w.id)
+    })),
+    { icon: "↩", label: "Đặt lại bố cục (Reset layout)", kw: "reset dat lai bo cuc layout mac dinh khoi phuc do rong", kbd: "", run: () => app.workspace && app.workspace.resetLayout() },
     { icon: "＋", label: "Tạo bài mới", kw: "new problem tao bai moi them", kbd: "Ctrl·N", run: () => app.openMetaModal(null) },
     { icon: "🎲", label: "Bài ngẫu nhiên (chưa giải)", kw: "random ngau nhien bai chua giai luyen tap practice", kbd: "", run: () => app.openRandomProblem && app.openRandomProblem() },
     { icon: "▶", label: "Chạy code (Run)", kw: "run chay code thuc thi", kbd: "Ctrl·↵", when: has, run: () => app.runOne && app.runOne() },
@@ -59,6 +67,7 @@ function buildActions(app) {
     { icon: "💾", label: "Lưu code", kw: "save luu", kbd: "Ctrl·S", when: has, run: () => app.saveCodeNow && app.saveCodeNow() },
     { icon: "📝", label: "Xem đề bài (Problem view)", kw: "statement de bai problem view dan anh paste", kbd: "", when: has, run: () => app.setView("problem") },
     { icon: "‹/›", label: "Quay lại Code view", kw: "code editor viet", kbd: "", when: has, run: () => app.setView("code") },
+    { icon: "⊟", label: "Đề + Code cạnh nhau (Split)", kw: "split de bai code canh nhau side by side song song doc va code", kbd: "Ctrl·⇧·M", when: has, run: () => app.setLayoutMode("split") },
     { icon: "🤖", label: "Hỏi AI Coach", kw: "coach chat ai hoi tro giup", kbd: "Ctrl·;", when: has, run: () => { app.setTab("coach"); app.focusCoachInput && app.focusCoachInput(); } },
     { icon: "⤢", label: "Phóng to / thu nhỏ Coach (đọc rộng)", kw: "coach phong to mo rong wide focus doc rong expand", kbd: "Alt·W", when: has, run: () => app.toggleCoachFocus && app.toggleCoachFocus() },
     { icon: "↔", label: "Đặt lại độ rộng panel", kw: "panel width do rong reset dat lai mac dinh resize keo", kbd: "", run: () => app.resetPanelWidth && app.resetPanelWidth() },
@@ -131,7 +140,7 @@ export function initCommandPalette(app) {
     if (!query.trim()) {
       // Default view: recent problems first (list is already updatedAt-desc),
       // then the context-relevant actions.
-      items = [...problems.slice(0, 5), ...actions];
+      items = [...problems.slice(0, 6), ...actions];
     } else {
       const scored = [];
       for (const it of [...actions, ...problems]) {

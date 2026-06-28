@@ -45,6 +45,139 @@ function classifyHeading(text) {
   return null;
 }
 
+// Most real statements (pasted / OCR'd) have NO Markdown headings — section
+// names are just a short plain line: "Đầu vào", "Giới hạn", "Đầu ra", "Ví dụ".
+// Treat such a line as a section break, but ONLY when it's unmistakably a label
+// (short, no sentence punctuation, and its normalized form is EXACTLY a known
+// keyword) so a real sentence that merely starts with "Đầu vào…" is never split.
+function classifyBareLabel(line) {
+  const t = line.trim();
+  if (!t || t.length > 28) return null;
+  if (/[.!?…,:;]$/.test(t) && !/[:：]\s*$/.test(t)) return null; // sentences (but allow a trailing colon)
+  const stripped = t.replace(/\s*[:：.\-–—]+\s*$/, "").trim();
+  const h = normHead(stripped);
+  if (!h) return null;
+  for (const r of SECTION_RULES) {
+    if (r.kw.includes(h)) return r;
+  }
+  return null;
+}
+
+// In example/sample sections the body is raw I/O, not prose. Turn "Input 01 …"
+// style sub-labels + the data lines under them into bold labels + fenced code
+// blocks so they render as proper monospace sample boxes instead of a ragged
+// stack of one-line paragraphs.
+// Example/sample renderer. Real sample sections are raw I/O under "Input 01 /
+// Output 01" labels. Pair them and render Input ↔ Output SIDE BY SIDE (each its
+// own monospace box with a copy button) — the layout a solver actually reads,
+// instead of a vertical stack of ragged lines. Falls back to plain Markdown if
+// no I/O structure is found.
+const IO_IN_RE  = /^(sample\s+input|input|in|dữ\s*liệu\s*vào|vào)\s*#?\s*(\d*)\s*[:：]?$/i;
+const IO_OUT_RE = /^(sample\s+output|output|out|kết\s*quả|ra)\s*#?\s*(\d*)\s*[:：]?$/i;
+function trimData(arr) { return arr.join("\n").replace(/^\n+/, "").replace(/\s+$/, ""); }
+function renderExamplesGrid(text) {
+  const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+  const preface = [];
+  const blocks = [];
+  let cur = null, started = false;
+  for (const line of lines) {
+    const t = line.trim();
+    const isIn = IO_IN_RE.test(t), isOut = IO_OUT_RE.test(t);
+    if (isIn || isOut) { if (cur) blocks.push(cur); cur = { kind: isIn ? "in" : "out", data: [] }; started = true; continue; }
+    if (!started) preface.push(line);
+    else if (cur) cur.data.push(line);
+  }
+  if (cur) blocks.push(cur);
+
+  const pairs = [];
+  for (let i = 0; i < blocks.length; i++) {
+    if (blocks[i].kind === "in") {
+      const o = blocks[i + 1] && blocks[i + 1].kind === "out" ? blocks[i + 1] : null;
+      pairs.push({ inp: trimData(blocks[i].data), out: o ? trimData(o.data) : "" });
+      if (o) i++;
+    } else { pairs.push({ inp: "", out: trimData(blocks[i].data) }); }
+  }
+  if (!pairs.length) return renderMarkdown(text);
+
+  const prefaceHtml = preface.join("\n").trim() ? renderMarkdown(preface.join("\n")) : "";
+  const col = (label, body) =>
+    `<div class="stmt-sample-col"><div class="stmt-sample-head"><span>${label}</span>` +
+    `<button type="button" class="stmt-copy" title="Sao chép">⧉</button></div>` +
+    `<pre class="stmt-sample-pre">${escapeHtml(body || "—")}</pre></div>`;
+  const samples = pairs.map((p, i) => {
+    const n = pairs.length > 1 ? " " + (i + 1) : "";
+    return `<div class="stmt-sample">${col("Input" + n, p.inp)}${col("Output" + n, p.out)}</div>`;
+  }).join("");
+  return prefaceHtml + `<div class="stmt-samples">${samples}</div>`;
+}
+
+// Operation-spec detector. In the description, lines like "PUSHFRONT x : …" are
+// the problem's command contract — the part a solver scans first. Render a run
+// of them as a clean reference TABLE (mono command ↔ description) instead of a
+// ragged stack of one-line paragraphs. A following continuation line (e.g.
+// "Nếu dequeue rỗng, in ra NONE.") folds into the operation above it.
+const OP_RE = /^([A-Z][A-Z0-9_]+(?:\s+[a-z][a-z0-9_]*)?)\s*[:：]\s*(\S.*)$/;
+function renderDescription(text) {
+  const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+  const out = [];
+  let prose = [];
+  let ops = null;
+  const flushProse = () => { const t = prose.join("\n").trim(); if (t) out.push(renderMarkdown(t)); prose = []; };
+  const flushOps = () => {
+    if (ops && ops.length) {
+      out.push('<div class="stmt-ops">' + ops.map((o) =>
+        `<div class="stmt-op"><code class="stmt-op-cmd">${escapeHtml(o.cmd)}</code>` +
+        `<div class="stmt-op-desc">${renderMarkdown(o.desc)}</div></div>`).join("") + "</div>");
+    }
+    ops = null;
+  };
+  for (const line of lines) {
+    const m = line.match(OP_RE);
+    if (m) { flushProse(); (ops = ops || []).push({ cmd: m[1].trim().replace(/\s+/g, " "), desc: m[2].trim() }); continue; }
+    if (!line.trim()) { if (!ops) prose.push(line); continue; }   // blanks don't break an ops run
+    if (ops) { ops[ops.length - 1].desc += " " + line.trim(); continue; } // continuation note
+    prose.push(line);
+  }
+  flushOps(); flushProse();
+  return out.join("\n");
+}
+
+// Uppercase operation / constant tokens (PUSHFRONT, PRINTBACK, NONE, YES…) are
+// the verbs of a CP statement; in plain prose they read as flat text. Wrap them
+// in <code> so they scan as the commands they are — but only in real text nodes,
+// never inside existing code / links / math (KaTeX) / headings.
+const TOKEN_RE = /\b[A-Z][A-Z0-9_]{2,}\b/g;
+function highlightTokens(host) {
+  const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const p = node.parentNode;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      const tag = p.nodeName;
+      if (tag === "CODE" || tag === "PRE" || tag === "A" || tag === "H1" || tag === "H2" || tag === "H3") return NodeFilter.FILTER_REJECT;
+      if (p.closest && p.closest(".katex, .stmt-section-label, pre, code")) return NodeFilter.FILTER_REJECT;
+      TOKEN_RE.lastIndex = 0;
+      return TOKEN_RE.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  const targets = [];
+  while (walker.nextNode()) targets.push(walker.currentNode);
+  for (const node of targets) {
+    const text = node.nodeValue;
+    const frag = document.createDocumentFragment();
+    let last = 0; TOKEN_RE.lastIndex = 0; let m;
+    while ((m = TOKEN_RE.exec(text))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const code = document.createElement("code");
+      code.className = "stmt-cmd";
+      code.textContent = m[0];
+      frag.appendChild(code);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  }
+}
+
 function parseSections(raw) {
   const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
   const sections = [];
@@ -61,6 +194,15 @@ function parseSections(raw) {
         continue; // the heading becomes the section label chip, not body text
       }
     }
+    // Plain-text label line (no Markdown heading) — the common real-world case.
+    if (!inFence && !hm) {
+      const bare = classifyBareLabel(line);
+      if (bare) {
+        sections.push(cur);
+        cur = { type: bare.type, label: bare.label, lines: [] };
+        continue;
+      }
+    }
     cur.lines.push(line);
   }
   sections.push(cur);
@@ -75,13 +217,40 @@ export function renderStatement(app) {
     host.innerHTML = '<div class="stmt-empty">Chưa có đề bài. Bấm <b>Edit</b> để dán đề (Markdown được hỗ trợ), hoặc dùng <b>⤴ Image / PDF</b> · <b>📋 Paste</b> để nhập từ ảnh — AI sẽ tự phân tích &amp; tạo test.</div>';
     return;
   }
-  const sections = parseSections(raw);
-  host.innerHTML = sections.map((s) =>
-    `<section class="stmt-section stmt-${s.type}">
-       <h2 class="stmt-section-label">${escapeHtml(s.label)}</h2>
-       <div class="stmt-section-body">${renderMarkdown(s.lines.join("\n"))}</div>
-     </section>`).join("");
+  const sections = parseSections(raw).map((s) => {
+    const body = s.lines.join("\n");
+    let html;
+    if (s.type === "description") html = renderDescription(body);
+    else if (s.type === "examples") html = renderExamplesGrid(body);
+    else html = renderMarkdown(body);
+    return { type: s.type, label: s.label, html };
+  });
+
+  // Emit sections; place the Input-format and Output-format sections side by side
+  // (a balanced 2-column row) so the I/O contract reads at a glance — even if a
+  // Constraints block sits between them in the source (it then follows the row).
+  const inIdx = sections.findIndex((s) => s.type === "input");
+  const outIdx = sections.findIndex((s) => s.type === "output");
+  const pairIO = inIdx !== -1 && outIdx !== -1;
+  let out = "";
+  for (let i = 0; i < sections.length; i++) {
+    if (pairIO && i === outIdx) continue;            // emitted alongside input
+    if (pairIO && i === inIdx) {
+      out += `<div class="stmt-io-grid">${sectionHtml(sections[inIdx])}${sectionHtml(sections[outIdx])}</div>`;
+      continue;
+    }
+    out += sectionHtml(sections[i]);
+  }
+  host.innerHTML = out;
   renderMath(host);
+  highlightTokens(host);
+}
+
+function sectionHtml(s) {
+  return `<section class="stmt-section stmt-${s.type}">
+       <h2 class="stmt-section-label">${escapeHtml(s.label)}</h2>
+       <div class="stmt-section-body">${s.html}</div>
+     </section>`;
 }
 
 function fileToDataUrl(file) {
@@ -395,6 +564,7 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
     if (res.analysis) {
       renderAnalysis(app, res.analysis);
       if (app.state.meta) app.state.meta.analysis = res.analysis;
+      if (app.bus) app.bus.emit("analysis:done");
       try { const { problem } = await api.getProblem(app.state.currentId); app.state.meta = problem; } catch { /* non-fatal */ }
       renderMeta(app);
       app.refreshProblems();
@@ -433,6 +603,7 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
         status(app, `✓ Đã phân tích &amp; tạo <b>${tests.length}</b> test.`);
       }
       if (app.playSound) app.playSound("complete");
+      if (app.bus) app.bus.emit("tests:generated");
     }
   } catch (err) {
     app.state._processedHash = null; // allow retry
@@ -514,6 +685,21 @@ export function loadProblemView(app) {
 
 export function initStatement(app) {
   const { el } = app;
+
+  // Copy buttons on sample I/O boxes (event-delegated so it survives re-renders).
+  if (el.statementRendered) {
+    el.statementRendered.addEventListener("click", (e) => {
+      const btn = e.target.closest(".stmt-copy");
+      if (!btn) return;
+      const col = btn.closest(".stmt-sample-col");
+      const pre = col && col.querySelector(".stmt-sample-pre");
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.textContent).then(() => {
+        btn.textContent = "✓"; btn.classList.add("done");
+        setTimeout(() => { btn.textContent = "⧉"; btn.classList.remove("done"); }, 1200);
+      }).catch(() => { if (app.toast) app.toast("Không copy được", "err"); });
+    });
+  }
 
   app.showProblemView = () => app.setView("problem");
   app.runStatementPipeline = () => { app.showProblemView(); runPipeline(app, { force: true }); };

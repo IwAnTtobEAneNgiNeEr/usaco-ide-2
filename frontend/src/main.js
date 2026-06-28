@@ -1,18 +1,18 @@
 // main.js — bootstraps USACO IDE 2.0, owns shared state, and wires modules.
 
 import { api } from "./api.js?v=2.3";
-import { initLayout, setTab, setView, setLayoutMode } from "./layout.js?v=2.3";
+import { initLayout, setTab, setView, setLayoutMode, cycleLayoutMode, getSavedLayoutMode } from "./layout.js?v=2.5";
 import { initProblems, renderProblems } from "./problems.js?v=2.3";
 import { initEditor, renderMeta, setEditorFiles } from "./editor.js?v=2.3";
 import { mountCmEditor } from "./editor-cm.js?v=2.3";
 import { initTests, renderTests } from "./testcases.js?v=2.3";
-import { initRunner, renderHistory } from "./runner.js?v=2.3";
+import { initRunner, renderHistory } from "./runner.js?v=2.4";
 import { initSettings } from "./settings.js?v=2.3";
-import { initStatement, loadProblemView } from "./statement.js?v=2.3";
+import { initStatement, loadProblemView } from "./statement.js?v=2.7";
 import { initTimer } from "./timer.js?v=2.3";
 import { initHints } from "./hints.js?v=2.3";
 import { initNotes } from "./notes.js?v=2.3";
-import { initSidebarToggle } from "./features/sidebar-toggle.js?v=2.3";
+import { initSidebarToggle } from "./features/sidebar-toggle.js?v=2.4";
 import { initTopicFilter } from "./features/topic-filter.js?v=2.3";
 import { initDesktopShell } from "./features/desktop-launcher.js?v=2.3";
 import { initWaReview } from "./features/wa-review.js?v=2.3";
@@ -20,11 +20,11 @@ import { initSnippets } from "./features/snippets.js?v=2.3";
 import { initCodeReview } from "./features/code-review.js?v=2.3";
 import { initLab } from "./features/lab.js?v=2.3";
 import { initDashboard } from "./features/dashboard.js?v=2.3";
-import { initMiniChat } from "./features/mini-chat.js?v=2.3";
+import { initMiniChat } from "./features/mini-chat.js?v=2.5";
 import { initSynthesizer } from "./features/synthesizer.js?v=2.3";
 import { initContests } from "./features/contests.js?v=2.3";
 import { initJourney } from "./features/journey.js?v=2.3";
-import { initCommandPalette } from "./features/command-palette.js?v=2.3";
+import { initCommandPalette } from "./features/command-palette.js?v=2.4";
 import { initMistakeBook } from "./features/mistake-book.js?v=2.3";
 import { initBoss } from "./features/boss.js?v=2.3";
 import { initDefense } from "./features/defense.js?v=2.3";
@@ -34,6 +34,9 @@ import { initSpj } from "./features/spj.js?v=2.3";
 import { initWelcome } from "./features/welcome.js?v=2.3";
 import { initOverflowMenus } from "./features/overflow-menu.js?v=2.3";
 import { initEditorAppearance } from "./features/editor-appearance.js?v=2.3";
+import { createBus } from "./core/bus.js";
+import { initWorkspaces } from "./features/workspaces.js?v=1.0";
+import { initPanelSignals, clearTabAttn } from "./features/panel-signals.js?v=1.0";
 
 const $ = (id) => document.getElementById(id);
 
@@ -57,6 +60,9 @@ const app = {
   },
   el: {}
 };
+
+// Event bus — the spine the Workspace orchestrator + panel-signals ride on.
+app.bus = createBus();
 
 // ---------------- DOM refs ----------------
 function collectRefs() {
@@ -163,10 +169,10 @@ function collectRefs() {
 }
 
 // ---------------- Shared helpers ----------------
-app.setTab = (name) => setTab(app, name);
+app.setTab = (name) => { clearTabAttn(name); setTab(app, name); };
 app.setView = (name) => setView(app, name);
 app.setLayoutMode = (m) => setLayoutMode(app, m);
-app.toggleLayoutMode = () => setLayoutMode(app, app.state.layoutMode === "reading" ? "coding" : "reading");
+app.toggleLayoutMode = () => cycleLayoutMode(app);
 app.getEditorValue = () => {
   return app.getCode ? app.getCode() : (app.el.codeEditor ? app.el.codeEditor.value : "");
 };
@@ -179,6 +185,13 @@ app.setEditorValue = (v) => {
 };
 
 app.toast = (message, type = "") => {
+  // Workspace notification policy: errors always show; "off" suppresses all
+  // non-errors; "minimal" suppresses plain info (keeps "ok" + "err").
+  const notif = (app.workspace && app.workspace.policy && app.workspace.policy.notifications) || "normal";
+  if (type !== "err") {
+    if (notif === "off") return;
+    if (notif === "minimal" && type !== "ok") return;
+  }
   const host = $("toast-host");
   const el = document.createElement("div");
   el.className = `toast ${type}`;
@@ -258,7 +271,9 @@ app.loadProblem = async (id) => {
     app.el.btnRun.disabled = false;
     app.el.btnJudge.disabled = false;
 
-    app.setView("code");
+    // Restore the student's preferred layout (Code / Đề + Code / Đề bài) so they
+    // don't have to re-pick Split every time they open a problem.
+    setLayoutMode(app, getSavedLayoutMode());
     renderMeta(app);
     setEditorFiles(app, { code, input, expected, notes, statement });
     renderTests(app);
@@ -408,12 +423,14 @@ app.toggleZenMode = () => {
   const btn = document.getElementById("btn-zen");
   if (btn) {
     btn.classList.toggle("btn-primary", isZen);
+    btn.classList.toggle("btn-ghost", !isZen);
     btn.innerHTML = isZen ? "🧘 Zen ON" : "🧘 Zen";
   }
 };
 
 // ---------------- Sound Player (Web Audio API synthesis) ----------------
 app.playSound = (type) => {
+  if (app.workspace && app.workspace.policy && app.workspace.policy.sounds === false) return;
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
@@ -570,6 +587,7 @@ app.applyTheme = (theme, accentColor) => {
   root.setProperty("--btn-primary-h", colors.strongH);
   root.setProperty("--btn-run", colors.strong);
   root.setProperty("--btn-run-h", colors.strongH);
+  if (app.applyEditorAppearance) app.applyEditorAppearance();
 };
 
 // ---------------- Global drop guard ----------------
@@ -657,7 +675,7 @@ async function boot() {
   initLayout(app);
   initProblems(app);
   initDesktopShell();
-  initSidebarToggle();
+  initSidebarToggle(app);
   initTopicFilter(app);
   initEditor(app);
   // CodeMirror 6 — try to mount; falls back to textarea automatically. We only
@@ -751,6 +769,11 @@ async function boot() {
     if (target) await app.loadProblem(target);
     else app.clearEditor();
   }
+
+  // Workspace environment — restore the saved workspace and apply it as the
+  // authoritative layout/behaviour layer (runs after loadProblem on purpose).
+  initWorkspaces(app);
+  initPanelSignals(app);
 
   try {
     const health = await api.health();
