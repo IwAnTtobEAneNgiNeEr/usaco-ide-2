@@ -7,6 +7,9 @@
 import { api } from "./api.js";
 import { renderMeta } from "./editor.js";
 import { renderMarkdown, escapeHtml, renderMath } from "./md.js";
+import { initNeonCanvas } from "./statement-neon-canvas.js";
+
+let stopNeonCanvas = null;
 
 // ---- Statement reading page (section-aware) --------------------------------
 // A real competitive-programming problem page: the raw Markdown is split into
@@ -101,11 +104,14 @@ function renderExamplesGrid(text) {
 
   const prefaceHtml = preface.join("\n").trim() ? renderMarkdown(preface.join("\n")) : "";
   const col = (label, body) =>
-    `<div class="stmt-sample-col"><div class="stmt-sample-head"><span>${label}</span>` +
-    `<button type="button" class="stmt-copy" title="Sao chép">⧉</button></div>` +
-    `<pre class="stmt-sample-pre">${escapeHtml(body || "—")}</pre></div>`;
+    `<div class="stmt-sample-col">` +
+    `<div class="stmt-sample-label">${label}</div>` +
+    `<div class="stmt-sample-box">` +
+    `<button type="button" class="stmt-copy" title="Sao chép">Copy</button>` +
+    `<pre class="stmt-sample-pre">${escapeHtml(body || "—")}</pre>` +
+    `</div></div>`;
   const samples = pairs.map((p, i) => {
-    const n = pairs.length > 1 ? " " + (i + 1) : "";
+    const n = pairs.length > 1 ? " 0" + (i + 1) : " 01";
     return `<div class="stmt-sample">${col("Input" + n, p.inp)}${col("Output" + n, p.out)}</div>`;
   }).join("");
   return prefaceHtml + `<div class="stmt-samples">${samples}</div>`;
@@ -209,7 +215,22 @@ function parseSections(raw) {
   return sections.filter((s) => s.lines.join("\n").trim().length > 0);
 }
 
-export function renderStatement(app) {
+export 
+function heroIllustration(app) {
+  const hasScene = app.state.canvasScene;
+  if (hasScene) {
+    return `<figure class="stmt-neon-hero-figure">
+      <div class="stmt-ai-canvas" id="stmt-neon-canvas-container"><canvas id="stmt-neon-canvas"></canvas></div>
+    </figure>`;
+  }
+  if (app.state.meta && app.state.meta.imageUrl) {
+    return `<figure class="stmt-neon-hero-figure"><img class="stmt-neon-hero-image" src="${escapeHtml(app.state.meta.imageUrl)}" /></figure>`;
+  }
+  return "";
+}
+
+function renderStatement(app) {
+  if (stopNeonCanvas) { stopNeonCanvas(); stopNeonCanvas = null; }
   const host = app.el.statementRendered;
   if (!host) return;
   const raw = app.el.ioStatement.value || "";
@@ -217,6 +238,7 @@ export function renderStatement(app) {
     host.innerHTML = '<div class="stmt-empty">Chưa có đề bài. Bấm <b>Edit</b> để dán đề (Markdown được hỗ trợ), hoặc dùng <b>⤴ Image / PDF</b> · <b>📋 Paste</b> để nhập từ ảnh — AI sẽ tự phân tích &amp; tạo test.</div>';
     return;
   }
+  
   const sections = parseSections(raw).map((s) => {
     const body = s.lines.join("\n");
     let html;
@@ -226,24 +248,73 @@ export function renderStatement(app) {
     return { type: s.type, label: s.label, html };
   });
 
-  // Emit sections; place the Input-format and Output-format sections side by side
-  // (a balanced 2-column row) so the I/O contract reads at a glance — even if a
-  // Constraints block sits between them in the source (it then follows the row).
-  const inIdx = sections.findIndex((s) => s.type === "input");
-  const outIdx = sections.findIndex((s) => s.type === "output");
-  const pairIO = inIdx !== -1 && outIdx !== -1;
-  let out = "";
-  for (let i = 0; i < sections.length; i++) {
-    if (pairIO && i === outIdx) continue;            // emitted alongside input
-    if (pairIO && i === inIdx) {
-      out += `<div class="stmt-io-grid">${sectionHtml(sections[inIdx])}${sectionHtml(sections[outIdx])}</div>`;
-      continue;
-    }
-    out += sectionHtml(sections[i]);
+  // Extract meta
+  const meta = app.state.meta || {};
+  let usacoTier = meta.usacoTier || "";
+  let cfRating = meta.cfRating || "";
+  let diffText = usacoTier || (cfRating ? `CF ${cfRating}` : meta.difficulty || "Unrated");
+  let topicName = (meta.topic || (meta.analysis && meta.analysis.tags && meta.analysis.tags[0]) || "").toLowerCase();
+  if (topicName.length > 20) topicName = topicName.substring(0, 20) + "...";
+
+  // Calculate Elo rating
+  const dText = diffText.toLowerCase();
+  let elo = (meta.analysis && meta.analysis.elo) ? parseInt(meta.analysis.elo) : 0;
+  if (!elo) {
+      if (/medium|vừa/i.test(dText)) elo = 1500;
+      else if (/hard|khó/i.test(dText)) elo = 1900;
+      else if (/extreme|chuyên|chuyên gia/i.test(dText)) elo = 2400;
+      else elo = 1000;
   }
-  host.innerHTML = out;
-  renderMath(host);
+  
+  let rankColor = "#a0a0a0"; let rankName = "Newbie";
+  if (elo >= 1200) { rankColor = "#50ff96"; rankName = "Pupil"; }
+  if (elo >= 1400) { rankColor = "#50c8ff"; rankName = "Specialist"; }
+  if (elo >= 1600) { rankColor = "#a050ff"; rankName = "Expert"; }
+  if (elo >= 1900) { rankColor = "#ff50a0"; rankName = "Candidate Master"; }
+  if (elo >= 2100) { rankColor = "#ff9650"; rankName = "Master"; }
+  if (elo >= 2300) { rankColor = "#ff5050"; rankName = "Grandmaster"; }
+  if (elo >= 2400) { rankColor = "#ff0000"; rankName = "Legendary"; }
+
+  const eloPercent = Math.min(100, Math.max(5, (elo / 3000) * 100));
+
+  const descHtml = sections.find(s => s.type === "description")?.html || "";
+  const heroVisualHtml = heroIllustration(app) || `<canvas id="stmt-neon-canvas"></canvas>`;
+  const heroHtml = `
+    <div class="stmt-neon-hero">
+      <div class="stmt-neon-hero-right">
+        ${heroVisualHtml}
+      </div>
+      <div class="stmt-neon-hero-left">
+        <div class="stmt-neon-hero-badges">
+          <div class="stmt-neon-badge-problem"><span class="icon">📄</span> BÀI TOÁN</div>
+          <div class="stmt-elo-chip" style="--rank-c: ${rankColor};">
+            <span class="stmt-elo-dot"></span>
+            <span class="stmt-elo-num">${elo}</span>
+            <span class="stmt-elo-label">ELO</span>
+            <span class="stmt-elo-sep"></span>
+            <span class="stmt-elo-rank">${rankName}</span>
+          </div>
+        </div>
+        <h1 class="stmt-neon-hero-title">${escapeHtml(meta.title || "Untitled")}</h1>
+        <div class="stmt-neon-hero-desc">
+          ${descHtml}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const out = sections.map(sectionHtml).join("");
+  host.innerHTML = heroHtml + out;
   highlightTokens(host);
+
+  if (app.state.canvasScene) {
+    const canvas = document.getElementById("stmt-neon-canvas");
+    if (canvas) {
+      if (typeof stopNeonCanvas === "function") stopNeonCanvas();
+      stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic, app.state.meta);
+    }
+  }
+
 }
 
 function sectionHtml(s) {
@@ -286,6 +357,11 @@ function hashOf(s) {
 
 // Client-side sample extractor (mirror of backend) — used when re-opening a
 // problem so the Examples card shows without re-calling the model.
+
+function refreshExamples(app, text) {
+  renderExamples(app, extractSamples(text));
+}
+
 function extractSamples(text) {
   text = String(text || "");
   if (!text.trim()) return [];
@@ -321,49 +397,67 @@ function ratingBand(r) {
   return "r-bronze";
 }
 
-function renderAnalysis(app, a) {
-  const card = app.el.analysisCard;
-  const hasDiff = a && (a.usacoTier || a.cfRating || a.doKho || a.doPhucTapYeuCauTime || a.doPhucTapYeuCauSpace);
-  if (!a || (!a.tomTat && !(a.kyThuat && a.kyThuat.length) && !a.rangBuoc && !hasDiff && !a.luuY)) {
-    card.classList.add("hidden"); card.innerHTML = ""; return;
+export function renderAnalysis(app, a) {
+  const card = document.getElementById("analysis-card");
+  if (!card) return;
+  if (!a || (!a.tomTat && !a.kyThuat?.length && !a.tags?.length && !a.doKho && !a.luuY && !a.doPhucTapYeuCauTime && !a.doPhucTapYeuCauSpace && !a.rangBuoc)) {
+    card.classList.add("hidden");
+    card.innerHTML = "";
+    return;
   }
   card.classList.remove("hidden");
-  const tech = (a.kyThuat || []).map((t) => `<span class="tag-pill tech">${escapeHtml(t)}</span>`).join("");
-  const tags = (a.tags || []).map((t) => `<span class="tag-pill">${escapeHtml(t)}</span>`).join("");
   
-  const getIcon = (label) => {
-    switch (label) {
-      case "Tóm tắt": return "📝";
-      case "Độ khó": return "📊";
-      case "Kỹ thuật": return "🛠️";
-      case "Ràng buộc": return "⚙️";
-      case "Lưu ý": return "⚠️";
-      case "Tags": return "🏷️";
-      default: return "🔹";
-    }
-  };
-
-  const row = (label, body, cls) => body
-    ? `<div class="an-row"><div class="an-label"><span>${getIcon(label)}</span><span>${label}</span></div><div class="an-body ${cls || ""}">${body}</div></div>`
-    : "";
-
-  // Difficulty line: USACO tier chip + estimated CF rating chip + complexity chips + the prose note.
-  const diffChips = [
-    a.usacoTier ? `<span class="diff-chip tier-${escapeHtml(a.usacoTier.toLowerCase())}">${escapeHtml(a.usacoTier)}</span>` : "",
-    a.cfRating ? `<span class="diff-chip rating ${ratingBand(a.cfRating)}" title="Ước lượng theo thang Codeforces">CF ~${a.cfRating}</span>` : "",
-    a.doPhucTapYeuCauTime ? `<span class="diff-chip time-complexity" title="Độ phức tạp thời gian yêu cầu">Time: ${escapeHtml(a.doPhucTapYeuCauTime)}</span>` : "",
-    a.doPhucTapYeuCauSpace ? `<span class="diff-chip space-complexity" title="Độ phức tạp bộ nhớ yêu cầu">Space: ${escapeHtml(a.doPhucTapYeuCauSpace)}</span>` : ""
-  ].filter(Boolean).join("");
-  const diffBody = `${diffChips}${a.doKho ? `<span class="diff-note">${escapeHtml(a.doKho)}</span>` : ""}`;
+  // Premium Neon AI Analysis Layout
+  const techChips = (a.kyThuat || []).map(t => `<span class="neon-ai-chip tech">${escapeHtml(t)}</span>`).join("");
+  const tagChips = (a.tags || []).map(t => `<span class="neon-ai-chip tag">${escapeHtml(t)}</span>`).join("");
+  
+  let complexityHtml = "";
+  if (a.doPhucTapYeuCauTime || a.doPhucTapYeuCauSpace) {
+    complexityHtml = `<div class="neon-ai-complexity-row">`;
+    if (a.doPhucTapYeuCauTime) complexityHtml += `<span class="neon-ai-chip time">⏱ ${escapeHtml(a.doPhucTapYeuCauTime)}</span>`;
+    if (a.doPhucTapYeuCauSpace) complexityHtml += `<span class="neon-ai-chip space">💾 ${escapeHtml(a.doPhucTapYeuCauSpace)}</span>`;
+    complexityHtml += `</div>`;
+  }
 
   card.innerHTML = `
-    <div class="card-title">Phân tích AI</div>
-    ${row("Tóm tắt", a.tomTat ? escapeHtml(a.tomTat) : "")}
-    ${row("Độ khó", hasDiff ? diffBody : "", "an-diff")}
-    ${row("Kỹ thuật", tech)}
-    ${row("Ràng buộc", a.rangBuoc ? escapeHtml(a.rangBuoc) : "")}
-    ${row("Lưu ý", a.luuY ? `<span class="an-warn">${escapeHtml(a.luuY)}</span>` : "")}
-    ${tags ? row("Tags", tags) : ""}`;
+    <div class="neon-ai-analysis-container">
+      <div class="neon-ai-header">
+        <span class="icon">✨</span> Phân tích AI
+      </div>
+      
+      <div class="neon-ai-grid">
+        ${a.tomTat ? `
+        <div class="neon-ai-panel summary-panel">
+          <div class="neon-ai-panel-title">TÓM TẮT</div>
+          <div class="neon-ai-panel-body">${escapeHtml(a.tomTat)}</div>
+        </div>` : ''}
+        
+        ${(techChips || tagChips) ? `
+        <div class="neon-ai-panel tags-panel">
+          <div class="neon-ai-panel-title">KỸ THUẬT &amp; CHỦ ĐỀ</div>
+          <div class="neon-ai-panel-body">
+            ${techChips}
+            ${tagChips}
+          </div>
+        </div>` : ''}
+        
+        ${(complexityHtml || a.rangBuoc) ? `
+        <div class="neon-ai-panel constraints-panel">
+          <div class="neon-ai-panel-title">ĐỘ PHỨC TẠP &amp; RÀNG BUỘC</div>
+          <div class="neon-ai-panel-body">
+            ${complexityHtml}
+            ${a.rangBuoc ? `<div class="neon-ai-text-block">${escapeHtml(a.rangBuoc)}</div>` : ''}
+          </div>
+        </div>` : ''}
+        
+        ${a.luuY ? `
+        <div class="neon-ai-panel warn-panel">
+          <div class="neon-ai-panel-title">LƯU Ý / GÓC KHUẤT</div>
+          <div class="neon-ai-panel-body highlight-warn">${escapeHtml(a.luuY)}</div>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
 }
 
 function renderExamples(app, samples) {
@@ -553,6 +647,7 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
     await api.saveStatement(app.state.currentId, statement);
     app.state.savedStatement = statement;
     renderStatement(app);
+    refreshExamples(app, statement);
 
     const res = await api.aiProcess({
       problemId: app.state.currentId,
@@ -580,15 +675,23 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
       status(app, `<span class="warn-text">Tạo test lỗi: ${escapeHtml(res.testsError)}</span>`);
     } else {
       const tests = res.tests || [];
-      const verified = tests.filter((t) => t.expectedKnown);
+      const autoAddable = tests.filter((t) => t.expectedKnown);
       const unverified = tests.filter((t) => !t.expectedKnown);
       // On a fresh problem (no tests yet), auto-add the execution-verified tests
       // silently and only surface the unverified ones for manual review.
       let added = 0;
-      if (verified.length && (app.state.tests || []).length === 0) {
+      if (autoAddable.length && (app.state.tests || []).length === 0) {
         try {
-          for (const t of verified) {
-            await api.addTest(app.state.currentId, { name: t.name, input: t.input, expected: t.expected, reason: t.reason || "", generatedBy: "ai" });
+          for (const t of autoAddable) {
+            await api.addTest(app.state.currentId, { 
+              name: t.name, 
+              input: t.input, 
+              expected: t.expected, 
+              reason: t.reason || "", 
+              generatedBy: "ai",
+              provenance: t.provenance,
+              statementHash: t.statementHash
+            });
             added += 1;
           }
           await app.reloadTests();
@@ -666,6 +769,28 @@ async function imageFromClipboardItems(items) {
 
 // ---- Public: render on problem load ---------------------------------------
 
+
+export async function requestCanvasIllustration(app, opts = {}) {
+  const manual = opts.manual || false;
+  if (!manual && !(app.state.aiSettings && app.state.aiSettings.illustrationEnabled)) return null;
+  if (app.state._illustrationBusy) return;
+  const btn = document.getElementById("btn-ai-illustration");
+  if (btn) { btn.disabled = true; btn.textContent = "Đang tạo minh hoạ…"; }
+  app.state._illustrationBusy = true;
+  try {
+    const res = await api.aiCanvasIllustration(app.state.meta?.topic || app.state.meta?.title || "Data Structures");
+    if (res && res.scene) {
+      app.state.canvasScene = res.scene;
+      renderStatement(app);
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    app.state._illustrationBusy = false;
+    if (btn) { btn.disabled = false; btn.textContent = "✨ Tạo minh hoạ"; }
+  }
+}
+
 export function loadProblemView(app) {
   app.state._processedHash = hashOf(app.el.ioStatement.value);
   app.state._pipelineBusy = false;
@@ -700,6 +825,10 @@ export function initStatement(app) {
       }).catch(() => { if (app.toast) app.toast("Không copy được", "err"); });
     });
   }
+
+    app.generateIllustration = () => requestCanvasIllustration(app, { manual: true });
+  const btnAiIllustration = document.getElementById("btn-ai-illustration");
+  if (btnAiIllustration) btnAiIllustration.addEventListener("click", app.generateIllustration);
 
   app.showProblemView = () => app.setView("problem");
   app.runStatementPipeline = () => { app.showProblemView(); runPipeline(app, { force: true }); };
@@ -736,7 +865,18 @@ export function initStatement(app) {
       runPipeline(app, { force: false });
     }, 1500);
   };
-  el.ioStatement.addEventListener("input", scheduleAuto);
+  let samplePreviewFrame = null;
+  const scheduleSamplePreview = () => {
+    if (samplePreviewFrame) cancelAnimationFrame(samplePreviewFrame);
+    samplePreviewFrame = requestAnimationFrame(() => {
+      samplePreviewFrame = null;
+      refreshExamples(app, el.ioStatement.value);
+    });
+  };
+  el.ioStatement.addEventListener("input", () => {
+    scheduleSamplePreview();
+    scheduleAuto();
+  });
 
   el.btnSaveStatement.addEventListener("click", async () => {
     if (!app.state.currentId) return;

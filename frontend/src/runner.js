@@ -348,6 +348,15 @@ export function initRunner(app) {
       .catch(() => app.toast("Không copy được.", "err"));
   });
 
+  const btnCopyExpected = document.getElementById("btn-copy-expected");
+  if (btnCopyExpected) btnCopyExpected.addEventListener("click", () => {
+    const txt = app.el.ioExpected.value || "";
+    if (!txt.trim()) { app.toast("Chưa có expected output để copy.", "err"); return; }
+    navigator.clipboard.writeText(txt)
+      .then(() => app.toast("Đã copy expected output.", "ok"))
+      .catch(() => app.toast("Không copy được.", "err"));
+  });
+
   // Failed-verdict → Coach bridge (the button only appears on WA/TLE/RE/CE).
   const coachAskBtn = document.getElementById("btn-coach-ask");
   if (coachAskBtn) coachAskBtn.addEventListener("click", () => {

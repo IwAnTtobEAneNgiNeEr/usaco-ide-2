@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="./styles/refine.css?v=2.6" />
   <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
   <link rel="stylesheet" href="./styles/forge.css?v=3.2" />
+  <link rel="stylesheet" href="./styles/statement-neon.css" />
   <!-- tokens.css — THE design system. Loaded LAST so it is the authoritative
        source of truth for every global --token. See docs/DESIGN-SYSTEM.md. -->
   <link rel="stylesheet" href="./styles/tokens.css?v=1.0" />
@@ -217,6 +218,7 @@
               <div class="prob-actions prob-actions-run">
                 <button id="btn-ai-template" class="btn btn-ai btn-sm" type="button">📝 Sinh Template</button>
                 <button id="btn-analyze" class="btn btn-ai btn-sm" type="button">🔎 Phân tích lại</button>
+                <button id="btn-ai-illustration" class="btn btn-ai btn-sm" type="button">🎨 Tạo minh họa</button>
                 <button id="btn-ai-generate-statement" class="btn btn-ai btn-sm" type="button">✨ Tạo test ngay</button>
               </div>
             </section>
@@ -268,7 +270,12 @@
           </div>
 
           <div class="console-block">
-            <div class="console-head"><span class="console-label">expected <span class="muted">(optional)</span></span></div>
+            <div class="console-head">
+              <span class="console-label">expected <span class="muted">(optional)</span></span>
+              <div class="rc-actions">
+                <button id="btn-copy-expected" class="btn btn-ghost btn-sm" type="button" title="Copy toàn bộ expected output">Copy</button>
+              </div>
+            </div>
             <div class="lined lined-sm">
               <div class="lined-gutter" id="exp-gutter"></div>
               <textarea id="io-expected" class="lined-field" spellcheck="false" placeholder="expected output…"></textarea>
