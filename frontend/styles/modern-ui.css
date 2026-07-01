@@ -113,7 +113,6 @@ textarea.input {
 .analysis-card,
 .examples-card,
 .gentests-card,
-.coach-card-sec,
 .tcard {
   border-color: rgba(121, 156, 192, .24) !important;
   border-radius: var(--block-radius) !important;
@@ -123,6 +122,64 @@ textarea.input {
     color-mix(in srgb, var(--panel) 86%, #0b1930 14%) !important;
   box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 8px 12px rgba(0, 0, 0, .18) !important;
 }
+
+/* Premium Neon Collapsible Coach Cards */
+.coach-card-sec {
+  --section-accent: var(--neon-cyan);
+  border: 1px solid rgba(var(--section-accent), .28) !important;
+  border-radius: var(--block-radius) !important;
+  background:
+    radial-gradient(380px 140px at 0 0, rgba(var(--section-accent), .075), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, .02), transparent 44%),
+    #0d182a !important;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .03),
+    inset 0 0 20px rgba(var(--section-accent), .02),
+    0 4px 14px rgba(0, 0, 0, 0.22) !important;
+  transition:
+    transform 180ms var(--ease),
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+  overflow: hidden;
+}
+
+.coach-card-sec:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--section-accent), .55) !important;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .04),
+    radial-gradient(380px 140px at 0 0, rgba(var(--section-accent), .12), transparent 72%),
+    0 0 24px rgba(var(--section-accent), .14),
+    0 6px 18px rgba(0, 0, 0, 0.28) !important;
+}
+
+.coach-card-header {
+  background: rgba(var(--section-accent), .08) !important;
+  color: rgb(var(--section-accent)) !important;
+  border-bottom: 1px solid rgba(var(--section-accent), .22) !important;
+  text-shadow: 0 0 12px rgba(var(--section-accent), .28) !important;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.coach-card-header::after {
+  color: rgb(var(--section-accent)) !important;
+  text-shadow: 0 0 10px rgba(var(--section-accent), .28) !important;
+}
+
+/* Card Types */
+.coach-card-sec-diag { --section-accent: var(--neon-violet); }
+.coach-card-sec-sum { --section-accent: var(--neon-mint); }
+.coach-card-sec-hint { --section-accent: var(--neon-amber); }
+.coach-card-sec-approach { --section-accent: var(--neon-blue); }
+.coach-card-sec-obs { --section-accent: var(--neon-blue); }
+.coach-card-sec-mistake { --section-accent: var(--neon-pink); }
+.coach-card-sec-evid { --section-accent: 143, 167, 191; }
+.coach-card-sec-fix { --section-accent: var(--neon-mint); }
+.coach-card-sec-next { --section-accent: var(--neon-violet); }
+.coach-card-sec-cur { --section-accent: var(--neon-amber); }
+.coach-card-sec-goal { --section-accent: var(--neon-mint); }
+
 .settings-card { padding: var(--space-20) !important; overflow: visible !important; }
 .settings-section-title,
 .card-title,
@@ -380,6 +437,14 @@ textarea.input {
 .stmt-neon-shell .stmt-examples { --section-accent: var(--neon-amber); }
 .stmt-neon-shell .stmt-notes { --section-accent: var(--neon-blue); }
 .stmt-neon-shell .stmt-subtasks { --section-accent: var(--neon-pink); }
+
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-input { --section-accent: var(--neon-cyan); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-output { --section-accent: var(--neon-mint); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-constraints { --section-accent: var(--neon-violet); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-examples { --section-accent: var(--neon-amber); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-notes { --section-accent: var(--neon-blue); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-subtasks { --section-accent: var(--neon-pink); }
+
 
 /* Label: no ugly arrows/diamonds. The icon is a geometric neon node. */
 .stmt-neon-shell .stmt-section-label {
@@ -670,3 +735,354 @@ textarea.input {
     animation: none !important;
   }
 }
+
+/* ========================================================================
+   NEON COCKPIT LAYOUT & MICRO-INTERACTIONS
+   ======================================================================== */
+
+/* Cursor-tracking neon glow overlay */
+.stmt-neon-secondary > .stmt-section,
+.coach-card-sec {
+  position: relative;
+  overflow: hidden;
+}
+
+.stmt-neon-secondary > .stmt-section::before,
+.coach-card-sec::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  background: radial-gradient(
+    280px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(var(--section-accent), 0.08),
+    transparent 80%
+  ) !important;
+  opacity: 0 !important;
+  transition: opacity 300ms ease !important;
+  pointer-events: none !important;
+  display: block !important;
+  transform: none !important;
+}
+
+.stmt-neon-secondary > .stmt-section:hover::before,
+.coach-card-sec:hover::before {
+  opacity: 1 !important;
+}
+
+/* App Header / Topbar neon glassmorphic style */
+.topbar {
+  background: rgba(7, 16, 31, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(var(--neon-cyan), 0.25) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    0 0 15px rgba(var(--neon-cyan), 0.04) !important;
+  padding: 0 20px !important;
+  position: relative;
+  z-index: 100;
+  transition: border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+.topbar:hover {
+  border-bottom-color: rgba(var(--neon-cyan), 0.38) !important;
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 0 22px rgba(var(--neon-cyan), 0.08) !important;
+}
+
+.brand-mark {
+  color: rgb(var(--neon-cyan)) !important;
+  text-shadow: 
+    0 0 8px rgba(var(--neon-cyan), 0.6),
+    0 0 16px rgba(var(--neon-cyan), 0.3) !important;
+}
+
+.brand-ver {
+  color: rgb(var(--neon-violet)) !important;
+  text-shadow: 0 0 8px rgba(var(--neon-violet), 0.4) !important;
+}
+
+.current-title {
+  color: #fff !important;
+  font-family: var(--display) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Widgets inside topbar: glassmorphism with neon accents */
+.topbar .pill, 
+.topbar .focus-timer, 
+.topbar .session-stats, 
+.jh-chip {
+  background: rgba(13, 24, 42, 0.6) !important;
+  border: 1px solid rgba(var(--neon-cyan), 0.22) !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.03),
+    inset 0 0 8px rgba(var(--neon-cyan), 0.05),
+    0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  color: #d9e9f7 !important;
+  font-weight: 650 !important;
+  transition: transform 150ms var(--ease), border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+.topbar .pill:hover,
+.topbar .focus-timer:hover,
+.topbar .session-stats:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(var(--neon-cyan), 0.45) !important;
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.05),
+    0 0 12px rgba(var(--neon-cyan), 0.12),
+    0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+.topbar .pill b,
+.topbar .focus-timer b,
+.topbar .session-stats b {
+  color: rgb(var(--neon-cyan)) !important;
+  text-shadow: 0 0 8px rgba(var(--neon-cyan), 0.3) !important;
+}
+
+.timer-display {
+  color: rgb(var(--neon-cyan)) !important;
+  text-shadow: 0 0 8px rgba(var(--neon-cyan), 0.4) !important;
+  font-family: var(--mono) !important;
+  font-weight: 800 !important;
+}
+
+.timer-btn {
+  background: rgba(var(--neon-cyan), 0.12) !important;
+  border: 1px solid rgba(var(--neon-cyan), 0.3) !important;
+  color: rgb(var(--neon-cyan)) !important;
+  border-radius: 5px !important;
+  transition: all 150ms ease !important;
+}
+
+.timer-btn:hover {
+  background: rgba(var(--neon-cyan), 0.25) !important;
+  color: #fff !important;
+  box-shadow: 0 0 8px rgba(var(--neon-cyan), 0.3) !important;
+}
+
+#compiler-pill {
+  border-color: rgba(var(--neon-blue), 0.26) !important;
+  color: color-mix(in srgb, rgb(var(--neon-blue)) 80%, #fff 20%) !important;
+}
+#compiler-pill:hover {
+  border-color: rgba(var(--neon-blue), 0.5) !important;
+  box-shadow: 0 0 10px rgba(var(--neon-blue), 0.15) !important;
+}
+
+/* Run/Judge button shadows and glows */
+.topbar .btn-run {
+  box-shadow: 
+    0 0 14px rgba(79, 152, 255, 0.25),
+    inset 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+.topbar .btn-run:hover:not(:disabled) {
+  box-shadow: 
+    0 0 20px rgba(79, 152, 255, 0.45),
+    inset 0 1px rgba(255, 255, 255, 0.25) !important;
+}
+.topbar .btn-judge {
+  box-shadow: 
+    0 0 14px rgba(35, 200, 111, 0.25),
+    inset 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+.topbar .btn-judge:hover:not(:disabled) {
+  box-shadow: 
+    0 0 20px rgba(35, 200, 111, 0.45),
+    inset 0 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Sidebar and tabs styling */
+.panel-tabs {
+  background: rgba(10, 21, 40, 0.8) !important;
+  border-bottom: 1px solid rgba(120, 196, 255, 0.2) !important;
+  padding: 8px 12px 0 !important;
+  gap: 6px !important;
+}
+
+.panel-tabs .tab {
+  font-family: var(--sans) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.02em !important;
+  padding: 8px 14px !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+  border: 1px solid transparent !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  color: var(--neon-muted) !important;
+  transition: all 200ms ease !important;
+  position: relative;
+}
+
+.panel-tabs .tab:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.panel-tabs .tab.active {
+  color: #fff !important;
+  background: rgba(13, 24, 42, 0.85) !important;
+  border-color: rgba(120, 196, 255, 0.2) !important;
+  text-shadow: 0 0 8px rgba(var(--neon-cyan), 0.4) !important;
+}
+
+.panel-tabs .tab::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, rgb(var(--neon-cyan)), rgb(var(--neon-violet))) !important;
+  transform: scaleX(0) !important;
+  transition: transform 220ms var(--ease) !important;
+  box-shadow: 0 0 8px rgb(var(--neon-cyan)) !important;
+}
+
+.panel-tabs .tab.active::after {
+  transform: scaleX(1) !important;
+}
+
+/* Panel bodies glass styling */
+.panel-bodies {
+  background: linear-gradient(180deg, #090f1b 0%, #070b13 100%) !important;
+}
+
+/* Resizer handle glow */
+.panel-resizer {
+  transition: background-color 200ms ease, box-shadow 200ms ease !important;
+}
+.panel-resizer:hover, 
+body.col-resizing .panel-resizer {
+  background: rgba(var(--neon-cyan), 0.5) !important;
+  box-shadow: 0 0 10px rgba(var(--neon-cyan), 0.5) !important;
+}
+
+/* Problem list explorer styling */
+.col-problems {
+  background: #070b13 !important;
+  border-right: 1px solid rgba(120, 196, 255, 0.15) !important;
+}
+
+.col-problems .col-head {
+  border-bottom: 1px solid rgba(120, 196, 255, 0.15) !important;
+  background: rgba(10, 21, 40, 0.4) !important;
+}
+
+.problem-list {
+  padding: 12px !important;
+}
+
+.explorer-filters .input,
+.explorer-filters .select {
+  border: 1px solid rgba(120, 196, 255, 0.2) !important;
+  background: rgba(13, 24, 42, 0.5) !important;
+  transition: all 180ms ease !important;
+}
+.explorer-filters .input:focus,
+.explorer-filters .select:focus {
+  border-color: rgba(var(--neon-cyan), 0.6) !important;
+  box-shadow: 
+    0 0 12px rgba(var(--neon-cyan), 0.15),
+    inset 0 1px rgba(255, 255, 255, 0.03) !important;
+}
+
+.prob-item {
+  border: 1px solid rgba(120, 196, 255, 0.1) !important;
+  border-radius: 8px !important;
+  background: rgba(13, 24, 42, 0.3) !important;
+  margin-bottom: 6px !important;
+  padding: 10px 12px !important;
+  transition: transform 160ms var(--ease), border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease !important;
+}
+
+.prob-item:hover {
+  transform: translateX(2px) !important;
+  border-color: rgba(var(--neon-cyan), 0.4) !important;
+  background: rgba(13, 24, 42, 0.65) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 0 10px rgba(var(--neon-cyan), 0.08) !important;
+}
+
+.prob-item.active {
+  border-color: rgba(var(--neon-cyan), 0.65) !important;
+  background: rgba(var(--neon-cyan), 0.06) !important;
+  box-shadow: 
+    inset 0 0 8px rgba(var(--neon-cyan), 0.04),
+    0 0 14px rgba(var(--neon-cyan), 0.1) !important;
+}
+
+/* Editor shell styling */
+.editor-shell {
+  background: #050b14 !important;
+}
+
+.editor-toolbar {
+  background: rgba(10, 21, 40, 0.7) !important;
+  border-bottom: 1px solid rgba(120, 196, 255, 0.18) !important;
+}
+
+.editor-toolbar .file-tab {
+  color: #fff !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid rgb(var(--neon-cyan)) !important;
+  text-shadow: 0 0 8px rgba(var(--neon-cyan), 0.4) !important;
+}
+
+.code-stack {
+  border: 1px solid rgba(120, 196, 255, 0.15) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    inset 0 1px rgba(255, 255, 255, 0.03) !important;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.code-stack:focus-within {
+  border-color: rgba(var(--neon-cyan), 0.45) !important;
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 0 16px rgba(var(--neon-cyan), 0.12),
+    inset 0 1px rgba(255, 255, 255, 0.03) !important;
+}
+
+.code-gutter {
+  border-right: 1px solid rgba(120, 196, 255, 0.15) !important;
+  background: rgba(5, 11, 20, 0.5) !important;
+}
+
+/* Glass shine animation for action buttons */
+.btn-ai, .btn-primary, .btn-run, .btn-judge {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ai::after, .btn-primary::after, .btn-run::after, .btn-judge::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent) !important;
+  transition: all 0.6s ease !important;
+  pointer-events: none !important;
+  display: block !important;
+  transform: none !important;
+}
+
+.btn-ai:hover::after, .btn-primary:hover::after, .btn-run:hover::after, .btn-judge:hover::after {
+  left: 100% !important;
+}
+
