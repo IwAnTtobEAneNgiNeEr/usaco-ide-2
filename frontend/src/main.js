@@ -686,7 +686,7 @@ function initGlobalParticles(app) {
   if (!backdrop) {
     backdrop = document.createElement("div");
     backdrop.id = "global-backdrop";
-    backdrop.style.cssText = "position:fixed; inset:0; z-index:-2; background: linear-gradient(180deg, #07101f 0%, #050b14 100%); pointer-events:none;";
+    backdrop.style.cssText = "position:fixed; inset:0; z-index:0; background: linear-gradient(180deg, #07101f 0%, #050b14 100%); pointer-events:none;";
     document.body.appendChild(backdrop);
   }
 
@@ -694,7 +694,7 @@ function initGlobalParticles(app) {
   if (!canvas) {
     canvas = document.createElement("canvas");
     canvas.id = "global-particles-canvas";
-    canvas.style.cssText = "position:fixed; inset:0; z-index:-1; pointer-events:none; display:block; background:transparent;";
+    canvas.style.cssText = "position:fixed; inset:0; z-index:1; pointer-events:none; display:block; background:transparent;";
     document.body.appendChild(canvas);
   }
 
@@ -709,15 +709,15 @@ function initGlobalParticles(app) {
   });
 
   const particles = [];
-  const maxParticles = 140;
+  const maxParticles = 180;
   
-  // Colorful particles matching the theme accents
+  // Vibrant, high-opacity particles matching the theme accents
   const colors = [
-    "rgba(45, 214, 255, 0.6)",   // Neon Cyan
-    "rgba(168, 85, 247, 0.6)",   // Neon Violet
-    "rgba(52, 211, 153, 0.6)",   // Neon Mint
-    "rgba(251, 191, 36, 0.6)",   // Neon Amber
-    "rgba(244, 63, 94, 0.6)"     // Neon Pink
+    "rgba(45, 214, 255, 0.85)",   // Neon Cyan
+    "rgba(168, 85, 247, 0.85)",   // Neon Violet
+    "rgba(52, 211, 153, 0.85)",   // Neon Mint
+    "rgba(251, 191, 36, 0.85)",   // Neon Amber
+    "rgba(244, 63, 94, 0.85)"     // Neon Pink
   ];
 
   class Particle {
@@ -728,12 +728,12 @@ function initGlobalParticles(app) {
     reset(init = false) {
       this.x = Math.random() * width;
       this.y = init ? Math.random() * height : height + 10;
-      this.size = Math.random() * 2.8 + 1.2;
-      this.speedY = -(Math.random() * 0.45 + 0.15);
-      this.speedX = (Math.random() - 0.5) * 0.25;
+      this.size = Math.random() * 3.8 + 1.8;
+      this.speedY = -(Math.random() * 0.5 + 0.25);
+      this.speedX = (Math.random() - 0.5) * 0.35;
       this.color = colors[Math.floor(Math.random() * colors.length)];
       this.angle = Math.random() * Math.PI * 2;
-      this.spin = (Math.random() - 0.5) * 0.015;
+      this.spin = (Math.random() - 0.5) * 0.02;
     }
 
     update(mouseX, mouseY) {
@@ -746,12 +746,12 @@ function initGlobalParticles(app) {
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 220) {
-          const force = (220 - dist) / 220;
+        if (dist < 260) {
+          const force = (260 - dist) / 260;
           // swirl direction (perpendicular vector)
           const angle = Math.atan2(dy, dx) + Math.PI / 2;
-          this.x += Math.cos(angle) * force * 0.75;
-          this.y += Math.sin(angle) * force * 0.75;
+          this.x += Math.cos(angle) * force * 1.5;
+          this.y += Math.sin(angle) * force * 1.5;
         }
       }
 
