@@ -1645,3 +1645,197 @@ body,
   background: rgba(5, 11, 20, 0.8) !important;
   border-bottom: 1px solid rgba(120, 196, 255, 0.16) !important;
 }
+
+/* ========================================================================
+   PREMIUM DRACULA-NEON C++ SYNTAX HIGHLIGHTING (IDE UPGRADE)
+   ======================================================================== */
+
+.cm-editor {
+  /* Premium Dracula Neon C++ Code Highlighting Variables */
+  --syn-kw: #ff79c6 !important;       /* C++ keywords (using, namespace, class, struct, public) - Dracula Pink */
+  --syn-ctrl: #ff5555 !important;     /* Flow control (for, while, if, else, return) - Dracula Rose/Red */
+  --syn-type: #50fa7b !important;     /* Primitive types (int, bool, void, char, double, long long) - Dracula Mint Green */
+  --syn-class: #bd93f9 !important;    /* Standard Library Classes (string, vector, pair, map, set) - Dracula Violet */
+  --syn-fn: #f1fa8c !important;       /* Functions (main, cmp, bk, push_back, cin.tie, etc.) - Dracula Gold/Yellow */
+  --syn-prop: #f1fa8c !important;     /* Class/object properties (first, second, fi, se) - Dracula Yellow */
+  --syn-var: #ffb86c !important;      /* Variables (n, visited, found, s, a, i, j, k) - Dracula Orange/Amber */
+  --syn-var-def: #ffb86c !important;  /* Variable declarations - Dracula Orange */
+  --syn-bool: #ff5555 !important;     /* Boolean constants (true, false, NULL, nullptr) - Dracula Red */
+  --syn-num: #ff5555 !important;      /* Numbers (0, 1, 1005, 10) - Dracula Red */
+  --syn-str: #f1fa8c !important;      /* String literals - Dracula Yellow */
+  --syn-cmt: #6272a4 !important;      /* Comments - Dracula Slate/Lavender Gray (italicized) */
+  --syn-meta: #ff79c6 !important;     /* Preprocessor directives (#include, #define) - Dracula Pink */
+  --syn-operator: #8be9fd !important; /* Math/logical operators (=, <, +, ++, <<, >>) - Dracula Cyan */
+  --syn-bracket: #6272a4 !important;  /* Brackets/braces/semicolons - Dracula Slate */
+}
+
+/* Ensure standard library highlighter uses the correct color */
+.cm-std-library, .cm-std-library * {
+  color: #8be9fd !important; /* Dracula Cyan */
+  font-weight: 600 !important;
+}
+
+/* Highlight Matching Brackets */
+.cm-editor .cm-matchingBracket {
+  background: rgba(80, 250, 123, 0.25) !important;
+  outline: 1px solid #50fa7b !important;
+}
+
+/* ========================================================================
+   HIGH CONTRAST GLASSMORPHIC PANEL STYLING & BRIGHTNESS
+   ======================================================================== */
+
+/* Elevate general copy text color brightness for 10x readability */
+:root {
+  --neon-copy: #f1f5f9 !important; /* Brighter slate-100 */
+  --text: #f8fafc !important;      /* Brighter slate-50 */
+}
+
+.stmt-neon-shell .stmt-section-body {
+  color: #f1f5f9 !important; /* Bright off-white */
+}
+
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section {
+  background:
+    radial-gradient(420px 150px at 0% 0%, rgba(var(--section-accent), .15), transparent 72%),
+    radial-gradient(420px 180px at 100% -20%, rgba(var(--neon-violet), .07), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .015)),
+    rgba(16, 32, 60, 0.95) !important; /* Slightly lighter deep space navy for contrast */
+  border: 1px solid rgba(var(--section-accent), .4) !important; /* Higher contrast border */
+}
+
+.editor-shell {
+  background: 
+    radial-gradient(circle at 50% 0%, rgba(var(--neon-cyan), 0.08), transparent 70%),
+    #0c1b33 !important; /* Rich deep navy blue space theme with excellent contrast */
+  border: 1px solid rgba(120, 196, 255, 0.28) !important; /* Higher contrast border matching the statement */
+  box-shadow: 
+    0 12px 36px rgba(0, 0, 0, 0.6),
+    inset 0 1px rgba(255, 255, 255, 0.03) !important;
+}
+
+.cm-editor .cm-gutters {
+  background: #081326 !important; /* Slightly darker navy for code margins */
+  border-right: 1px solid rgba(120, 196, 255, 0.16) !important;
+}
+
+/* ========================================================================
+   INTERACTIVE COPY BUTTON FIXES
+   ======================================================================== */
+
+.stmt-sample-box {
+  position: relative !important;
+}
+
+.stmt-sample-box .stmt-copy {
+  z-index: 25 !important; /* Force button on top of text */
+  pointer-events: auto !important;
+  background: rgba(168, 85, 247, 0.2) !important;
+  border: 1px solid rgba(168, 85, 247, 0.45) !important;
+  color: #e9d5ff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 4px !important;
+  padding: 5px 12px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 180ms ease !important;
+}
+
+.stmt-sample-box .stmt-copy:hover {
+  background: rgba(168, 85, 247, 0.38) !important;
+  color: #ffffff !important;
+  border-color: rgba(168, 85, 247, 0.7) !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45) !important;
+}
+
+.stmt-sample-box .stmt-copy:active {
+  transform: scale(0.95) !important;
+}
+
+.stmt-sample-box .stmt-sample-pre {
+  padding-right: 64px !important; /* Clear horizontal space to prevent text overlap */
+  white-space: pre-wrap !important;
+  color: #f1f5f9 !important;
+}
+
+/* ========================================================================
+   AI ANALYSIS PANEL visual alignment
+   ======================================================================== */
+
+.neon-ai-analysis-container {
+  background: 
+    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.08), transparent 50%),
+    rgba(16, 32, 60, 0.95) !important; /* Matches statement sections background */
+  border: 1px solid rgba(168, 85, 247, 0.36) !important;
+  border-radius: 14px !important;
+  box-shadow: 
+    0 12px 32px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(168, 85, 247, 0.08) !important;
+  padding: 20px !important;
+  margin-top: 24px !important;
+}
+
+.neon-ai-analysis-container .neon-ai-header {
+  font-family: var(--display, sans-serif) !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  margin-bottom: 18px !important;
+}
+
+/* Inner Panels styled like statement sections */
+.neon-ai-panel {
+  background: rgba(12, 23, 44, 0.6) !important;
+  border: 1px solid rgba(120, 196, 255, 0.16) !important;
+  border-radius: 8px !important;
+  padding: 14px !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.02) !important;
+  margin-bottom: 16px !important;
+}
+
+/* Titles styled like statement section headers */
+.neon-ai-panel-title {
+  font-family: var(--display, sans-serif) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  letter-spacing: 1px !important;
+  margin-bottom: 10px !important;
+  text-shadow: none !important;
+}
+
+/* Left-borders for the four sections matching statement color codes */
+.neon-ai-panel.summary-panel {
+  border-left: 3px solid rgb(var(--neon-cyan)) !important;
+}
+.neon-ai-panel.summary-panel .neon-ai-panel-title {
+  color: rgb(var(--neon-cyan)) !important;
+}
+
+.neon-ai-panel.tags-panel {
+  border-left: 3px solid rgb(var(--neon-violet)) !important;
+}
+.neon-ai-panel.tags-panel .neon-ai-panel-title {
+  color: rgb(var(--neon-violet)) !important;
+}
+
+.neon-ai-panel.constraints-panel {
+  border-left: 3px solid rgb(var(--neon-mint)) !important;
+}
+.neon-ai-panel.constraints-panel .neon-ai-panel-title {
+  color: rgb(var(--neon-mint)) !important;
+}
+
+.neon-ai-panel.warn-panel {
+  border-left: 3px solid rgb(var(--neon-amber)) !important;
+}
+.neon-ai-panel.warn-panel .neon-ai-panel-title {
+  color: rgb(var(--neon-amber)) !important;
+}
+
+/* Glow highlight for warn content */
+.neon-ai-panel.warn-panel .highlight-warn {
+  color: #fef08a !important; /* soft yellow */
+}

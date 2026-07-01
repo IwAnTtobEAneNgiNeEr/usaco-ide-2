@@ -705,15 +705,15 @@ function initGlobalParticles(app) {
   });
 
   const particles = [];
-  const maxParticles = 180;
+  const maxParticles = 120; // Reduced density for a cleaner, more premium look
   
-  // Vibrant, high-opacity neon colors matching the colorful statement accents
+  // Premium analogous space/cyan-violet palette (no childish rainbow/gay elements)
   const colors = [
-    "rgba(0, 242, 254, 0.8)",   // Neon Cyan
-    "rgba(187, 115, 255, 0.8)", // Neon Purple
-    "rgba(0, 255, 178, 0.8)",   // Neon Mint
-    "rgba(255, 187, 0, 0.8)",   // Neon Amber
-    "rgba(255, 0, 127, 0.8)"    // Neon Hot Pink
+    "rgba(0, 229, 255, 0.8)",   // Neon Cyan
+    "rgba(56, 189, 248, 0.8)",  // Sky Blue
+    "rgba(99, 102, 241, 0.8)",  // Indigo Blue
+    "rgba(167, 139, 250, 0.75)", // Soft Violet
+    "rgba(224, 242, 254, 0.65)"  // Glass White / Ice shine
   ];
 
   class Particle {
@@ -724,8 +724,8 @@ function initGlobalParticles(app) {
     reset(init = false) {
       this.x = Math.random() * width;
       this.y = init ? Math.random() * height : height + 25;
-      this.size = Math.random() * 8 + 8; // length of the trail
-      this.width = Math.random() * 1.5 + 0.8; // thickness
+      this.size = Math.random() * 12 + 10; // Longer comets for majestic flows
+      this.width = Math.random() * 0.9 + 0.55; // Much thinner, elegant threads
       this.vx = 0;
       this.vy = 0;
       this.phase = Math.random() * Math.PI * 2;
