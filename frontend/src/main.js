@@ -536,15 +536,11 @@ app.playSound = (type) => {
 
 // ---------------- Theme Applier ----------------
 app.applyTheme = (theme, accentColor) => {
-  theme = theme || "dark";
+  theme = "dark"; // Force dark theme globally, completely deleting light mode
   accentColor = accentColor || "amber";
 
-  // Apply theme class
-  if (theme === "light") {
-    document.documentElement.classList.add("light-theme");
-  } else {
-    document.documentElement.classList.remove("light-theme");
-  }
+  // Apply theme class (always dark, no light-theme class)
+  document.documentElement.classList.remove("light-theme");
 
   // Accent palette — one calm color per choice. No gradients: --accent-grad
   // resolves to a solid so the feature CSS that references it stays flat.
@@ -711,13 +707,13 @@ function initGlobalParticles(app) {
   const particles = [];
   const maxParticles = 180;
   
-  // Vibrant analogous space/cyan particles matching Google Antigravity aesthetic
+  // Vibrant, high-opacity neon colors matching the colorful statement accents
   const colors = [
-    "rgba(0, 229, 255, 0.75)",   // Neon Cyan
-    "rgba(56, 189, 248, 0.75)",  // Sky Blue
-    "rgba(99, 102, 241, 0.75)",  // Indigo Blue
-    "rgba(139, 92, 246, 0.75)",  // Royal Violet
-    "rgba(224, 242, 254, 0.5)"   // Ice White / Glass shine
+    "rgba(0, 242, 254, 0.8)",   // Neon Cyan
+    "rgba(187, 115, 255, 0.8)", // Neon Purple
+    "rgba(0, 255, 178, 0.8)",   // Neon Mint
+    "rgba(255, 187, 0, 0.8)",   // Neon Amber
+    "rgba(255, 0, 127, 0.8)"    // Neon Hot Pink
   ];
 
   class Particle {
@@ -727,8 +723,9 @@ function initGlobalParticles(app) {
 
     reset(init = false) {
       this.x = Math.random() * width;
-      this.y = init ? Math.random() * height : height + 20;
-      this.size = Math.random() * 6 + 6; // length of the dash
+      this.y = init ? Math.random() * height : height + 25;
+      this.size = Math.random() * 8 + 8; // length of the trail
+      this.width = Math.random() * 1.5 + 0.8; // thickness
       this.vx = 0;
       this.vy = 0;
       this.phase = Math.random() * Math.PI * 2;
@@ -736,8 +733,8 @@ function initGlobalParticles(app) {
     }
 
     update(mouseX, mouseY) {
-      // Default base flow: slow upward drift and soft horizontal oscillation
-      const baseVx = Math.sin(this.y * 0.004 + this.phase) * 0.2;
+      // Natural organic wave drift (micro-turbulence)
+      const baseVx = Math.sin(this.y * 0.015 + this.phase) * 0.35;
       const baseVy = -0.55;
 
       // Mouse swirling vortex field attraction force
@@ -745,8 +742,8 @@ function initGlobalParticles(app) {
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 280) {
-          const force = (280 - dist) / 280;
+        if (dist < 320) {
+          const force = (320 - dist) / 320;
           // Perpendicular swirl vector (-dy, dx)
           const swirlX = -dy / (dist + 0.1);
           const swirlY = dx / (dist + 0.1);
@@ -754,25 +751,32 @@ function initGlobalParticles(app) {
           const attractX = dx / (dist + 0.1);
           const attractY = dy / (dist + 0.1);
 
-          // Rotate and attract (55% swirl, 45% attraction to actually follow the mouse)
-          this.vx += (swirlX * 0.55 + attractX * 0.45) * force * 0.65;
-          this.vy += (swirlY * 0.55 + attractY * 0.45) * force * 0.65;
+          // Liquid swirl mechanics: 55% swirl, 45% center-attraction
+          this.vx += (swirlX * 0.55 + attractX * 0.45) * force * 0.85;
+          this.vy += (swirlY * 0.55 + attractY * 0.45) * force * 0.85;
 
-          // Slow down and cluster when very close to mouse to prevent centrifugal fling-out
-          if (dist < 80) {
-            this.vx *= 0.88;
-            this.vy *= 0.88;
+          // Gravity well: push back if too close to maintain a hollow orbital ring around cursor
+          if (dist < 25) {
+            const pushForce = (25 - dist) / 25;
+            this.vx -= attractX * pushForce * 1.5;
+            this.vy -= attractY * pushForce * 1.5;
+          }
+
+          // Damping inside the gravity field to settle into smooth orbits
+          if (dist < 90) {
+            this.vx *= 0.86;
+            this.vy *= 0.86;
           }
         }
       }
 
       // Apply drag to velocities
-      this.vx *= 0.94;
-      this.vy *= 0.94;
+      this.vx *= 0.93;
+      this.vy *= 0.93;
 
       // Clamp max velocity to prevent chaotic scattering
       const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-      const maxSpeed = 3.5;
+      const maxSpeed = 4.2;
       if (speed > maxSpeed) {
         this.vx = (this.vx / speed) * maxSpeed;
         this.vy = (this.vy / speed) * maxSpeed;
@@ -783,23 +787,33 @@ function initGlobalParticles(app) {
       this.y += this.vy + baseVy;
 
       // Reset when particle goes off screen
-      if (this.y < -20 || this.x < -20 || this.x > width + 20) {
+      if (this.y < -30 || this.x < -30 || this.x > width + 30) {
         this.reset(false);
       }
     }
 
     draw() {
-      const baseVx = Math.sin(this.y * 0.004 + this.phase) * 0.2;
+      const baseVx = Math.sin(this.y * 0.015 + this.phase) * 0.35;
       const baseVy = -0.55;
       const speedX = this.vx + baseVx;
       const speedY = this.vy + baseVy;
       const angle = Math.atan2(speedY, speedX);
 
+      const headX = this.x;
+      const headY = this.y;
+      const tailX = this.x - Math.cos(angle) * this.size;
+      const tailY = this.y - Math.sin(angle) * this.size;
+
+      // Create faded gradient comet tail
+      const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
+      grad.addColorStop(0, this.color);
+      grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
       ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      ctx.lineTo(this.x - Math.cos(angle) * this.size, this.y - Math.sin(angle) * this.size);
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 1.25;
+      ctx.moveTo(headX, headY);
+      ctx.lineTo(tailX, tailY);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = this.width;
       ctx.lineCap = "round";
       ctx.stroke();
     }
@@ -834,10 +848,12 @@ function initGlobalParticles(app) {
     ctx.clearRect(0, 0, width, height);
     canvas.style.display = "block";
     
+    ctx.globalCompositeOperation = "screen";
     for (let i = 0; i < particles.length; i++) {
       particles[i].update(mouseX, mouseY);
       particles[i].draw();
     }
+    ctx.globalCompositeOperation = "source-over";
 
     animationFrameId = requestAnimationFrame(animate);
   }

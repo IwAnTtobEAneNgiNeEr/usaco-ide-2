@@ -194,6 +194,68 @@ export async function mountCmEditor(app) {
   host.className = "cm-editor-host";
   codeStack.appendChild(host);
 
+  // ---- C++ syntactical auto-indentation calculator ----------------------
+  function getCppIndentation(state, pos) {
+    const line = state.doc.lineAt(pos);
+    const lineText = line.text;
+    const tabSize = (app.state.settings && app.state.settings.tabSize) || 4;
+
+    // Find previous non-empty line
+    let prevNonEmptyLine = null;
+    for (let i = 1; i <= Math.min(line.number - 1, 80); i++) {
+      const prev = state.doc.line(line.number - i);
+      if (prev.text.trim()) {
+        prevNonEmptyLine = prev;
+        break;
+      }
+    }
+
+    if (!prevNonEmptyLine) return 0;
+
+    const prevText = prevNonEmptyLine.text;
+    const prevTrimmed = prevText.trim();
+    
+    // Get previous line's base indentation
+    const prevIndentMatch = prevText.match(/^[ \t]*/);
+    let prevIndent = prevIndentMatch ? prevIndentMatch[0].length : 0;
+
+    // Analyze previous line to see if we should indent further
+    let indentChange = 0;
+
+    // Count braces in previous line (ignoring comments)
+    const cleanPrevText = prevText.replace(/\/\/.*$/, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    let prevOpenBraces = 0;
+    let prevCloseBraces = 0;
+    for (let char of cleanPrevText) {
+      if (char === '{') prevOpenBraces++;
+      else if (char === '}') prevCloseBraces++;
+    }
+
+    if (prevOpenBraces > prevCloseBraces) {
+      // Previous line opened a brace
+      indentChange = tabSize;
+    } else if (prevTrimmed.match(/^(for|while|if|else)\b/) && !prevTrimmed.endsWith(";") && !prevTrimmed.endsWith("}")) {
+      // Previous line was a control flow statement block start
+      indentChange = tabSize;
+    }
+
+    let targetIndent = prevIndent + indentChange;
+
+    // Adjust for current line
+    const currentTrimmed = lineText.trim();
+    if (currentTrimmed.startsWith("}")) {
+      // If this line starts with a closing brace, align it with matching open brace block (minus one tab size)
+      targetIndent = Math.max(0, targetIndent - tabSize);
+    } else if (currentTrimmed.startsWith("{")) {
+      // If this line starts with an opening brace, align it with the control flow statement above it
+      if (prevTrimmed.match(/^(for|while|if|else)\b/)) {
+        targetIndent = prevIndent;
+      }
+    }
+
+    return targetIndent;
+  }
+
   // ---- snippet-expansion Tab handler (runs before indentMore) -----------
   const lineIndent = (line) => (line.match(/^[ \t]*/) || [""])[0];
 
@@ -205,32 +267,52 @@ export async function mountCmEditor(app) {
       if (sel.from !== sel.to) return false; // let indentMore handle blocks
       const line = state.doc.lineAt(sel.from);
       const before = line.text.slice(0, sel.from - line.from);
+
+      // 1. If cursor is at leading whitespace, auto-indent to C++ syntactical level
+      const isLeadingWhitespace = /^\s*$/.test(before);
+      if (isLeadingWhitespace) {
+        const correctIndent = getCppIndentation(state, sel.from);
+        const currentIndentStr = (line.text.match(/^[ \t]*/) || [""])[0];
+        if (currentIndentStr.length !== correctIndent) {
+          const indentStr = " ".repeat(correctIndent);
+          view.dispatch({
+            changes: { from: line.from, to: line.from + currentIndentStr.length, insert: indentStr },
+            selection: { anchor: line.from + indentStr.length, head: line.from + indentStr.length },
+            scrollIntoView: true,
+            userEvent: "input.indent"
+          });
+          return true;
+        }
+      }
+
+      // 2. Check for snippet expansion
       const m = before.match(/([A-Za-z_]\w*)$/);
-      if (!m || !SNIPPETS[m[1]]) {
-        // If no snippet matches, insert spaces at cursor
-        const size = (app.state.settings && app.state.settings.tabSize) || 4;
-        const indentStr = " ".repeat(size);
+      if (m && SNIPPETS[m[1]]) {
+        const word = m[1];
+        const indent = lineIndent(line.text);
+        let body = SNIPPETS[word].split("\n")
+          .map((ln, i) => (i === 0 ? ln : indent + ln)).join("\n");
+        const caretIdx = body.indexOf("$0");
+        const clean = body.replace("$0", "");
+        const wordStart = sel.from - word.length;
+        const finalCaret = caretIdx >= 0 ? wordStart + caretIdx : wordStart + clean.length;
         view.dispatch({
-          changes: { from: sel.from, to: sel.to, insert: indentStr },
-          selection: { anchor: sel.from + indentStr.length, head: sel.from + indentStr.length },
+          changes: { from: wordStart, to: sel.to, insert: clean },
+          selection: { anchor: finalCaret, head: finalCaret },
           scrollIntoView: true,
-          userEvent: "input.type"
+          userEvent: "input.snippet"
         });
         return true;
       }
-      const word = m[1];
-      const indent = lineIndent(line.text);
-      let body = SNIPPETS[word].split("\n")
-        .map((ln, i) => (i === 0 ? ln : indent + ln)).join("\n");
-      const caretIdx = body.indexOf("$0");
-      const clean = body.replace("$0", "");
-      const wordStart = sel.from - word.length;
-      const finalCaret = caretIdx >= 0 ? wordStart + caretIdx : wordStart + clean.length;
+
+      // 3. Fallback: insert spaces at cursor
+      const size = (app.state.settings && app.state.settings.tabSize) || 4;
+      const indentStr = " ".repeat(size);
       view.dispatch({
-        changes: { from: wordStart, to: sel.to, insert: clean },
-        selection: { anchor: finalCaret, head: finalCaret },
+        changes: { from: sel.from, to: sel.to, insert: indentStr },
+        selection: { anchor: sel.from + indentStr.length, head: sel.from + indentStr.length },
         scrollIntoView: true,
-        userEvent: "input.snippet"
+        userEvent: "input.type"
       });
       return true;
     }
@@ -311,9 +393,15 @@ export async function mountCmEditor(app) {
     { tag: CM.t.lineComment, color: "var(--syn-cmt)", fontStyle: "italic" },
     { tag: CM.t.blockComment, color: "var(--syn-cmt)", fontStyle: "italic" },
     { tag: CM.t.function(CM.t.variableName), color: "var(--syn-fn)" },
-    { tag: CM.t.macroName, color: "var(--syn-ctrl)" },
-    { tag: CM.t.operator, color: "var(--text)" },
-    { tag: CM.t.bracket, color: "var(--text-muted)" }
+    { tag: CM.t.propertyName, color: "var(--syn-prop)" },
+    { tag: CM.t.definition(CM.t.propertyName), color: "var(--syn-fn)" },
+    { tag: CM.t.variableName, color: "var(--syn-var)" },
+    { tag: CM.t.definition(CM.t.variableName), color: "var(--syn-var-def)" },
+    { tag: CM.t.bool, color: "var(--syn-bool)" },
+    { tag: CM.t.meta, color: "var(--syn-meta)" },
+    { tag: CM.t.macroName, color: "var(--syn-meta)" },
+    { tag: CM.t.operator, color: "var(--syn-operator)" },
+    { tag: CM.t.bracket, color: "var(--syn-bracket)" }
   ]);
 
   // ---- Build the state --------------------------------------------------

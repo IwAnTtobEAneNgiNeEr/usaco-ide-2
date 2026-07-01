@@ -121,13 +121,10 @@ export function renderSettings(app) {
           <label>Tab size</label>
           <input id="set-tab" class="input" type="number" min="2" max="8" value="${s.tabSize}" style="max-width:90px" />
         </div>
-        <div class="settings-group">
           <label>Theme</label>
-          <select id="set-theme" class="select">
-            ${opt("dark", "Dark Mode", s.theme === "dark" || !s.theme)}
-            ${opt("light", "Light Mode", s.theme === "light")}
+          <select id="set-theme" class="select" disabled>
+            <option value="dark" selected>USACO Cockpit Dark</option>
           </select>
-        </div>
       </div>
       <div class="settings-group">
         <label>Accent Color</label>
