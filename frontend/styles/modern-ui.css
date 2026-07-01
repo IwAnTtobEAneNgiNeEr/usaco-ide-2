@@ -1172,3 +1172,91 @@ body.col-resizing .panel-resizer {
 .btn-ai:hover::after, .btn-primary:hover::after, .btn-run:hover::after, .btn-judge:hover::after {
   left: 100% !important;
 }
+
+/* ========================================================================
+   JOURNEY HOME GLASSMORPHIC COCKPIT OVERRIDES
+   ======================================================================== */
+
+.empty-state.journey-mode {
+  background: transparent !important;
+}
+
+.journey-home {
+  padding: 32px 24px !important;
+  background: transparent !important;
+}
+
+.journey-home .jh-greet {
+  color: #fff !important;
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 0.25),
+    0 0 20px rgba(var(--neon-cyan), 0.15) !important;
+  font-family: var(--display) !important;
+  font-weight: 800 !important;
+}
+
+/* Dashboard Journey Home cockpit card styling */
+.jh-streak,
+.jh-level,
+.jh-card,
+.jh-boss,
+.jh-continue-card {
+  border: 1px solid rgba(120, 196, 255, 0.14) !important;
+  border-radius: 14px !important;
+  background: 
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.05), transparent 70%),
+    rgba(10, 20, 38, 0.5) !important;
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.02),
+    0 8px 16px rgba(0, 0, 0, 0.3) !important;
+  transition: transform 180ms var(--ease), border-color 180ms ease, box-shadow 180ms ease !important;
+}
+
+.jh-streak:hover,
+.jh-level:hover,
+.jh-card:hover,
+.jh-boss:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(var(--neon-cyan), 0.38) !important;
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 0 15px rgba(var(--neon-cyan), 0.1),
+    0 12px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+.jh-level {
+  background: 
+    radial-gradient(420px 100px at 12% 0%, rgba(var(--neon-cyan), 0.06), transparent 70%),
+    rgba(10, 20, 38, 0.55) !important;
+}
+
+.jh-boss.alive {
+  border-color: rgba(var(--neon-pink), 0.28) !important;
+  background: 
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-pink), 0.07), transparent 70%),
+    rgba(22, 10, 22, 0.5) !important;
+}
+
+.jh-boss.alive:hover {
+  border-color: rgba(var(--neon-pink), 0.45) !important;
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.03),
+    0 0 15px rgba(var(--neon-pink), 0.12),
+    0 12px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+.jh-continue-card {
+  border-left: 3px solid rgb(var(--neon-cyan)) !important;
+  background: 
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.05), transparent 70%),
+    rgba(10, 20, 38, 0.6) !important;
+}
+
+.jh-continue-card:hover {
+  transform: translateX(3px) !important;
+  border-color: rgba(var(--neon-cyan), 0.5) !important;
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.03),
+    0 0 15px rgba(var(--neon-cyan), 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.3) !important;
+}

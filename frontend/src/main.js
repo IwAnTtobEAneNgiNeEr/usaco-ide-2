@@ -680,6 +680,161 @@ function initMouseGlow() {
   });
 }
 
+// ---------------- Global Particles Background (Google Antigravity style) ----------------
+function initGlobalParticles(app) {
+  let backdrop = document.getElementById("global-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.id = "global-backdrop";
+    backdrop.style.cssText = "position:fixed; inset:0; z-index:-2; background: linear-gradient(180deg, #07101f 0%, #050b14 100%); pointer-events:none;";
+    document.body.appendChild(backdrop);
+  }
+
+  let canvas = document.getElementById("global-particles-canvas");
+  if (!canvas) {
+    canvas = document.createElement("canvas");
+    canvas.id = "global-particles-canvas";
+    canvas.style.cssText = "position:fixed; inset:0; z-index:-1; pointer-events:none; display:block; background:transparent;";
+    document.body.appendChild(canvas);
+  }
+
+  const ctx = canvas.getContext("2d");
+  let animationFrameId = null;
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener("resize", () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  const particles = [];
+  const maxParticles = 140;
+  
+  // Colorful particles matching the theme accents
+  const colors = [
+    "rgba(45, 214, 255, 0.6)",   // Neon Cyan
+    "rgba(168, 85, 247, 0.6)",   // Neon Violet
+    "rgba(52, 211, 153, 0.6)",   // Neon Mint
+    "rgba(251, 191, 36, 0.6)",   // Neon Amber
+    "rgba(244, 63, 94, 0.6)"     // Neon Pink
+  ];
+
+  class Particle {
+    constructor() {
+      this.reset(true);
+    }
+
+    reset(init = false) {
+      this.x = Math.random() * width;
+      this.y = init ? Math.random() * height : height + 10;
+      this.size = Math.random() * 2.8 + 1.2;
+      this.speedY = -(Math.random() * 0.45 + 0.15);
+      this.speedX = (Math.random() - 0.5) * 0.25;
+      this.color = colors[Math.floor(Math.random() * colors.length)];
+      this.angle = Math.random() * Math.PI * 2;
+      this.spin = (Math.random() - 0.5) * 0.015;
+    }
+
+    update(mouseX, mouseY) {
+      this.y += this.speedY;
+      this.x += this.speedX;
+      this.angle += this.spin;
+
+      // Mouse swirling attraction force
+      if (mouseX !== null && mouseY !== null) {
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 220) {
+          const force = (220 - dist) / 220;
+          // swirl direction (perpendicular vector)
+          const angle = Math.atan2(dy, dx) + Math.PI / 2;
+          this.x += Math.cos(angle) * force * 0.75;
+          this.y += Math.sin(angle) * force * 0.75;
+        }
+      }
+
+      // Reset when particle goes off screen
+      if (this.y < -10 || this.x < -10 || this.x > width + 10) {
+        this.reset(false);
+      }
+    }
+
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.angle);
+      ctx.fillStyle = this.color;
+      // Draw rectangular confetti or round dust particles
+      if (Math.random() > 0.45) {
+        ctx.fillRect(-this.size, -this.size, this.size * 2, this.size * 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // Populate particles
+  for (let i = 0; i < maxParticles; i++) {
+    particles.push(new Particle());
+  }
+
+  let mouseX = null;
+  let mouseY = null;
+
+  document.addEventListener("mousemove", (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  document.addEventListener("mouseleave", () => {
+    mouseX = null;
+    mouseY = null;
+  });
+
+  function animate() {
+    // If settings explicitly disables particles, stop animation loop
+    if (app.state.settings && app.state.settings.enableParticles === false) {
+      canvas.style.display = "none";
+      animationFrameId = null;
+      return;
+    }
+
+    ctx.clearRect(0, 0, width, height);
+    canvas.style.display = "block";
+    
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].update(mouseX, mouseY);
+      particles[i].draw();
+    }
+
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  app.toggleGlobalParticles = (enable) => {
+    if (enable) {
+      if (!animationFrameId) {
+        animate();
+      }
+    } else {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      ctx.clearRect(0, 0, width, height);
+      canvas.style.display = "none";
+    }
+  };
+
+  // Start particles based on settings
+  const start = app.state.settings ? app.state.settings.enableParticles !== false : true;
+  app.toggleGlobalParticles(start);
+}
+
 // ---------------- Boot ----------------
 async function boot() {
   collectRefs();
@@ -690,6 +845,7 @@ async function boot() {
     app.state.settings = settings;
   } catch { /* defaults stand */ }
   app.applyTheme(app.state.settings.theme, app.state.settings.accentColor);
+  initGlobalParticles(app);
 
   initLayout(app);
   initProblems(app);

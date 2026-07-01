@@ -319,12 +319,14 @@ function renderStatement(app) {
   // Description is already presented in the hero. Rendering it again below
   // creates a long duplicated block and breaks the intended reading order.
   const out = sections.filter((section) => section.type !== "description").map(sectionHtml).join("");
+  const analysisHtml = renderAnalysisHtml(meta.analysis);
   host.innerHTML = `
     <div class="stmt-neon-shell">
       ${heroHtml}
       <div class="stmt-neon-secondary">
         ${out}
       </div>
+      ${analysisHtml}
     </div>
   `;
   highlightTokens(host);
@@ -420,15 +422,10 @@ function ratingBand(r) {
   return "r-bronze";
 }
 
-export function renderAnalysis(app, a) {
-  const card = document.getElementById("analysis-card");
-  if (!card) return;
+function renderAnalysisHtml(a) {
   if (!a || (!a.tomTat && !a.kyThuat?.length && !a.tags?.length && !a.doKho && !a.luuY && !a.doPhucTapYeuCauTime && !a.doPhucTapYeuCauSpace && !a.rangBuoc)) {
-    card.classList.add("hidden");
-    card.innerHTML = "";
-    return;
+    return "";
   }
-  card.classList.remove("hidden");
   
   // Premium Neon AI Analysis Layout
   const techChips = (a.kyThuat || []).map(t => `<span class="neon-ai-chip tech">${escapeHtml(t)}</span>`).join("");
@@ -442,7 +439,7 @@ export function renderAnalysis(app, a) {
     complexityHtml += `</div>`;
   }
 
-  card.innerHTML = `
+  return `
     <div class="neon-ai-analysis-container">
       <div class="neon-ai-header">
         <span class="icon">✨</span> Phân tích AI
@@ -481,6 +478,22 @@ export function renderAnalysis(app, a) {
       </div>
     </div>
   `;
+}
+
+export function renderAnalysis(app, a) {
+  if (app.state.meta) {
+    app.state.meta.analysis = a;
+  }
+  
+  // Hide and clear the separate legacy container
+  const card = document.getElementById("analysis-card");
+  if (card) {
+    card.classList.add("hidden");
+    card.innerHTML = "";
+  }
+  
+  // Re-draw statement to render the AI analysis inline
+  renderStatement(app);
 }
 
 function renderExamples(app, samples) {

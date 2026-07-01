@@ -53,7 +53,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   autosaveDelayMs: 800,     // debounce for autosave
   tabSize: 4,                // editor indentation width
   theme: "dark",            // "dark" | "light"
-  accentColor: "amber"      // "amber" | "blue" | "green" | "orange" | "purple" | "red"
+  accentColor: "amber",      // "amber" | "blue" | "green" | "orange" | "purple" | "red"
+  enableParticles: true      // background particle animation toggle
 });
 
 // Starter for a per-problem special judge (SPJ). The checker is compiled once

@@ -26,6 +26,7 @@ async function saveSettings(patch = {}) {
   next.tabSize = Math.min(Math.max(Number(next.tabSize) || 4, 2), 8);
   next.theme = ["dark", "light"].includes(next.theme) ? next.theme : "dark";
   next.accentColor = ["amber", "blue", "green", "orange", "purple", "red"].includes(next.accentColor) ? next.accentColor : "amber";
+  next.enableParticles = Boolean(next.enableParticles);
   await store.writeJson(SETTINGS_FILE, next);
   return next;
 }
