@@ -77,7 +77,14 @@ function classifyBareLabel(line) {
 // no I/O structure is found.
 const IO_IN_RE  = /^(sample\s+input|input|in|dữ\s*liệu\s*vào|vào)\s*#?\s*(\d*)\s*[:：]?$/i;
 const IO_OUT_RE = /^(sample\s+output|output|out|kết\s*quả|ra)\s*#?\s*(\d*)\s*[:：]?$/i;
-function trimData(arr) { return arr.join("\n").replace(/^\n+/, "").replace(/\s+$/, ""); }
+function trimData(arr) {
+  return arr.join("\n")
+    .replace(/^\n+/, "")
+    // Judge pages often paste their Copy-button label as the first data line.
+    // Strip only leading standalone chrome, never legitimate sample content.
+    .replace(/^(?:(?:copy|copied)\s*\n)+/i, "")
+    .replace(/\s+$/, "");
+}
 function renderExamplesGrid(text) {
   const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
   const preface = [];
@@ -229,6 +236,14 @@ function heroIllustration(app) {
   return "";
 }
 
+function updateIllustrationButton(app) {
+  const btn = document.getElementById("btn-ai-illustration");
+  if (!btn) return;
+  const hasScene = !!app.state.canvasScene;
+  const showing = !!app.state.showIllustration;
+  btn.textContent = hasScene ? (showing ? "⏸ Tắt animation" : "▶ Hiển thị animation") : "🎨 Tạo minh họa";
+}
+
 function renderStatement(app) {
   if (stopNeonCanvas) { stopNeonCanvas(); stopNeonCanvas = null; }
   const host = app.el.statementRendered;
@@ -278,12 +293,9 @@ function renderStatement(app) {
   const eloPercent = Math.min(100, Math.max(5, (elo / 3000) * 100));
 
   const descHtml = sections.find(s => s.type === "description")?.html || "";
-  const heroVisualHtml = heroIllustration(app) || `<canvas id="stmt-neon-canvas"></canvas>`;
+  const heroVisualHtml = heroIllustration(app);
   const heroHtml = `
-    <div class="stmt-neon-hero">
-      <div class="stmt-neon-hero-right">
-        ${heroVisualHtml}
-      </div>
+    <div class="stmt-neon-hero${heroVisualHtml ? " has-visual" : ""}">
       <div class="stmt-neon-hero-left">
         <div class="stmt-neon-hero-badges">
           <div class="stmt-neon-badge-problem"><span class="icon">📄</span> BÀI TOÁN</div>
@@ -300,26 +312,37 @@ function renderStatement(app) {
           ${descHtml}
         </div>
       </div>
+      ${heroVisualHtml ? `<div class="stmt-neon-hero-right">${heroVisualHtml}</div>` : ""}
     </div>
   `;
 
-  const out = sections.map(sectionHtml).join("");
-  host.innerHTML = heroHtml + out;
+  // Description is already presented in the hero. Rendering it again below
+  // creates a long duplicated block and breaks the intended reading order.
+  const out = sections.filter((section) => section.type !== "description").map(sectionHtml).join("");
+  host.innerHTML = `
+    <div class="stmt-neon-shell">
+      ${heroHtml}
+      <div class="stmt-neon-secondary">
+        ${out}
+      </div>
+    </div>
+  `;
   highlightTokens(host);
 
   if (app.state.canvasScene) {
     const canvas = document.getElementById("stmt-neon-canvas");
     if (canvas) {
       if (typeof stopNeonCanvas === "function") stopNeonCanvas();
-      stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic, app.state.meta);
+      stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic, app.state.meta, { animate: !!app.state.showIllustration });
     }
   }
+  updateIllustrationButton(app);
 
 }
 
 function sectionHtml(s) {
   return `<section class="stmt-section stmt-${s.type}">
-       <h2 class="stmt-section-label">${escapeHtml(s.label)}</h2>
+       <h2 class="stmt-section-label"><span class="stmt-section-icon" aria-hidden="true"></span><span>${escapeHtml(s.label)}</span></h2>
        <div class="stmt-section-body">${s.html}</div>
      </section>`;
 }
@@ -781,6 +804,7 @@ export async function requestCanvasIllustration(app, opts = {}) {
     const res = await api.aiCanvasIllustration(app.state.meta?.topic || app.state.meta?.title || "Data Structures");
     if (res && res.scene) {
       app.state.canvasScene = res.scene;
+      app.state.showIllustration = true;
       renderStatement(app);
     }
   } catch (e) {
@@ -795,6 +819,7 @@ export function loadProblemView(app) {
   app.state._processedHash = hashOf(app.el.ioStatement.value);
   app.state._pipelineBusy = false;
   app.state._pipelinePending = false;
+  app.state.showIllustration = false;
   const a = app.state.meta && app.state.meta.analysis;
   renderAnalysis(app, a);
   renderExamples(app, extractSamples(app.el.ioStatement.value));
@@ -826,7 +851,14 @@ export function initStatement(app) {
     });
   }
 
-    app.generateIllustration = () => requestCanvasIllustration(app, { manual: true });
+  app.generateIllustration = () => {
+    if (app.state.canvasScene) {
+      app.state.showIllustration = !app.state.showIllustration;
+      renderStatement(app);
+      return;
+    }
+    return requestCanvasIllustration(app, { manual: true });
+  };
   const btnAiIllustration = document.getElementById("btn-ai-illustration");
   if (btnAiIllustration) btnAiIllustration.addEventListener("click", app.generateIllustration);
 

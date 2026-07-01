@@ -27,12 +27,15 @@
   <link rel="stylesheet" href="./styles/refine.css?v=2.6" />
   <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
   <link rel="stylesheet" href="./styles/forge.css?v=3.2" />
-  <link rel="stylesheet" href="./styles/statement-neon.css" />
+  <link rel="stylesheet" href="./styles/statement-neon.css?v=1.6" />
+  <link rel="stylesheet" href="./styles/statement-neon-polish.css?v=1.1" />
   <!-- tokens.css — THE design system. Loaded LAST so it is the authoritative
        source of truth for every global --token. See docs/DESIGN-SYSTEM.md. -->
   <link rel="stylesheet" href="./styles/tokens.css?v=1.0" />
   <!-- Workspace switcher + policy-driven visibility (loaded after tokens so .ws-* utilities win). -->
   <link rel="stylesheet" href="./styles/workspaces.css?v=1.0" />
+  <!-- Final presentation layer: selectable UI fonts + modern blocks/buttons. -->
+  <link rel="stylesheet" href="./styles/modern-ui.css?v=1.4" />
   <!-- KaTeX for math rendering — vendored locally so the app stays truly offline (was a CDN dep with stale SRI hashes that broke all math). -->
   <link rel="stylesheet" href="./vendor/katex/katex.min.css" />
   <script defer src="./vendor/katex/katex.min.js"></script>
@@ -610,6 +613,6 @@
   <!-- Toast host -->
   <div id="toast-host" class="toast-host"></div>
 
-  <script type="module" src="./src/main.js?v=3.5"></script>
+  <script type="module" src="./src/main.js?v=3.7"></script>
 </body>
 </html>

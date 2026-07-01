@@ -8,7 +8,7 @@ import { mountCmEditor } from "./editor-cm.js?v=2.3";
 import { initTests, renderTests } from "./testcases.js?v=2.3";
 import { initRunner, renderHistory } from "./runner.js?v=2.4";
 import { initSettings } from "./settings.js?v=2.3";
-import { initStatement, loadProblemView } from "./statement.js?v=2.7";
+import { initStatement, loadProblemView } from "./statement.js?v=2.9";
 import { initTimer } from "./timer.js?v=2.3";
 import { initHints } from "./hints.js?v=2.3";
 import { initNotes } from "./notes.js?v=2.3";
@@ -56,7 +56,8 @@ const app = {
     savedCode: "", savedInput: "", savedExpected: "", savedNotes: "", savedStatement: "",
     editingMeta: null,
     aiSettings: null,
-    aiTests: []
+    aiTests: [],
+    showIllustration: false
   },
   el: {}
 };
@@ -231,6 +232,8 @@ app.refreshProblems = async () => {
 app.clearEditor = () => {
   app.state.currentId = null;
   app.state.meta = null;
+  app.state.canvasScene = null;
+  app.state.showIllustration = false;
   app.el.editorShell.classList.add("hidden");
   app.el.editorEmpty.classList.remove("hidden");
   app.el.currentTitle.textContent = "Chưa chọn bài";
@@ -262,6 +265,8 @@ app.loadProblem = async (id) => {
     const { problem, code, input, expected, notes, statement, tests } = await api.getWorkspace(id);
     app.state.currentId = id;
     app.state.meta = problem;
+    app.state.canvasScene = null;
+    app.state.showIllustration = false;
     app.state.tests = tests;
     app.state.openTests = new Set();
     app.state.testResults = {};

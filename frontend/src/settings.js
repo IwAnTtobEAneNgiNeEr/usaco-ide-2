@@ -4,12 +4,57 @@
 import { api } from "./api.js?v=2.2";
 import { escapeHtml } from "./md.js?v=2.2";
 
+const APP_FONT_KEY = "usaco-app-font";
+const APP_FONTS = {
+  geist: {
+    label: "Geist",
+    note: "Gọn, trung tính",
+    stack: '"Geist", -apple-system, "Segoe UI", system-ui, sans-serif'
+  },
+  manrope: {
+    label: "Manrope",
+    note: "Mềm và hiện đại",
+    stack: '"Manrope", "Geist", system-ui, sans-serif'
+  },
+  space: {
+    label: "Space Grotesk",
+    note: "Cá tính kỹ thuật",
+    stack: '"Space Grotesk", "Geist", system-ui, sans-serif'
+  },
+  vietnam: {
+    label: "Be Vietnam Pro",
+    note: "Tối ưu tiếng Việt",
+    stack: '"Be Vietnam Pro", "Geist", system-ui, sans-serif'
+  }
+};
+
+function getAppFont() {
+  try {
+    const saved = localStorage.getItem(APP_FONT_KEY);
+    return APP_FONTS[saved] ? saved : "geist";
+  } catch {
+    return "geist";
+  }
+}
+
+function applyAppFont(fontKey) {
+  const key = APP_FONTS[fontKey] ? fontKey : "geist";
+  const root = document.documentElement;
+  root.dataset.appFont = key;
+  root.style.setProperty("--sans", APP_FONTS[key].stack);
+  root.style.setProperty("--display", APP_FONTS[key].stack);
+  try { localStorage.setItem(APP_FONT_KEY, key); } catch { /* storage may be disabled */ }
+}
+
+applyAppFont(getAppFont());
+
 function opt(value, label, selected) {
   return `<option value="${value}" ${selected ? "selected" : ""}>${label}</option>`;
 }
 
 export function renderSettings(app) {
   const s = app.state.settings;
+  const appFont = getAppFont();
   const ai = app.state.aiSettings || { baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", fallbackModels: "", hasKey: false };
   const tpl = app.state.codeTemplate || { template: "", custom: false };
 
@@ -93,6 +138,16 @@ export function renderSettings(app) {
           ${opt("purple", "Amethyst (Purple)", s.accentColor === "purple")}
           ${opt("red", "Crimson (Red)", s.accentColor === "red")}
         </select>
+      </div>
+      <div class="settings-group app-font-setting">
+        <label for="set-app-font">Phông chữ giao diện</label>
+        <select id="set-app-font" class="select">
+          ${Object.entries(APP_FONTS).map(([key, font]) => opt(key, `${font.label} — ${font.note}`, appFont === key)).join("")}
+        </select>
+        <div class="app-font-preview" aria-hidden="true">
+          <strong>Đề bài nổi bật</strong>
+          <span>Đọc rõ hơn · tập trung lâu hơn · giải bài tốt hơn</span>
+        </div>
       </div>
       <div class="settings-group" style="margin-top:6px">
         <button id="btn-save-settings" class="btn btn-primary">Save settings</button>
@@ -182,6 +237,11 @@ function wire(app) {
     $("epsilon-group").hidden = $("set-compare").value !== "float";
   });
 
+  // Apply immediately so the preview and the whole app respond while browsing.
+  $("set-app-font").addEventListener("change", (event) => {
+    applyAppFont(event.target.value);
+  });
+
   $("btn-check-compiler").addEventListener("click", async () => {
     const status = $("compiler-status");
     status.textContent = "Checking…";
@@ -206,6 +266,7 @@ function wire(app) {
       theme: $("set-theme").value,
       accentColor: $("set-accent-color").value
     };
+    applyAppFont($("set-app-font").value);
     try {
       const { settings } = await api.saveSettings(patch);
       app.state.settings = settings;

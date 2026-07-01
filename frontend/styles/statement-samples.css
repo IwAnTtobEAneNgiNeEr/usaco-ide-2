@@ -1,0 +1,124 @@
+/* =========================================================================
+   statement-samples.css — targeted Statement / Tests UI patch
+   Loaded last; every value is token-driven so dark + light themes both adapt.
+   Three concerns, kept minimal and self-contained:
+     1. Copy buttons on the "Ví dụ mẫu" sample I/O boxes.
+     2. "Ảnh minh hoạ từ đề" pasted-image figure cards.
+     3. Compact, secondary provenance chips in the Tests panel.
+   ========================================================================= */
+
+/* ---- 1. Sample I/O copy buttons (Examples card) ------------------------- */
+/* .ex-head gains a trailing copy button; mirror the statement page's
+   .stmt-copy affordance so the whole problem column feels like one system. */
+.examples-card .ex-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.examples-card .ex-head-label { flex: 1 1 auto; min-width: 0; }
+.ex-copy {
+  flex: none;
+  font-family: var(--mono); font-size: 11px; line-height: 1;
+  color: var(--text-dim); background: transparent;
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 7px; cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.ex-copy:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.ex-copy.done { color: var(--ac); border-color: rgba(52, 210, 126, .5); }
+
+/* ---- 2. "Ảnh minh hoạ từ đề" figure cards ------------------------------- */
+.images-card .img-fig-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.img-fig {
+  position: relative; margin: 0;
+  display: flex; flex-direction: column; gap: 7px;
+  background: var(--editor-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px;
+}
+.img-fig-img {
+  width: 100%; height: auto; max-height: 320px; object-fit: contain;
+  display: block; background: var(--bg-soft);
+  border-radius: calc(var(--radius) - 4px);
+}
+.img-fig-cap {
+  font-size: 11.5px; line-height: 1.45; color: var(--text-dim); text-align: center;
+}
+.img-fig-del {
+  position: absolute; top: 6px; right: 6px;
+  width: 22px; height: 22px; display: grid; place-items: center;
+  font-size: 12px; color: var(--text-dim);
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 999px; cursor: pointer; opacity: 0;
+  transition: opacity .12s, color .12s, border-color .12s;
+}
+.img-fig:hover .img-fig-del,
+.img-fig:focus-within .img-fig-del { opacity: 1; }
+.img-fig-del:hover { color: var(--wa); border-color: var(--wa); }
+
+/* ---- 3. Compact provenance chips (Tests panel) -------------------------- */
+/* Quiet + secondary by design: the AC/WA/RE verdict badge must stay dominant,
+   so these are small outline chips (tinted text + hairline), never filled
+   "screaming" blocks. The full provenance string lives in the title tooltip
+   and in the expanded card body (.tc-prov-full). */
+.tc-prov {
+  flex: none;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .3px; line-height: 1.5;
+  color: var(--text-dim);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px; padding: 1px 6px;
+  white-space: nowrap; max-width: 96px; overflow: hidden; text-overflow: ellipsis;
+}
+.tc-prov-official,
+.tc-prov-verified { color: var(--ac); border-color: rgba(52, 210, 126, .35); }
+.tc-prov-oracle   { color: #6cc5e8; border-color: rgba(108, 197, 232, .35); }
+.tc-prov-checked  { color: #86b98f; border-color: rgba(134, 185, 143, .35); }
+.tc-prov-unverified { color: var(--text-dim); border-color: var(--border); }
+.tc-prov-user     { color: var(--text-muted); border-color: var(--border-soft); }
+.tc-prov-stale    { color: #c9a14a; border-color: rgba(201, 161, 74, .35); }
+.tc-prov-invalid  { color: var(--wa); border-color: rgba(240, 88, 79, .35); }
+.tc-prov-unknown  { color: var(--text-dim); }
+
+/* Full technical string, surfaced inside the expanded test card (detail view). */
+.tc-prov-full { font-size: 10.5px; color: var(--text-dim); }
+.tc-prov-full code {
+  font-family: var(--mono); font-size: 10.5px; color: var(--text-muted);
+  background: var(--bg-soft); border: 1px solid var(--border-soft);
+  border-radius: 4px; padding: 1px 5px;
+}
+
+/* ---- 4. Backend generate-tests integration (summary, warnings, tab flash) - */
+/* Read-only summary after a server-side generate+persist run. */
+.gt-summary { font-size: 12.5px; color: var(--text-muted); }
+.gt-summary b { color: var(--text); }
+.gt-warnings { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.gt-warn-line {
+  font-size: 11.5px; line-height: 1.45; color: #c9a14a;
+  background: rgba(201, 161, 74, .08); border: 1px solid rgba(201, 161, 74, .25);
+  border-radius: 6px; padding: 5px 9px;
+}
+.gt-skip { margin-top: 8px; font-size: 11.5px; color: var(--text-dim); }
+.gt-skip > summary { cursor: pointer; color: var(--text-dim); user-select: none; }
+.gt-skip > summary:hover { color: var(--text-muted); }
+.gt-skip-line {
+  font-family: var(--mono); font-size: 10.5px; color: var(--text-dim);
+  padding: 3px 0 0 12px;
+}
+.gt-skip-line b { color: var(--text-muted); }
+
+/* Compact, non-popup illustration note inside the images card. */
+.img-note { font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+
+/* Brief glow drawing the eye to the Tests tab after tests are added. */
+.panel-tabs .tab.tab-flash {
+  animation: tab-flash-kf 1.5s ease-out;
+}
+@keyframes tab-flash-kf {
+  0%   { box-shadow: inset 0 -2px 0 var(--accent), 0 0 0 1px var(--accent-soft); color: var(--accent); }
+  100% { box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-tabs .tab.tab-flash { animation: none; }
+}

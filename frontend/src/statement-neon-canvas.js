@@ -4,8 +4,9 @@ export function supportsNeonCanvas(topic, meta) {
   return /(kmp|knapsack|dijkstra|monotonic stack|convex hull|kruskal|prim|sliding window|binary search|flood fill|\bbfs\b|\bdfs\b|\blis\b|segment tree|fenwick|trie|n-queens|hanoi|prefix sum|bitmask|topological|\blca\b|sieve|prime|max flow|hoán vị|permutation|queue|stack|greedy|merge sort|quick sort|string|array|mê cung|đồng hồ|clock|timeline|robot|pathfinding|grid|đường đi|lưới)/i.test(text);
 }
 
-export function initNeonCanvas(canvas, topic, meta) {
+export function initNeonCanvas(canvas, topic, meta, opts = {}) {
   const ctx = canvas.getContext('2d');
+  const shouldAnimate = opts.animate !== false;
   let animationFrame;
   let frame = 0;
 
@@ -463,21 +464,67 @@ export function initNeonCanvas(canvas, topic, meta) {
     const step = Math.floor(frame/90) % steps.length;
     const state = steps[step];
     
-    // Draw full range bar (dim)
-    drawRoundedRectGlow(startX, startY, barW, 20, 10, "rgba(100, 200, 255, 0.2)", 0, '0.1');
-    
-    // Draw valid search space
-    const rx = startX + (state.l/maxVal)*barW;
-    const rw = ((state.r - state.l)/maxVal)*barW;
-    drawRoundedRectGlow(rx, startY, rw, 20, 10, "rgba(50, 255, 150, 0.6)", 15, '0.3');
-    
-    // Draw Mid pointer
-    const mx = startX + (state.m/maxVal)*barW;
-    drawLineGlow(mx, startY - 20, mx, startY + 40, state.valid ? "rgba(50, 255, 150, 1)" : "rgba(255, 100, 100, 1)", 15, 3);
+    // Draw a clean rail with endpoints so it reads as a deliberate diagram,
+    // not a stray line.
+    const railY = startY + 8;
+    const railH = 16;
+    const rx = startX + (state.l / maxVal) * barW;
+    const rw = ((state.r - state.l) / maxVal) * barW;
+    const mx = startX + (state.m / maxVal) * barW;
+
+    ctx.fillStyle = "rgba(7, 13, 23, 0.95)";
+    ctx.strokeStyle = "rgba(100, 200, 255, 0.16)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(startX, railY - 8, barW, railH + 16, 12);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(rx, railY, rw, railH, 10);
+    ctx.clip();
+    const grad = ctx.createLinearGradient(rx, 0, rx + rw, 0);
+    grad.addColorStop(0, "rgba(50, 255, 150, 0.14)");
+    grad.addColorStop(0.5, "rgba(69, 200, 255, 0.26)");
+    grad.addColorStop(1, "rgba(50, 255, 150, 0.14)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(rx, railY, rw, railH);
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.roundRect(rx, railY, rw, railH, 10);
+    ctx.strokeStyle = "rgba(50, 255, 150, 0.72)";
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = "rgba(50, 255, 150, 0.65)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Draw Mid pointer as a clear marker above the rail.
+    drawLineGlow(mx, railY - 26, mx, railY + railH + 18, state.valid ? "rgba(50, 255, 150, 1)" : "rgba(255, 100, 100, 1)", 15, 3);
+    drawGlow(mx, railY - 24, 5, state.valid ? "rgba(50, 255, 150, 1)" : "rgba(255, 100, 100, 1)", 12);
     
     ctx.fillStyle = "#fff";
     ctx.font = "12px sans-serif";
-    ctx.fillText(`Mid: ${state.m} => ${state.valid ? "Valid (shrink right)" : "Invalid (shrink left)"}`, startX, startY - 30);
+    ctx.fillText(`Mid: ${state.m} => ${state.valid ? "Valid (shrink right)" : "Invalid (shrink left)"}`, startX, railY - 30);
+
+    // Endpoint labels so the visual has structure even when the bar is short.
+    const labelY = railY + 38;
+    const label = (x, text, color) => {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(x - 18, labelY - 14, 36, 22, 8);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = "700 10px var(--mono)";
+      ctx.textAlign = "center";
+      ctx.fillText(text, x, labelY + 1);
+      ctx.restore();
+    };
+    label(startX + (state.l / maxVal) * barW, `L=${state.l}`, "rgba(59, 130, 246, 0.22)");
+    label(startX + (state.r / maxVal) * barW, `R=${state.r}`, "rgba(239, 68, 68, 0.20)");
   }
 
   // --- 9. Flood Fill (BFS Maze) ---
@@ -2310,8 +2357,8 @@ export function initNeonCanvas(canvas, topic, meta) {
     
 
     // Routing Logic (Ordered by specificity)
-    if (/(clock|timeline)/i.test(textToScan)) { renderClockRollover(); frame++; animationFrame = requestAnimationFrame(loop); return; }
-    if (/(robot|pathfinding|grid|path)/i.test(textToScan)) { renderRobotPath(); frame++; animationFrame = requestAnimationFrame(loop); return; }
+    if (/(clock|timeline)/i.test(textToScan)) { renderClockRollover(); frame++; if (shouldAnimate) animationFrame = requestAnimationFrame(loop); return; }
+    if (/(robot|pathfinding|grid|path)/i.test(textToScan)) { renderRobotPath(); frame++; if (shouldAnimate) animationFrame = requestAnimationFrame(loop); return; }
     if (/(clock|đồng hồ|timeline)/i.test(textToScan)) renderClockRollover();
     else if (/(robot|pathfinding|đường đi|lưới)/i.test(textToScan)) renderRobotPath();
     if (/(maze|mê cung)/i.test(textToScan)) renderMazeDFS();
@@ -2375,7 +2422,7 @@ export function initNeonCanvas(canvas, topic, meta) {
     else renderMathFallback();
     
     frame++;
-    animationFrame = requestAnimationFrame(loop);
+    if (shouldAnimate) animationFrame = requestAnimationFrame(loop);
   }
 
   loop();

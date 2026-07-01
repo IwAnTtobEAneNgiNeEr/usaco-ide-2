@@ -1,0 +1,963 @@
+{
+  "version": 1,
+  "entries": {
+    "cd70f0a36e7f4a6a0a2ff4c5c45442029a89723af9d07e679f9993c34a3fe85a": {
+      "problemId": "b-tatar-tv-show",
+      "statementHash": "09e91923a14294d1a13cb39421014469e49b32043b7179aa5e2787b211922e96",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid",
+        "title": "B. Tatar TV Show",
+        "caption": "Flipping paired bits at distance k to reach all zeros",
+        "static": false,
+        "steps": 6,
+        "elements": [
+          {
+            "type": "grid",
+            "cells": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "rows": 1,
+            "cols": 6
+          },
+          {
+            "type": "arrow",
+            "from": "[object Object]",
+            "to": "[object Object]",
+            "color": "cyan"
+          },
+          {
+            "type": "sequence",
+            "values": [
+              "101101",
+              "001001",
+              "000000"
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T10:03:15.613Z"
+    },
+    "5b6707d4cf93b8bcb3b3538f0b4ed2159c36e8152adb39f6250b40dee2e6b6cf": {
+      "problemId": "quay-lui-nhanh-can-bai-8-chia-mang",
+      "statementHash": "637a0ddc45a113f0a299834f7368ca7f3ccf5bae854dcbfa7f2a298b5fdf63f9",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid",
+        "title": "Equal-sum Subset Partition",
+        "caption": "Animating grouping of array elements into K subsets with equal sum",
+        "static": false,
+        "steps": 6,
+        "elements": [
+          {
+            "type": "grid",
+            "cells": [
+              0
+            ],
+            "rows": 1,
+            "cols": 5
+          },
+          {
+            "type": "region",
+            "label": "Subset 1 (2+4=6)",
+            "color": "cyan",
+            "points": [
+              {
+                "r": 0,
+                "c": 1
+              },
+              {
+                "r": 0,
+                "c": 2
+              }
+            ]
+          },
+          {
+            "type": "region",
+            "label": "Subset 2 (1+5=6)",
+            "color": "amber",
+            "points": [
+              {
+                "r": 0,
+                "c": 0
+              },
+              {
+                "r": 0,
+                "c": 3
+              }
+            ]
+          },
+          {
+            "type": "region",
+            "label": "Subset 3 (6)",
+            "color": "green",
+            "points": [
+              {
+                "r": 0,
+                "c": 4
+              }
+            ]
+          },
+          {
+            "type": "label",
+            "text": "All subsets sum to 6",
+            "x": 0.5,
+            "y": 0.9
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T10:02:34.896Z"
+    },
+    "345174a3639b711822d96265606d9a4f4e964c02317d4ef808b28a7434ab5ad6": {
+      "problemId": "quay-lui-nhanh-can-bai-5-di-chuyen-trong-ma-tran",
+      "statementHash": "9e979fb65908f8f9cdb4115b8052b01b56085b476895a2cfb2b92b39d4af4966",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid",
+        "title": "Quay Lui - Nhánh Cận: Đếm đường đi trong ma trận",
+        "caption": "Shows moving from the top‑left cell to the bottom‑right cell using only down or right moves.",
+        "static": false,
+        "steps": 6,
+        "elements": [
+          {
+            "type": "grid",
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1,
+            "color": "muted",
+            "rows": 3,
+            "cols": 5
+          },
+          {
+            "type": "path",
+            "color": "cyan"
+          },
+          {
+            "type": "timeline",
+            "color": "amber"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:57:26.010Z"
+    },
+    "c2064e97ce03f437884ca914f8f6d8fb9b0e1a1ffd8dd0d0f9381f0a01c98604": {
+      "problemId": "robot-tim-duong-di",
+      "statementHash": "b0529d6f633d8950f23943262e76cf88a2a797639b18b18e7f96283acc398362",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "gridPath",
+        "title": "Robot Minimal Path",
+        "caption": "Robot moves from (1,1) to (3,3) using only right and down moves, showing a minimal‑step path.",
+        "static": false,
+        "steps": 5,
+        "elements": [
+          {
+            "type": "grid",
+            "color": "muted",
+            "rows": 3,
+            "cols": 3
+          },
+          {
+            "type": "node",
+            "id": "A",
+            "label": "(1,1)",
+            "x": 0.1,
+            "y": 0.1,
+            "color": "cyan"
+          },
+          {
+            "type": "node",
+            "id": "B",
+            "label": "(1,2)",
+            "x": 0.5,
+            "y": 0.1,
+            "color": "cyan"
+          },
+          {
+            "type": "node",
+            "id": "C",
+            "label": "(1,3)",
+            "x": 0.9,
+            "y": 0.1,
+            "color": "cyan"
+          },
+          {
+            "type": "node",
+            "id": "D",
+            "label": "(2,3)",
+            "x": 0.9,
+            "y": 0.5,
+            "color": "cyan"
+          },
+          {
+            "type": "node",
+            "id": "E",
+            "label": "(3,3)",
+            "x": 0.9,
+            "y": 0.9,
+            "color": "cyan"
+          },
+          {
+            "type": "arrow",
+            "from": "A",
+            "to": "B",
+            "color": "amber"
+          },
+          {
+            "type": "arrow",
+            "from": "B",
+            "to": "C",
+            "color": "amber"
+          },
+          {
+            "type": "arrow",
+            "from": "C",
+            "to": "D",
+            "color": "amber"
+          },
+          {
+            "type": "arrow",
+            "from": "D",
+            "to": "E",
+            "color": "amber"
+          },
+          {
+            "type": "label",
+            "text": "Minimal steps = 4",
+            "x": 0.5,
+            "y": 0.2,
+            "color": "green"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:57:09.882Z"
+    },
+    "884975308664040a2afe10d8f5062b874e542b09ed035a872b65482335a3589e": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "clock",
+        "title": "Đồng hồ",
+        "caption": "Thời gian từ T_start đến T_end",
+        "static": false,
+        "steps": 6,
+        "elements": [
+          {
+            "type": "clock",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "cyan"
+          },
+          {
+            "type": "label",
+            "text": "Bắt đầu",
+            "x": 0.5,
+            "y": 0.85,
+            "color": "amber"
+          },
+          {
+            "type": "label",
+            "text": "Kết thúc",
+            "x": 0.5,
+            "y": 0.15,
+            "color": "amber"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:56:59.173Z"
+    },
+    "ce879970f2e30d3fc8fc20d163f64bd4007b2b7708c3694ea0ddd24709a841a9": {
+      "problemId": "quay-lui-nhanh-can-bai-5-di-chuyen-trong-ma-tran",
+      "statementHash": "9e979fb65908f8f9cdb4115b8052b01b56085b476895a2cfb2b92b39d4af4966",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid",
+        "title": "Matrix Path Counting",
+        "caption": "Illustrates monotonic paths from (1,1) to (N,M) in a 3×5 matrix.",
+        "static": false,
+        "steps": 5,
+        "elements": [
+          {
+            "type": "grid",
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1,
+            "color": "muted",
+            "rows": 3,
+            "cols": 5
+          },
+          {
+            "type": "path",
+            "color": "cyan"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:56:49.600Z"
+    },
+    "aa7cc87b439637c2d06c6db7a9cdb7ef39ce2d733fb8d1b4b1cec776948323d1": {
+      "problemId": "robot-tim-duong-di",
+      "statementHash": "b0529d6f633d8950f23943262e76cf88a2a797639b18b18e7f96283acc398362",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid",
+        "title": "Robot Path Example",
+        "caption": "Illustration of robot moving from (1,1) to (n,n) with right/down moves.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "grid",
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1,
+            "color": "muted",
+            "rows": 3,
+            "cols": 3
+          },
+          {
+            "type": "path",
+            "color": "cyan"
+          },
+          {
+            "type": "label",
+            "text": "Steps: 4",
+            "x": 0.02,
+            "y": 0.02,
+            "color": "ink"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:50:16.817Z"
+    },
+    "62856031bcbceac90349be747c28ebb1d5ad177d7df7a724baff1a9e97bd602f": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "clock",
+        "title": "Đồng hồ",
+        "caption": "Tiến trình thời gian từ T_start đến T_end trên đồng hồ 24‑giờ",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "clock"
+          },
+          {
+            "type": "sequence"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:49:57.061Z"
+    },
+    "2693f60be0a58ad6bdab70eae7a8a014ce3cb83618301187f80d71312fad6f76": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Đồng hồ",
+        "caption": "Linear progression of clock states from T_start to T_end",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "label",
+            "text": "Start: HH:MM:SS",
+            "x": 0.1,
+            "y": 0.2,
+            "color": "green"
+          },
+          {
+            "type": "label",
+            "text": "End: HH:MM:SS",
+            "x": 0.9,
+            "y": 0.2,
+            "color": "red"
+          },
+          {
+            "type": "timeline",
+            "x": 0.1,
+            "y": 0.5,
+            "x2": 0.9,
+            "y2": 0.5,
+            "color": "cyan"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:49:48.606Z"
+    },
+    "509868113399217a4c47ac68a423991cf0541d53fa2e41ca14d9c261e7fc46ef": {
+      "problemId": "quay-lui-nhanh-can-bai-1-tap-hop-co-tong-bang-s",
+      "statementHash": "60ea182a5efb25e86b6e09d0d6c233b6f9d37cda4c7244b5c678eec00ac6624e",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid",
+        "title": "Subset sum counting",
+        "caption": "Example n=9, k=3, s=23 – only subset {6,8,9}",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "label",
+            "text": "Example n=9, k=3, s=23",
+            "x": 0.5,
+            "y": 0.05,
+            "color": "ink"
+          },
+          {
+            "type": "node",
+            "label": "1",
+            "x": 0.1666667,
+            "y": 0.1666667,
+            "color": "muted"
+          },
+          {
+            "type": "node",
+            "label": "2",
+            "x": 0.5,
+            "y": 0.1666667,
+            "color": "muted"
+          },
+          {
+            "type": "node",
+            "label": "3",
+            "x": 0.8333333,
+            "y": 0.1666667,
+            "color": "muted"
+          },
+          {
+            "type": "node",
+            "label": "4",
+            "x": 0.1666667,
+            "y": 0.5,
+            "color": "muted"
+          },
+          {
+            "type": "node",
+            "label": "5",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "muted"
+          },
+          {
+            "type": "node",
+            "label": "6",
+            "x": 0.8333333,
+            "y": 0.5,
+            "color": "green"
+          },
+          {
+            "type": "node",
+            "label": "7",
+            "x": 0.1666667,
+            "y": 0.8333333,
+            "color": "muted"
+          },
+          {
+            "type": "node",
+            "label": "8",
+            "x": 0.5,
+            "y": 0.8333333,
+            "color": "green"
+          },
+          {
+            "type": "node",
+            "label": "9",
+            "x": 0.8333333,
+            "y": 0.8333333,
+            "color": "green"
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:41:52.875Z"
+    },
+    "edc940146596848df9479b09991b68ca06165de1a50d42d682dded65d6a2baff": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "sequence",
+        "title": "Clock states",
+        "caption": "Example of consecutive clock displays from T_start to T_end.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "sequence",
+            "color": "cyan",
+            "values": [
+              "08:29:58",
+              "08:29:59",
+              "08:30:00",
+              "08:30:01",
+              "08:30:02"
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:41:18.971Z"
+    },
+    "6d34573ff3c4ad6fa69c7424a26a54ed22b58e6b48adb1e23c3c012b0e2799f4": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Đồng hồ",
+        "caption": "Digital clock progression from start to end time.",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "clock",
+            "x": 0.5,
+            "y": 0.2,
+            "color": "ink"
+          },
+          {
+            "type": "timeline",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "cyan"
+          },
+          {
+            "type": "sequence",
+            "x": 0.5,
+            "y": 0.8,
+            "color": "amber",
+            "values": [
+              "08:29:58",
+              "08:29:59",
+              "08:30:00",
+              "08:30:01",
+              "08:30:02"
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-07-01T08:32:58.324Z"
+    },
+    "b33e0ff5ae55492a53ae9a1753f156ba9c398cbe5235e3290c47dca035413e31": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "clock",
+        "title": "Đồng hồ",
+        "caption": "Illustration of a digital clock advancing second‑by‑second from a start time to an end time.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "clock",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "ink"
+          },
+          {
+            "type": "clock",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "muted"
+          },
+          {
+            "type": "timeline",
+            "x": 0.1,
+            "y": 0.9,
+            "width": 0.8,
+            "height": 0.05,
+            "color": "cyan"
+          },
+          {
+            "type": "label",
+            "text": "08:29:58",
+            "x": 0.1,
+            "y": 0.85,
+            "color": "amber"
+          },
+          {
+            "type": "label",
+            "text": "08:30:02",
+            "x": 0.9,
+            "y": 0.85,
+            "color": "amber"
+          },
+          {
+            "type": "sequence",
+            "x": 0.5,
+            "y": 0.2,
+            "color": "green"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:23:15.350Z"
+    },
+    "93f3130f28ec584c344d3583c9c6bb2ed00ad62f6ae08d75e87619893f308ff0": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Đồng hồ điện tử",
+        "caption": "Các trạng thái thời gian từ T_start đến T_end",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "timeline",
+            "x": 0.1,
+            "y": 0.5,
+            "width": 0.8,
+            "height": 0.02,
+            "color": "ink"
+          },
+          {
+            "type": "pointer",
+            "x": 0.1,
+            "y": 0.5,
+            "x2": 0.9,
+            "y2": 0.5,
+            "color": "red"
+          },
+          {
+            "type": "label",
+            "text": "HH:MM:SS",
+            "x": 0.1,
+            "y": 0.45,
+            "color": "cyan"
+          },
+          {
+            "type": "label",
+            "text": "HH:MM:SS",
+            "x": 0.9,
+            "y": 0.45,
+            "color": "cyan"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:20:34.878Z"
+    },
+    "a49a77d42b7c8eb309e3e7ec65fd04c63a24c2501f692ec7684b853689f8d9b4": {
+      "problemId": "robot-tim-duong-di",
+      "statementHash": "b0529d6f633d8950f23943262e76cf88a2a797639b18b18e7f96283acc398362",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "sequence",
+        "title": "Robot minimal path example",
+        "caption": "5×5 grid, k = 4. Robot starts at (1,1) and moves only right or down to (5,5), passing through cells whose value i·j = 4.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "sequence",
+            "color": "cyan"
+          },
+          {
+            "type": "label",
+            "text": "(1,1)",
+            "x": 0,
+            "y": 0,
+            "color": "red"
+          },
+          {
+            "type": "label",
+            "text": "(5,5)",
+            "x": 1,
+            "y": 1,
+            "color": "red"
+          },
+          {
+            "type": "region",
+            "x": 0.2,
+            "y": 0.2,
+            "width": 0.2,
+            "height": 0.2,
+            "color": "amber"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:20:08.100Z"
+    },
+    "5e076399a1c247d861100195e2603a269e6bc5e7b074837e0d5fb5081f04b60b": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Digital Clock Progression",
+        "caption": "Shows the linear progression of displayed times from a start moment to an end moment, handling the possible midnight wra",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "timeline",
+            "label": "00:00:00",
+            "x": 0.1,
+            "y": 0.5
+          },
+          {
+            "type": "label",
+            "text": "Start",
+            "x": 0.1,
+            "y": 0.4
+          },
+          {
+            "type": "label",
+            "text": "End",
+            "x": 0.9,
+            "y": 0.4
+          },
+          {
+            "type": "pointer",
+            "label": "T_start",
+            "x": 0.2,
+            "y": 0.5
+          },
+          {
+            "type": "pointer",
+            "label": "T_end",
+            "x": 0.8,
+            "y": 0.5
+          },
+          {
+            "type": "range",
+            "x": 0.2,
+            "y": 0.5,
+            "x2": 0.8,
+            "y2": 0.5,
+            "color": "cyan"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:19:54.434Z"
+    },
+    "e2262fbb95b2beb573a46de08330950bc4fa543b31625585f14727e4325c5edf": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Đồng hồ",
+        "caption": "Example progression of a digital clock from start to end within one minute.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "sequence",
+            "x": 0.1,
+            "y": 0.5,
+            "color": "cyan",
+            "values": [
+              "08:29:58",
+              "08:29:59",
+              "08:30:00",
+              "08:30:01",
+              "08:30:02"
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:17:38.006Z"
+    },
+    "e47312873bb6f8fb6a4a6b5408d6a77e047eb893c4df02955fb22a44e611233c": {
+      "problemId": "dong-ho",
+      "statementHash": "ca379286718a72202a3ffd44416ec9d9ca115f5433950e3ceb4b5aecd2aaa433",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Đồng hồ - Trình tự thời gian",
+        "caption": "Ví dụ ngắn các trạng thái của đồng hồ từ T_start tới T_end.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "label",
+            "text": "T_start",
+            "x": 0.1,
+            "y": 0.2,
+            "color": "ink"
+          },
+          {
+            "type": "clock",
+            "x": 0.3,
+            "y": 0.5,
+            "color": "cyan"
+          },
+          {
+            "type": "label",
+            "text": "...",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "muted"
+          },
+          {
+            "type": "clock",
+            "x": 0.7,
+            "y": 0.5,
+            "color": "amber"
+          },
+          {
+            "type": "label",
+            "text": "T_end",
+            "x": 0.9,
+            "y": 0.2,
+            "color": "ink"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:17:35.126Z"
+    },
+    "40a8bd92faa8bca1922711ce397c51e8082a8f97bddbea7f9617d80b96ba9a9a": {
+      "problemId": "",
+      "statementHash": "a744ab8d6cb0d733d7e7e3b6315828f5a7fc648573bb8941f323e9420e5955a9",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "grid maze",
+        "title": "Robot t?m ???ng",
+        "caption": "A robot navigating a grid maze.",
+        "static": true,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "grid",
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1,
+            "color": "muted",
+            "rows": 5,
+            "cols": 5
+          },
+          {
+            "type": "node",
+            "label": "S",
+            "x": 0.1,
+            "y": 0.1,
+            "color": "green"
+          },
+          {
+            "type": "node",
+            "label": "G",
+            "x": 0.9,
+            "y": 0.9,
+            "color": "red"
+          },
+          {
+            "type": "path",
+            "color": "cyan"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:17:14.879Z"
+    },
+    "41fcb4dc35f115792b128c5e7fed959a739215d6822d09dc9c26bfa3e567c7ac": {
+      "problemId": "",
+      "statementHash": "deb225c6234028ec74efc96042ec9eb3cc5f774f257092ff08254b896b088718",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "sequence",
+        "title": "Permutation Generation",
+        "caption": "Lexicographic order for N=3",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "sequence",
+            "color": "cyan",
+            "values": [
+              "123",
+              "132",
+              "213",
+              "231",
+              "312",
+              "321"
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:17:12.771Z"
+    },
+    "a94e2791b6e93c285734c57cb018105ad1c8eab5dc7fe1b21221746329cc5f4e": {
+      "problemId": "",
+      "statementHash": "5dc73141d18efc2217aadf3bb378b69d1b263b9a74f31191c7451d563683ef76",
+      "model": "mercury-2",
+      "scene": {
+        "version": 1,
+        "visualType": "timeline",
+        "title": "Time interval simulation",
+        "caption": "Show seconds from 23:59:58 to 00:00:02 across midnight",
+        "static": false,
+        "steps": 0,
+        "elements": [
+          {
+            "type": "timeline",
+            "x": 0.1,
+            "y": 0.5,
+            "width": 0.8,
+            "height": 0.05,
+            "color": "ink"
+          },
+          {
+            "type": "label",
+            "text": "23:59:58",
+            "x": 0.1,
+            "y": 0.45,
+            "color": "red"
+          },
+          {
+            "type": "label",
+            "text": "00:00:02",
+            "x": 0.9,
+            "y": 0.45,
+            "color": "red"
+          },
+          {
+            "type": "range",
+            "x": 0.1,
+            "y": 0.5,
+            "width": 0.8,
+            "height": 0.05,
+            "color": "cyan"
+          },
+          {
+            "type": "pointer",
+            "x": 0.5,
+            "y": 0.5,
+            "color": "amber"
+          }
+        ]
+      },
+      "createdAt": "2026-06-30T20:16:56.405Z"
+    }
+  }
+}

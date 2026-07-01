@@ -1,0 +1,672 @@
+/* Modern UI v4 — neon competition cockpit, loaded last.
+   Direction: keep the 6/10 card structure, push it into a real cyber/neon
+   statement pane without ugly symbol glyphs or flattened enterprise styling. */
+:root {
+  --display: "Space Grotesk", "Manrope", var(--sans);
+  --control-radius: 8px;
+  --block-radius: 14px;
+
+  --neon-bg: #07101f;
+  --neon-bg-2: #0a1528;
+  --neon-card: #0d182a;
+  --neon-card-2: #101e33;
+  --neon-ink: #f4fbff;
+  --neon-copy: #d9e9f7;
+  --neon-muted: #8fa7bf;
+  --neon-cyan: 45, 214, 255;
+  --neon-blue: 68, 136, 255;
+  --neon-violet: 166, 112, 255;
+  --neon-mint: 64, 235, 178;
+  --neon-amber: 255, 194, 82;
+  --neon-pink: 255, 96, 177;
+  --neon-line: rgba(120, 196, 255, .23);
+  --neon-line-hot: rgba(65, 215, 255, .58);
+  --neon-shadow: 0 0 22px rgba(45, 214, 255, .12), 0 8px 12px rgba(0, 0, 0, .24);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* App font setting */
+.app-font-setting { margin-top: var(--space-4); }
+.app-font-setting .select { font-family: var(--sans); }
+.app-font-preview {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  overflow: hidden;
+  border: 1px solid rgba(var(--neon-cyan), .25);
+  border-radius: var(--control-radius);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(var(--neon-cyan), .18), transparent 48%),
+    radial-gradient(circle at 90% 0%, rgba(var(--neon-violet), .12), transparent 42%),
+    var(--neon-bg-2);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04);
+}
+.app-font-preview strong {
+  font: 800 16px/1.22 var(--display);
+  letter-spacing: -.025em;
+  color: var(--neon-ink);
+}
+.app-font-preview span { font-size: var(--text-caption); color: var(--neon-muted); }
+
+/* Controls: sharper neon-edged buttons, not mushy gray pills. */
+.btn {
+  min-height: 32px;
+  border-radius: var(--control-radius);
+  border-color: rgba(121, 156, 192, .28);
+  font-weight: 720;
+  letter-spacing: -.01em;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .012)),
+    color-mix(in srgb, var(--panel-2) 82%, #0b1930 18%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .055);
+  transition:
+    transform 160ms var(--ease),
+    color 160ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+.btn-sm { min-height: 28px; }
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(var(--neon-cyan), .54);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(var(--neon-cyan), .12), inset 0 1px rgba(255, 255, 255, .08);
+}
+.btn:active:not(:disabled) { transform: translateY(0) scale(.985); box-shadow: inset 0 1px rgba(255, 255, 255, .04); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(var(--neon-cyan), .72), 0 0 0 6px rgba(var(--neon-cyan), .12); }
+.btn-primary,
+.btn-run,
+.btn-judge {
+  border-color: rgba(255, 255, 255, .16) !important;
+  color: #fff !important;
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), .18), inset 0 1px rgba(255, 255, 255, .24) !important;
+}
+.btn-run { background: linear-gradient(180deg, #4f98ff 0%, #2466ee 100%) !important; }
+.btn-judge { background: linear-gradient(180deg, #23c86f 0%, #128b4d 100%) !important; }
+.btn kbd {
+  opacity: .74;
+  font-weight: 650;
+  background: rgba(0, 0, 0, .2);
+  border-color: rgba(255, 255, 255, .14);
+}
+
+.input,
+.select,
+textarea.input {
+  border-radius: var(--control-radius);
+  border-color: rgba(121, 156, 192, .26);
+  background: color-mix(in srgb, var(--editor-bg) 86%, #0b1930 14%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .035);
+}
+
+/* Settings and utility cards follow the same sharper surface vocabulary. */
+.settings-card,
+.analysis-card,
+.examples-card,
+.gentests-card,
+.coach-card-sec,
+.tcard {
+  border-color: rgba(121, 156, 192, .24) !important;
+  border-radius: var(--block-radius) !important;
+  background:
+    radial-gradient(520px 180px at 0% 0%, rgba(var(--neon-cyan), .055), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 44%),
+    color-mix(in srgb, var(--panel) 86%, #0b1930 14%) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 8px 12px rgba(0, 0, 0, .18) !important;
+}
+.settings-card { padding: var(--space-20) !important; overflow: visible !important; }
+.settings-section-title,
+.card-title,
+.prob-label,
+.col-title {
+  font-family: var(--sans);
+  font-weight: 800;
+  letter-spacing: .045em;
+}
+
+/* Top problem title: clean and strong, while the statement title carries the neon. */
+.meta-title,
+#meta-title {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -.028em;
+  line-height: 1.13;
+  text-wrap: balance;
+}
+.editor-meta { padding-top: 14px; padding-bottom: 12px; }
+.meta-chips { margin-top: 8px; }
+.meta-chip {
+  border-color: rgba(121, 156, 192, .22);
+  background: rgba(13, 24, 42, .72);
+  font-weight: 650;
+}
+
+/* ========================================================================
+   STATEMENT — neon reading pane.
+   ======================================================================== */
+.problem-view {
+  position: relative;
+  container-type: inline-size;
+  background:
+    radial-gradient(520px 320px at 8% -8%, rgba(var(--neon-cyan), .18), transparent 62%),
+    radial-gradient(460px 260px at 96% 0%, rgba(var(--neon-violet), .13), transparent 62%),
+    linear-gradient(180deg, #07101f 0%, #090f1b 58%, #070b13 100%);
+}
+.problem-view::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .22;
+  background-image:
+    linear-gradient(rgba(90, 170, 255, .12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 170, 255, .10) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 30% 0%, black, transparent 72%);
+}
+.problem-scroll {
+  position: relative;
+  z-index: 1;
+  gap: 16px;
+  padding: 10px 18px 34px;
+}
+.statement-page { background: transparent; }
+.stmt-neon-shell {
+  gap: 16px;
+  max-width: 100%;
+}
+.prob-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 8px 0 12px;
+  padding: 7px 10px;
+  border: 1px solid rgba(var(--neon-cyan), .18);
+  border-radius: 10px;
+  background: rgba(4, 12, 24, .34);
+  color: rgba(216, 233, 247, .70);
+  font-size: 11.5px;
+  line-height: 1.45;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025);
+}
+.prob-status:empty { display: none; }
+.prob-status::before {
+  content: "";
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: rgb(var(--neon-cyan));
+  box-shadow: 0 0 10px rgba(var(--neon-cyan), .55);
+}
+.prob-status b { color: #fff; }
+.prob-status .warn-text { color: #ffb4c8; }
+
+/* Hero: bigger neon identity, but still readable. */
+.stmt-neon-shell .stmt-neon-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 25px 28px 27px;
+  border: 1px solid rgba(var(--neon-cyan), .38);
+  border-radius: 16px;
+  background:
+    radial-gradient(560px 240px at 2% -18%, rgba(var(--neon-cyan), .28), transparent 66%),
+    radial-gradient(440px 260px at 98% -12%, rgba(var(--neon-violet), .22), transparent 65%),
+    linear-gradient(135deg, rgba(14, 34, 60, .96), rgba(8, 17, 32, .98));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .035) inset,
+    0 0 28px rgba(var(--neon-cyan), .14),
+    0 8px 12px rgba(0, 0, 0, .28);
+}
+.stmt-neon-shell .stmt-neon-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(var(--neon-cyan), .64) 18%, rgba(var(--neon-violet), .48) 48%, transparent 84%) top / 100% 1px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, .055), transparent 42%);
+}
+.stmt-neon-shell .stmt-neon-hero::after {
+  content: "";
+  position: absolute;
+  right: -120px;
+  top: -120px;
+  width: 310px;
+  height: 310px;
+  border: 1px solid rgba(var(--neon-cyan), .16);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(var(--neon-cyan), .13), transparent 60%),
+    radial-gradient(circle at 40% 40%, rgba(var(--neon-violet), .12), transparent 46%);
+  box-shadow: 0 0 42px rgba(var(--neon-cyan), .08);
+  pointer-events: none;
+}
+.stmt-neon-shell .stmt-neon-hero-badges {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 15px;
+  align-items: center;
+}
+.stmt-neon-shell .stmt-neon-badge-problem {
+  padding: 5px 10px;
+  border: 1px solid rgba(var(--neon-cyan), .36);
+  border-radius: 8px;
+  background: rgba(var(--neon-cyan), .10);
+  color: #bff3ff;
+  font: 800 10px/1 var(--sans);
+  letter-spacing: .105em;
+  box-shadow: inset 0 0 12px rgba(var(--neon-cyan), .08), 0 0 16px rgba(var(--neon-cyan), .09);
+}
+.stmt-neon-shell .stmt-neon-badge-problem .icon { display: none !important; }
+.stmt-neon-shell .stmt-elo-chip {
+  border-color: rgba(255, 255, 255, .14) !important;
+  background: rgba(3, 8, 18, .36) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04), 0 0 16px color-mix(in srgb, var(--rank-c) 26%, transparent) !important;
+}
+.stmt-neon-shell .stmt-neon-hero-title {
+  position: relative;
+  z-index: 1;
+  max-width: 22ch;
+  margin: 0 0 14px;
+  color: #ffffff;
+  font-family: var(--display);
+  font-size: clamp(28px, 2.55vw, 38px);
+  font-weight: 860;
+  line-height: 1.03;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, .9),
+    0 0 18px rgba(var(--neon-cyan), .45),
+    0 0 34px rgba(var(--neon-blue), .22);
+}
+.stmt-neon-shell .stmt-neon-hero-title::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 2px;
+  margin-top: 15px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(var(--neon-cyan)), rgb(var(--neon-violet)), transparent);
+  box-shadow: 0 0 16px rgba(var(--neon-cyan), .5);
+}
+.stmt-neon-shell .stmt-neon-hero-desc {
+  position: relative;
+  z-index: 1;
+  max-width: 72ch;
+  color: #eef8ff;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.72;
+  letter-spacing: -.004em;
+  text-wrap: pretty;
+}
+.stmt-neon-shell .stmt-neon-hero-desc strong { color: #fff; font-weight: 820; }
+
+/* Cards: clear blocks with real neon edges. */
+.stmt-neon-shell .stmt-neon-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section {
+  --section-accent: var(--neon-cyan);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(132px, 164px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  overflow: hidden;
+  padding: 22px 24px;
+  border: 1px solid rgba(var(--section-accent), .34);
+  border-radius: 14px;
+  background:
+    radial-gradient(420px 150px at 0% 0%, rgba(var(--section-accent), .145), transparent 72%),
+    radial-gradient(420px 180px at 100% -20%, rgba(var(--neon-violet), .06), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .01)),
+    rgba(11, 23, 41, .94);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .04),
+    inset 0 0 24px rgba(var(--section-accent), .035),
+    0 0 18px rgba(var(--section-accent), .085),
+    0 8px 12px rgba(0, 0, 0, .22);
+  transition:
+    transform 180ms var(--ease),
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--section-accent), .62), transparent);
+  pointer-events: none;
+}
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--section-accent), .58);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .06),
+    inset 0 0 28px rgba(var(--section-accent), .055),
+    0 0 26px rgba(var(--section-accent), .14),
+    0 8px 12px rgba(0, 0, 0, .26);
+}
+.stmt-neon-shell .stmt-input { --section-accent: var(--neon-cyan); }
+.stmt-neon-shell .stmt-output { --section-accent: var(--neon-mint); }
+.stmt-neon-shell .stmt-constraints { --section-accent: var(--neon-violet); }
+.stmt-neon-shell .stmt-examples { --section-accent: var(--neon-amber); }
+.stmt-neon-shell .stmt-notes { --section-accent: var(--neon-blue); }
+.stmt-neon-shell .stmt-subtasks { --section-accent: var(--neon-pink); }
+
+/* Label: no ugly arrows/diamonds. The icon is a geometric neon node. */
+.stmt-neon-shell .stmt-section-label {
+  position: sticky;
+  top: var(--space-12);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: rgb(var(--section-accent));
+  font: 860 11.5px/1.15 var(--sans);
+  letter-spacing: .052em;
+  text-transform: uppercase;
+  text-shadow: 0 0 15px rgba(var(--section-accent), .28);
+}
+.stmt-neon-shell .stmt-section-label::before,
+.stmt-neon-shell .stmt-section-label::after { content: none !important; display: none !important; }
+.stmt-neon-shell .stmt-section-label span:last-child {
+  padding-top: 1px;
+}
+.stmt-neon-shell .stmt-section-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  overflow: visible;
+  border: 1px solid rgba(var(--section-accent), .44) !important;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle, rgba(var(--section-accent), .22), rgba(var(--section-accent), .06) 58%, transparent 70%) !important;
+  color: rgb(var(--section-accent)) !important;
+  font-size: 0 !important;
+  box-shadow:
+    inset 0 0 10px rgba(var(--section-accent), .16),
+    0 0 14px rgba(var(--section-accent), .20);
+}
+.stmt-neon-shell .stmt-section-icon::before {
+  content: "" !important;
+  display: block !important;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(45deg);
+  box-shadow: 0 0 12px rgba(var(--section-accent), .72);
+}
+.stmt-neon-shell .stmt-section-icon::after {
+  content: "" !important;
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(var(--section-accent), .26);
+  border-radius: 5px;
+  transform: rotate(45deg);
+}
+
+.stmt-neon-shell .stmt-section-body {
+  min-width: 0;
+  padding: 0;
+  color: var(--neon-copy);
+  font-family: var(--sans);
+  font-size: 14.7px;
+  font-weight: 620;
+  line-height: 1.72;
+  letter-spacing: -.002em;
+  text-wrap: pretty;
+}
+.stmt-neon-shell .stmt-section-body > :first-child { margin-top: 0; }
+.stmt-neon-shell .stmt-section-body > :last-child { margin-bottom: 0; }
+.stmt-neon-shell .stmt-section-body p { max-width: 70ch; margin: 0 0 12px; }
+.stmt-neon-shell .stmt-section-body strong { color: #fff; font-weight: 820; }
+.stmt-neon-shell .stmt-section-body li::marker { color: rgb(var(--section-accent)); }
+.stmt-neon-shell .stmt-section-body code {
+  border-color: rgba(var(--section-accent), .24);
+  background: rgba(var(--section-accent), .09);
+  color: #f7fdff;
+}
+
+/* Constraints are neon spec tiles, not dull subcards. */
+.stmt-neon-shell .stmt-constraints .stmt-section-body,
+.stmt-neon-shell .stmt-subtasks .stmt-section-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.stmt-neon-shell .stmt-constraints .stmt-section-body > p,
+.stmt-neon-shell .stmt-subtasks .stmt-section-body > p {
+  display: flex;
+  align-items: center;
+  min-height: 78px;
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(var(--section-accent), .30);
+  border-radius: 12px;
+  background:
+    radial-gradient(220px 100px at 0 0, rgba(var(--section-accent), .16), transparent 70%),
+    rgba(4, 12, 24, .52);
+  color: #f5fbff;
+  font: 720 12.8px/1.55 var(--mono);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04), 0 0 18px rgba(var(--section-accent), .06);
+}
+
+/* Examples: terminal neon treatment. */
+.stmt-neon-shell .stmt-examples .stmt-section-body { padding: 0; }
+.stmt-neon-shell .stmt-sample {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.stmt-neon-shell .stmt-sample-col { margin: 0 0 17px !important; }
+.stmt-neon-shell .stmt-sample-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px !important;
+  color: color-mix(in srgb, rgb(var(--section-accent)) 82%, #fff 18%) !important;
+  font: 860 11px/1.25 var(--sans) !important;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(var(--section-accent), .22);
+}
+.stmt-neon-shell .stmt-sample-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgb(var(--section-accent));
+  box-shadow: 0 0 12px rgba(var(--section-accent), .7);
+}
+.stmt-neon-shell .stmt-sample-box,
+.stmt-neon-shell pre {
+  position: relative;
+  border: 1px solid rgba(var(--section-accent), .34) !important;
+  border-radius: 13px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 32%),
+    radial-gradient(340px 140px at 0 0, rgba(var(--section-accent), .11), transparent 72%),
+    #050b16 !important;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .05),
+    inset 0 0 28px rgba(var(--section-accent), .035),
+    0 0 18px rgba(var(--section-accent), .09) !important;
+}
+.stmt-neon-shell .stmt-sample-box { padding: 17px 18px !important; }
+.stmt-neon-shell .stmt-sample-box .stmt-copy,
+.stmt-neon-shell .stmt-copy,
+.stmt-neon-shell .copy-btn {
+  min-height: 27px;
+  padding: 5px 10px !important;
+  border: 1px solid rgba(var(--section-accent), .44) !important;
+  border-radius: 8px !important;
+  background: rgba(var(--section-accent), .13) !important;
+  color: color-mix(in srgb, rgb(var(--section-accent)) 84%, #fff 16%) !important;
+  font: 820 10.5px/1 var(--sans) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .05), 0 0 12px rgba(var(--section-accent), .08) !important;
+  transition:
+    transform 150ms var(--ease),
+    color 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease !important;
+}
+.stmt-neon-shell .stmt-sample-box .stmt-copy:hover,
+.stmt-neon-shell .stmt-copy:hover,
+.stmt-neon-shell .copy-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--section-accent), .72) !important;
+  background: rgba(var(--section-accent), .20) !important;
+  color: #fff !important;
+  box-shadow: 0 0 18px rgba(var(--section-accent), .18) !important;
+}
+.stmt-neon-shell .stmt-sample-pre {
+  color: #f8fdff !important;
+  font-size: 13px !important;
+  line-height: 1.66 !important;
+  font-weight: 560 !important;
+}
+
+/* Split mode: preserve title and cards, avoid huge awkward glyphs. */
+.workbench.mode-split .problem-scroll {
+  padding: 10px 18px 34px;
+  gap: 16px;
+}
+.workbench.mode-split .stmt-neon-shell .stmt-neon-hero {
+  padding: 24px 24px 25px;
+}
+.workbench.mode-split .stmt-neon-shell .stmt-neon-hero-badges {
+  display: flex;
+  margin-bottom: 13px;
+}
+.workbench.mode-split .stmt-neon-shell .stmt-neon-hero-title {
+  display: block;
+  max-width: 20ch;
+  margin-bottom: 13px;
+  font-size: clamp(27px, 2.15vw, 35px);
+}
+.workbench.mode-split .stmt-neon-shell .stmt-neon-hero-desc {
+  max-width: 72ch;
+  color: #f0f8ff;
+  font-size: 14.8px;
+  line-height: 1.72;
+}
+.workbench.mode-split .stmt-neon-shell .stmt-neon-secondary > .stmt-section {
+  grid-template-columns: minmax(124px, 154px) minmax(0, 1fr);
+  padding: 21px 22px;
+}
+
+/* A little motion makes neon feel alive, but content is visible by default. */
+@media (prefers-reduced-motion: no-preference) {
+  .stmt-neon-shell .stmt-section-icon {
+    animation: neon-node-breathe 2.8s ease-in-out infinite;
+  }
+  .stmt-neon-shell .stmt-neon-hero-title::after {
+    animation: neon-rule-breathe 3.6s ease-in-out infinite;
+  }
+}
+@keyframes neon-node-breathe {
+  0%, 100% { box-shadow: inset 0 0 10px rgba(var(--section-accent), .14), 0 0 12px rgba(var(--section-accent), .14); }
+  50% { box-shadow: inset 0 0 14px rgba(var(--section-accent), .20), 0 0 20px rgba(var(--section-accent), .28); }
+}
+@keyframes neon-rule-breathe {
+  0%, 100% { opacity: .74; transform: scaleX(.92); transform-origin: left; }
+  50% { opacity: 1; transform: scaleX(1); transform-origin: left; }
+}
+
+.light-theme .problem-view {
+  background:
+    radial-gradient(520px 320px at 8% -8%, rgba(var(--neon-cyan), .14), transparent 62%),
+    linear-gradient(180deg, #eef5ff 0%, #e8eef8 100%);
+}
+.light-theme .stmt-neon-shell .stmt-neon-hero,
+.light-theme .stmt-neon-shell .stmt-neon-secondary > .stmt-section {
+  background-color: #f8fbff;
+}
+.light-theme .stmt-neon-shell .stmt-neon-hero-desc,
+.light-theme .stmt-neon-shell .stmt-section-body { color: #14243a; }
+.light-theme .stmt-neon-shell .stmt-neon-hero-title,
+.light-theme .stmt-neon-shell .stmt-neon-hero-desc strong,
+.light-theme .stmt-neon-shell .stmt-section-body strong { color: #07111f; }
+.light-theme .stmt-neon-shell .stmt-sample-box,
+.light-theme .stmt-neon-shell pre { background: #f8fbff !important; }
+.light-theme .stmt-neon-shell .stmt-sample-pre { color: #07111f !important; }
+
+@media (max-width: 1120px) {
+  .stmt-neon-shell .stmt-neon-secondary > .stmt-section,
+  .workbench.mode-split .stmt-neon-shell .stmt-neon-secondary > .stmt-section {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  .stmt-neon-shell .stmt-section-label { position: static; }
+}
+
+@container (max-width: 620px) {
+  .stmt-neon-shell .stmt-neon-secondary > .stmt-section,
+  .workbench.mode-split .stmt-neon-shell .stmt-neon-secondary > .stmt-section {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  .stmt-neon-shell .stmt-section-label { position: static; }
+  .stmt-neon-shell .stmt-constraints .stmt-section-body,
+  .stmt-neon-shell .stmt-subtasks .stmt-section-body { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .settings-card { padding: var(--space-16) !important; }
+  .problem-scroll,
+  .workbench.mode-split .problem-scroll { padding-inline: var(--space-12); }
+  .stmt-neon-shell .stmt-neon-hero { padding: 20px; }
+  .stmt-neon-shell .stmt-neon-hero-title { font-size: 27px; }
+  .stmt-neon-shell .stmt-neon-secondary > .stmt-section { padding: var(--space-16); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn,
+  .stmt-neon-shell .stmt-neon-secondary > .stmt-section,
+  .stmt-neon-shell .stmt-copy,
+  .stmt-neon-shell .copy-btn {
+    transition: none !important;
+    animation: none !important;
+  }
+}
