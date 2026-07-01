@@ -1598,22 +1598,23 @@ body,
    PREMIUM NEON C++ SYNTAX HIGHLIGHTING (IDE UPGRADE)
    ======================================================================== */
 
+/* Fallback values for editor variables, no !important so user settings cascade */
 .cm-editor {
-  /* Premium Neon C++ Code Highlighting Variables */
-  --syn-kw: #f472b6 !important;       /* C++ keywords (using, namespace, class, struct, public) - Neon Pink */
-  --syn-ctrl: #fb7185 !important;     /* Flow control (for, while, if, else, return) - Neon Rose */
-  --syn-type: #34d399 !important;     /* Primitive & Object types (int, bool, void, string, pair, vector) - Neon Mint */
-  --syn-fn: #facc15 !important;       /* Functions (main, cmp, bk, push_back, cin.tie, etc.) - Glowing Gold */
-  --syn-prop: #fbbf24 !important;     /* Class/object properties (first, second, fi, se) - Amber */
-  --syn-var: #60a5fa !important;      /* Variables (n, visited, found, s, a, i, j, k) - Soft Cyan/Blue */
-  --syn-var-def: #38bdf8 !important;  /* Variable declarations - Bright Neon Blue */
-  --syn-bool: #f97316 !important;     /* Boolean constants (true, false, NULL, nullptr) - Bright Orange */
-  --syn-num: #fb923c !important;      /* Numbers (0, 1, 1005, 10) - Warm Gold/Orange */
-  --syn-str: #a78bfa !important;      /* String literals - Soft Violet */
-  --syn-cmt: #64748b !important;      /* Comments - Muted Slate Grey (italicized) */
-  --syn-meta: #c084fc !important;     /* Preprocessor directives (#include, #define) - Electric Purple */
-  --syn-operator: #2dd4bf !important; /* Math/logical operators (=, <, +, ++, <<, >>) - Glowing Teal */
-  --syn-bracket: #94a3b8 !important;  /* Brackets/braces - Clean Slate */
+  --syn-kw: var(--syn-kw, #ff79c6);
+  --syn-ctrl: var(--syn-ctrl, #ff5555);
+  --syn-type: var(--syn-type, #50fa7b);
+  --syn-class: var(--syn-class, #bd93f9);
+  --syn-fn: var(--syn-fn, #f1fa8c);
+  --syn-prop: var(--syn-prop, #f1fa8c);
+  --syn-var: var(--syn-var, #ffb86c);
+  --syn-var-def: var(--syn-var-def, #ffb86c);
+  --syn-bool: var(--syn-bool, #ff5555);
+  --syn-num: var(--syn-num, #ff5555);
+  --syn-str: var(--syn-str, #f1fa8c);
+  --syn-cmt: var(--syn-cmt, #6272a4);
+  --syn-meta: var(--syn-meta, #ff79c6);
+  --syn-operator: var(--syn-operator, #8be9fd);
+  --syn-bracket: var(--syn-bracket, #6272a4);
 }
 
 /* ========================================================================
@@ -1646,28 +1647,7 @@ body,
   border-bottom: 1px solid rgba(120, 196, 255, 0.16) !important;
 }
 
-/* ========================================================================
-   PREMIUM DRACULA-NEON C++ SYNTAX HIGHLIGHTING (IDE UPGRADE)
-   ======================================================================== */
-
-.cm-editor {
-  /* Premium Dracula Neon C++ Code Highlighting Variables */
-  --syn-kw: #ff79c6 !important;       /* C++ keywords (using, namespace, class, struct, public) - Dracula Pink */
-  --syn-ctrl: #ff5555 !important;     /* Flow control (for, while, if, else, return) - Dracula Rose/Red */
-  --syn-type: #50fa7b !important;     /* Primitive types (int, bool, void, char, double, long long) - Dracula Mint Green */
-  --syn-class: #bd93f9 !important;    /* Standard Library Classes (string, vector, pair, map, set) - Dracula Violet */
-  --syn-fn: #f1fa8c !important;       /* Functions (main, cmp, bk, push_back, cin.tie, etc.) - Dracula Gold/Yellow */
-  --syn-prop: #f1fa8c !important;     /* Class/object properties (first, second, fi, se) - Dracula Yellow */
-  --syn-var: #ffb86c !important;      /* Variables (n, visited, found, s, a, i, j, k) - Dracula Orange/Amber */
-  --syn-var-def: #ffb86c !important;  /* Variable declarations - Dracula Orange */
-  --syn-bool: #ff5555 !important;     /* Boolean constants (true, false, NULL, nullptr) - Dracula Red */
-  --syn-num: #ff5555 !important;      /* Numbers (0, 1, 1005, 10) - Dracula Red */
-  --syn-str: #f1fa8c !important;      /* String literals - Dracula Yellow */
-  --syn-cmt: #6272a4 !important;      /* Comments - Dracula Slate/Lavender Gray (italicized) */
-  --syn-meta: #ff79c6 !important;     /* Preprocessor directives (#include, #define) - Dracula Pink */
-  --syn-operator: #8be9fd !important; /* Math/logical operators (=, <, +, ++, <<, >>) - Dracula Cyan */
-  --syn-bracket: #6272a4 !important;  /* Brackets/braces/semicolons - Dracula Slate */
-}
+/* Dynamic syntax highlighting is driven by editor-appearance.js variables on the document root */
 
 /* Ensure standard library highlighter uses the correct color */
 .cm-std-library, .cm-std-library * {
@@ -1765,13 +1745,15 @@ body,
 
 .neon-ai-analysis-container {
   background: 
-    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.08), transparent 50%),
+    radial-gradient(circle at 0% 0%, rgba(0, 229, 255, 0.08), transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.06), transparent 55%),
     rgba(16, 32, 60, 0.95) !important; /* Matches statement sections background */
-  border: 1px solid rgba(168, 85, 247, 0.36) !important;
+  border: 1px solid rgba(0, 229, 255, 0.32) !important; /* Premium Cyan neon border (no pink overlap) */
   border-radius: 14px !important;
   box-shadow: 
-    0 12px 32px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(168, 85, 247, 0.08) !important;
+    0 12px 36px rgba(0, 0, 0, 0.55),
+    0 0 20px rgba(0, 229, 255, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.03) !important;
   padding: 20px !important;
   margin-top: 24px !important;
 }
@@ -1781,19 +1763,45 @@ body,
   font-size: 16px !important;
   font-weight: 800 !important;
   color: #fff !important;
-  text-shadow: 0 0 10px rgba(168, 85, 247, 0.6) !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important; /* Cyan neon title glow */
   letter-spacing: 0.5px !important;
   margin-bottom: 18px !important;
 }
 
 /* Inner Panels styled like statement sections */
 .neon-ai-panel {
-  background: rgba(12, 23, 44, 0.6) !important;
+  background: rgba(10, 21, 40, 0.70) !important;
   border: 1px solid rgba(120, 196, 255, 0.16) !important;
   border-radius: 8px !important;
   padding: 14px !important;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.02) !important;
   margin-bottom: 16px !important;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease !important;
+}
+
+/* Interactive hover lifts and glows for the AI Analysis sub-cards */
+.neon-ai-panel.summary-panel:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(0, 229, 255, 0.4) !important;
+  box-shadow: 0 6px 16px rgba(0, 229, 255, 0.08) !important;
+}
+
+.neon-ai-panel.tags-panel:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(168, 85, 247, 0.4) !important;
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.08) !important;
+}
+
+.neon-ai-panel.constraints-panel:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+  box-shadow: 0 6px 16px rgba(52, 211, 153, 0.08) !important;
+}
+
+.neon-ai-panel.warn-panel:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.08) !important;
 }
 
 /* Titles styled like statement section headers */

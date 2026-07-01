@@ -705,7 +705,7 @@ function initGlobalParticles(app) {
   });
 
   const particles = [];
-  const maxParticles = 120; // Reduced density for a cleaner, more premium look
+  const maxParticles = 240; // High-density premium starry sky
   
   // Premium analogous space/cyan-violet palette (no childish rainbow/gay elements)
   const colors = [
@@ -725,10 +725,11 @@ function initGlobalParticles(app) {
       this.x = Math.random() * width;
       this.y = init ? Math.random() * height : height + 25;
       this.size = Math.random() * 12 + 10; // Longer comets for majestic flows
-      this.width = Math.random() * 0.9 + 0.55; // Much thinner, elegant threads
+      this.width = Math.random() * 0.8 + 0.5; // Much thinner, elegant threads
       this.vx = 0;
       this.vy = 0;
       this.phase = Math.random() * Math.PI * 2;
+      this.twinkleSpeed = Math.random() * 0.003 + 0.0015; // Speed of twinkling phase
       this.color = colors[Math.floor(Math.random() * colors.length)];
     }
 
@@ -751,11 +752,15 @@ function initGlobalParticles(app) {
           const attractX = dx / (dist + 0.1);
           const attractY = dy / (dist + 0.1);
 
-          // Liquid swirl mechanics: 55% swirl, 45% center-attraction
-          this.vx += (swirlX * 0.55 + attractX * 0.45) * force * 0.85;
-          this.vy += (swirlY * 0.55 + attractY * 0.45) * force * 0.85;
+          // Blend swirl and attraction (55% swirl, 45% attraction)
+          const vortexX = swirlX * 0.55 + attractX * 0.45;
+          const vortexY = swirlY * 0.55 + attractY * 0.45;
 
-          // Gravity well: push back if too close to maintain a hollow orbital ring around cursor
+          // Apply forces, scale by proximity
+          this.vx += vortexX * force * 1.05;
+          this.vy += vortexY * force * 1.05;
+
+          // Repelling boundary at dist < 25px to prevent center clumping (creating orbiting rings)
           if (dist < 25) {
             const pushForce = (25 - dist) / 25;
             this.vx -= attractX * pushForce * 1.5;
@@ -792,7 +797,7 @@ function initGlobalParticles(app) {
       }
     }
 
-    draw() {
+    draw(mouseX, mouseY) {
       const baseVx = Math.sin(this.y * 0.015 + this.phase) * 0.35;
       const baseVy = -0.55;
       const speedX = this.vx + baseVx;
@@ -803,6 +808,26 @@ function initGlobalParticles(app) {
       const headY = this.y;
       const tailX = this.x - Math.cos(angle) * this.size;
       const tailY = this.y - Math.sin(angle) * this.size;
+
+      // Calculate organic twinkling opacity over time
+      let alpha = 0.4 + Math.sin(this.phase + Date.now() * this.twinkleSpeed) * 0.35;
+
+      // Excite particle opacity if near cursor
+      if (mouseX !== null && mouseY !== null) {
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          alpha += (120 - dist) / 120 * 0.4;
+        }
+      }
+      ctx.globalAlpha = Math.max(0.1, Math.min(1.0, alpha));
+
+      // Draw bright glowing head core
+      ctx.beginPath();
+      ctx.arc(headX, headY, this.width * 1.6, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
 
       // Create faded gradient comet tail
       const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
@@ -816,6 +841,16 @@ function initGlobalParticles(app) {
       ctx.lineWidth = this.width;
       ctx.lineCap = "round";
       ctx.stroke();
+
+      // Draw micro-sparks along the tail for 35% of comets
+      if (this.phase % 3 < 1) {
+        ctx.beginPath();
+        const midX = headX - (tailX - headX) * 0.4;
+        const midY = headY - (tailY - headY) * 0.4;
+        ctx.arc(midX, midY, 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.fill();
+      }
     }
   }
 
@@ -851,7 +886,7 @@ function initGlobalParticles(app) {
     ctx.globalCompositeOperation = "screen";
     for (let i = 0; i < particles.length; i++) {
       particles[i].update(mouseX, mouseY);
-      particles[i].draw();
+      particles[i].draw(mouseX, mouseY);
     }
     ctx.globalCompositeOperation = "source-over";
 
