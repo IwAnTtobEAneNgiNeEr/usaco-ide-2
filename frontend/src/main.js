@@ -727,54 +727,67 @@ function initGlobalParticles(app) {
 
     reset(init = false) {
       this.x = Math.random() * width;
-      this.y = init ? Math.random() * height : height + 10;
-      this.size = Math.random() * 3.8 + 1.8;
-      this.speedY = -(Math.random() * 0.5 + 0.25);
-      this.speedX = (Math.random() - 0.5) * 0.35;
+      this.y = init ? Math.random() * height : height + 20;
+      this.size = Math.random() * 6 + 6; // length of the dash
+      this.vx = 0;
+      this.vy = 0;
+      this.phase = Math.random() * Math.PI * 2;
       this.color = colors[Math.floor(Math.random() * colors.length)];
-      this.angle = Math.random() * Math.PI * 2;
-      this.spin = (Math.random() - 0.5) * 0.02;
     }
 
     update(mouseX, mouseY) {
-      this.y += this.speedY;
-      this.x += this.speedX;
-      this.angle += this.spin;
+      // Default base flow: slow upward drift and soft horizontal oscillation
+      const baseVx = Math.sin(this.y * 0.004 + this.phase) * 0.2;
+      const baseVy = -0.55;
 
-      // Mouse swirling attraction force
+      // Mouse swirling vortex field attraction force
       if (mouseX !== null && mouseY !== null) {
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 260) {
-          const force = (260 - dist) / 260;
-          // swirl direction (perpendicular vector)
-          const angle = Math.atan2(dy, dx) + Math.PI / 2;
-          this.x += Math.cos(angle) * force * 1.5;
-          this.y += Math.sin(angle) * force * 1.5;
+        if (dist < 280) {
+          const force = (280 - dist) / 280;
+          // Perpendicular swirl vector (-dy, dx)
+          const swirlX = -dy / (dist + 0.1);
+          const swirlY = dx / (dist + 0.1);
+          // Attraction vector (dx, dy)
+          const attractX = dx / (dist + 0.1);
+          const attractY = dy / (dist + 0.1);
+
+          // Rotate and attract
+          this.vx += (swirlX * 0.95 + attractX * 0.05) * force * 0.45;
+          this.vy += (swirlY * 0.95 + attractY * 0.05) * force * 0.45;
         }
       }
 
+      // Apply drag to velocities
+      this.vx *= 0.94;
+      this.vy *= 0.94;
+
+      // Move particle
+      this.x += this.vx + baseVx;
+      this.y += this.vy + baseVy;
+
       // Reset when particle goes off screen
-      if (this.y < -10 || this.x < -10 || this.x > width + 10) {
+      if (this.y < -20 || this.x < -20 || this.x > width + 20) {
         this.reset(false);
       }
     }
 
     draw() {
-      ctx.save();
-      ctx.translate(this.x, this.y);
-      ctx.rotate(this.angle);
-      ctx.fillStyle = this.color;
-      // Draw rectangular confetti or round dust particles
-      if (Math.random() > 0.45) {
-        ctx.fillRect(-this.size, -this.size, this.size * 2, this.size * 2);
-      } else {
-        ctx.beginPath();
-        ctx.arc(0, 0, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
+      const baseVx = Math.sin(this.y * 0.004 + this.phase) * 0.2;
+      const baseVy = -0.55;
+      const speedX = this.vx + baseVx;
+      const speedY = this.vy + baseVy;
+      const angle = Math.atan2(speedY, speedX);
+
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x - Math.cos(angle) * this.size, this.y - Math.sin(angle) * this.size);
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 1.25;
+      ctx.lineCap = "round";
+      ctx.stroke();
     }
   }
 
