@@ -670,7 +670,7 @@ function initShortcuts() {
 // ---------------- Cursor Tracking Glow Overlay ----------------
 function initMouseGlow() {
   document.addEventListener("mousemove", (e) => {
-    const target = e.target.closest(".coach-card-sec, .stmt-section");
+    const target = e.target.closest(".coach-card-sec, .stmt-section, .prob-item, .analysis-card, .examples-card, .gentests-card, .console-block, .settings-card, .code-stack");
     if (!target) return;
     const rect = target.getBoundingClientRect();
     const x = e.clientX - rect.left;
