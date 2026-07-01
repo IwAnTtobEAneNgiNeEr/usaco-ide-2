@@ -1431,14 +1431,25 @@ body,
    ======================================================================== */
 
 /* Workspace tab switch buttons */
+.panel-tabs {
+  overflow-x: hidden !important; /* prevent horizontal scroll bar */
+  display: flex !important;
+  justify-content: space-between !important;
+}
+
 .panel-tabs .tab {
+  flex: 1 !important; /* distribute evenly across 100% width */
+  text-align: center !important;
   border: 1px solid rgba(120, 196, 255, 0.12) !important;
   border-radius: 6px 6px 0 0 !important;
   background: rgba(13, 24, 42, 0.3) !important;
   color: rgba(255, 255, 255, 0.55) !important;
   text-shadow: none !important;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.01) !important;
-  margin-right: 2px;
+  margin-right: 2px !important;
+  padding: 6px 4px !important; /* reduced horizontal padding to fit perfectly */
+  font-size: 11px !important;    /* slightly smaller font size */
+  white-space: nowrap !important;
 }
 .panel-tabs .tab:hover {
   color: #fff !important;
@@ -1515,4 +1526,70 @@ body,
   box-shadow: 
     0 0 12px rgba(var(--neon-cyan), 0.1),
     inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ========================================================================
+   ACCENTED AI ANALYSIS CHIPS COLOR SYNC
+   ======================================================================== */
+
+.neon-ai-chip.time {
+  background: rgba(52, 211, 153, 0.08) !important;
+  color: #a7f3d0 !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.35) !important;
+}
+
+.neon-ai-chip.space {
+  background: rgba(244, 63, 94, 0.08) !important;
+  color: #fda4af !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.35) !important;
+}
+
+/* ========================================================================
+   HIGH CONTRAST GLASSMORPHIC COCKPIT OVERRIDES
+   ======================================================================== */
+
+.jh-streak,
+.jh-level,
+.jh-card,
+.jh-boss,
+.jh-continue-card {
+  border: 1px solid rgba(120, 196, 255, 0.22) !important; /* higher contrast border */
+  border-radius: 14px !important;
+  background: 
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.08), transparent 70%),
+    rgba(15, 27, 49, 0.85) !important; /* higher opacity and lighter background */
+  box-shadow: 
+    inset 0 1px rgba(255, 255, 255, 0.03),
+    0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+  transition: transform 180ms var(--ease), border-color 180ms ease, box-shadow 180ms ease !important;
+}
+
+.jh-level {
+  background: 
+    radial-gradient(420px 100px at 12% 0%, rgba(var(--neon-cyan), 0.09), transparent 70%),
+    rgba(15, 27, 49, 0.88) !important;
+}
+
+.jh-boss.alive {
+  border-color: rgba(var(--neon-pink), 0.38) !important;
+  background: 
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-pink), 0.1), transparent 70%),
+    rgba(26, 12, 28, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.jh-continue-card {
+  border-left: 3px solid rgb(var(--neon-cyan)) !important;
+  background: 
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.08), transparent 70%),
+    rgba(15, 27, 49, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.jh-level .progress-bar-fill {
+  background: linear-gradient(90deg, rgb(var(--neon-cyan)), rgb(var(--neon-violet))) !important;
+  box-shadow: 0 0 8px rgba(var(--neon-cyan), 0.5) !important;
 }

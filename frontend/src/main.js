@@ -711,13 +711,13 @@ function initGlobalParticles(app) {
   const particles = [];
   const maxParticles = 180;
   
-  // Vibrant, high-opacity particles matching the theme accents
+  // Vibrant analogous space/cyan particles matching Google Antigravity aesthetic
   const colors = [
-    "rgba(45, 214, 255, 0.85)",   // Neon Cyan
-    "rgba(168, 85, 247, 0.85)",   // Neon Violet
-    "rgba(52, 211, 153, 0.85)",   // Neon Mint
-    "rgba(251, 191, 36, 0.85)",   // Neon Amber
-    "rgba(244, 63, 94, 0.85)"     // Neon Pink
+    "rgba(0, 229, 255, 0.75)",   // Neon Cyan
+    "rgba(56, 189, 248, 0.75)",  // Sky Blue
+    "rgba(99, 102, 241, 0.75)",  // Indigo Blue
+    "rgba(139, 92, 246, 0.75)",  // Royal Violet
+    "rgba(224, 242, 254, 0.5)"   // Ice White / Glass shine
   ];
 
   class Particle {
@@ -754,15 +754,29 @@ function initGlobalParticles(app) {
           const attractX = dx / (dist + 0.1);
           const attractY = dy / (dist + 0.1);
 
-          // Rotate and attract
-          this.vx += (swirlX * 0.95 + attractX * 0.05) * force * 0.45;
-          this.vy += (swirlY * 0.95 + attractY * 0.05) * force * 0.45;
+          // Rotate and attract (55% swirl, 45% attraction to actually follow the mouse)
+          this.vx += (swirlX * 0.55 + attractX * 0.45) * force * 0.65;
+          this.vy += (swirlY * 0.55 + attractY * 0.45) * force * 0.65;
+
+          // Slow down and cluster when very close to mouse to prevent centrifugal fling-out
+          if (dist < 80) {
+            this.vx *= 0.88;
+            this.vy *= 0.88;
+          }
         }
       }
 
       // Apply drag to velocities
       this.vx *= 0.94;
       this.vy *= 0.94;
+
+      // Clamp max velocity to prevent chaotic scattering
+      const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      const maxSpeed = 3.5;
+      if (speed > maxSpeed) {
+        this.vx = (this.vx / speed) * maxSpeed;
+        this.vy = (this.vy / speed) * maxSpeed;
+      }
 
       // Move particle
       this.x += this.vx + baseVx;
