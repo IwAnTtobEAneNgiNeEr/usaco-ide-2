@@ -1661,19 +1661,7 @@ body,
   outline: 1px solid #50fa7b !important;
 }
 
-/* ========================================================================
-   HIGH CONTRAST GLASSMORPHIC PANEL STYLING & BRIGHTNESS
-   ======================================================================== */
-
-/* Elevate general copy text color brightness for 10x readability */
-:root {
-  --neon-copy: #f1f5f9 !important; /* Brighter slate-100 */
-  --text: #f8fafc !important;      /* Brighter slate-50 */
-}
-
-.stmt-neon-shell .stmt-section-body {
-  color: #f1f5f9 !important; /* Bright off-white */
-}
+/* Text colors are restored to their original slate-blue specifications */
 
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section {
   background:
