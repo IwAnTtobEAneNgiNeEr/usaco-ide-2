@@ -444,13 +444,13 @@ textarea.input {
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-examples { --section-accent: var(--neon-amber); }
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-notes { --section-accent: var(--neon-blue); }
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-subtasks { --section-accent: var(--neon-pink); }
-.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-visualizer { --section-accent: var(--neon-pink); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-visualizer { --section-accent: var(--neon-violet); }
 
 /* Icon content overrides */
 .stmt-neon-shell .stmt-visualizer .stmt-section-icon::before {
   content: "🎨" !important;
-  box-shadow: 0 0 12px rgba(236, 72, 153, 0.6) !important;
-  border-color: rgba(236, 72, 153, 0.8) !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6) !important;
+  border-color: rgba(168, 85, 247, 0.8) !important;
 }
 
 /* Problem Visualizer Interactive Component Layout */
@@ -460,9 +460,9 @@ textarea.input {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
-  background: #03070e;
-  border: 1px solid rgba(236, 72, 153, 0.18);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  background: transparent !important; /* Transparent to blend seamlessly with statement background */
+  border: none !important; /* Remove inner border to prevent double border clashing */
+  box-shadow: none !important;
   margin-top: 8px;
 }
 
@@ -478,8 +478,8 @@ textarea.input {
   align-items: center;
   margin-top: 12px;
   padding: 8px 12px;
-  background: rgba(236, 72, 153, 0.04);
-  border: 1px solid rgba(236, 72, 153, 0.15);
+  background: rgba(168, 85, 247, 0.04);
+  border: 1px solid rgba(168, 85, 247, 0.15);
   border-radius: 6px;
 }
 
@@ -495,15 +495,15 @@ textarea.input {
 .stmt-visualizer .status-pulse-dot {
   width: 6px;
   height: 6px;
-  background-color: #ec4899;
+  background-color: #a855f7;
   border-radius: 50%;
-  box-shadow: 0 0 8px #ec4899;
-  animation: pulse-glow 1.5s infinite;
+  box-shadow: 0 0 8px #a855f7;
+  animation: pulse-glow-violet 1.5s infinite;
 }
 
-@keyframes pulse-glow {
+@keyframes pulse-glow-violet {
   0% { transform: scale(0.9); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #ec4899; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #a855f7; }
   100% { transform: scale(0.9); opacity: 0.5; }
 }
 
@@ -511,8 +511,8 @@ textarea.input {
   padding: 5px 12px !important;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(236, 72, 153, 0.12) !important;
-  border: 1px solid rgba(236, 72, 153, 0.4) !important;
+  background: rgba(168, 85, 247, 0.12) !important;
+  border: 1px solid rgba(168, 85, 247, 0.4) !important;
   color: #fff !important;
   border-radius: 4px;
   cursor: pointer;
@@ -523,9 +523,9 @@ textarea.input {
 }
 
 .stmt-visualizer #btn-toggle-visualizer-animation:hover {
-  background: rgba(236, 72, 153, 0.25) !important;
-  border-color: #ec4899 !important;
-  box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+  background: rgba(168, 85, 247, 0.25) !important;
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
 }
 
 

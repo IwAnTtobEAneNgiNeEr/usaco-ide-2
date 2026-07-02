@@ -224,6 +224,12 @@ function parseSections(raw) {
 
 export 
 function heroIllustration(app) {
+  // If the visualizer block is active at the bottom, do not show duplicate top right hero animation
+  const isVisualizerEnabled = app.state.settings ? app.state.settings.enableVisualizer !== false : true;
+  if (isVisualizerEnabled && supportsNeonCanvas((app.state.meta?.topic || "").toLowerCase(), app.state.meta)) {
+    return "";
+  }
+
   const hasScene = app.state.canvasScene;
   if (hasScene) {
     return `<figure class="stmt-neon-hero-figure">
