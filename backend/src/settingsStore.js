@@ -27,6 +27,7 @@ async function saveSettings(patch = {}) {
   next.theme = ["dark", "light"].includes(next.theme) ? next.theme : "dark";
   next.accentColor = ["amber", "blue", "green", "orange", "purple", "red"].includes(next.accentColor) ? next.accentColor : "amber";
   next.enableParticles = Boolean(next.enableParticles);
+  next.enableVisualizer = Boolean(next.enableVisualizer);
   await store.writeJson(SETTINGS_FILE, next);
   return next;
 }

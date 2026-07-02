@@ -7,7 +7,7 @@
 import { api } from "./api.js";
 import { renderMeta } from "./editor.js";
 import { renderMarkdown, escapeHtml, renderMath } from "./md.js";
-import { initNeonCanvas } from "./statement-neon-canvas.js";
+import { initNeonCanvas, supportsNeonCanvas } from "./statement-neon-canvas.js";
 
 let stopNeonCanvas = null;
 
@@ -316,14 +316,47 @@ function renderStatement(app) {
     </div>
   `;
 
-  // Description is already presented in the hero. Rendering it again below
-  // creates a long duplicated block and breaks the intended reading order.
   const out = sections.filter((section) => section.type !== "description").map(sectionHtml).join("");
   const analysisHtml = renderAnalysisHtml(meta.analysis);
+
+  // Dedicated Problem Visualizer Block
+  const isVisualizerEnabled = app.state.settings ? app.state.settings.enableVisualizer !== false : true;
+  
+  if (isVisualizerEnabled && !app.state.canvasScene && supportsNeonCanvas(topicName, meta)) {
+    app.state.canvasScene = "predefined";
+    app.state.showIllustration = true;
+  }
+
+  let visualizerHtml = "";
+  if (isVisualizerEnabled && app.state.canvasScene) {
+    visualizerHtml = `
+      <section class="stmt-section stmt-visualizer">
+        <h2 class="stmt-section-label">
+          <span class="stmt-section-icon" aria-hidden="true">🎨</span>
+          <span>MINH HỌA TRỰC QUAN ĐỀ BÀI</span>
+        </h2>
+        <div class="stmt-section-body">
+          <div class="visualizer-container-inner" style="position: relative; background: rgba(10, 25, 50, 0.35); border: 1px solid rgba(0, 229, 255, 0.22); border-radius: 12px; padding: 16px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
+            <div class="visualizer-canvas-wrapper" style="width: 100%; height: 260px; position: relative; border-radius: 8px; overflow: hidden; background: rgba(5, 11, 20, 0.7); border: 1px dashed rgba(0, 229, 255, 0.15);">
+              <canvas id="stmt-neon-canvas" style="display: block; width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="visualizer-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
+              <span class="visualizer-status" style="font-size: 12px; color: rgba(217, 233, 247, 0.85); font-family: monospace;">Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
+              <button id="btn-toggle-visualizer-animation" class="stmt-copy" style="padding: 6px 14px !important; font-size: 12px; background: rgba(0, 229, 255, 0.15) !important; border: 1px solid rgba(0, 229, 255, 0.4) !important; color: #fff !important; border-radius: 6px; cursor: pointer; transition: all 0.2s; position: static !important; pointer-events: auto !important;">
+                ${app.state.showIllustration !== false ? "⏸ Tạm dừng" : "▶ Tiếp tục"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   host.innerHTML = `
     <div class="stmt-neon-shell">
       ${heroHtml}
       <div class="stmt-neon-secondary">
+        ${visualizerHtml}
         ${out}
       </div>
       ${analysisHtml}
@@ -331,11 +364,19 @@ function renderStatement(app) {
   `;
   highlightTokens(host);
 
-  if (app.state.canvasScene) {
+  if (isVisualizerEnabled && app.state.canvasScene) {
     const canvas = document.getElementById("stmt-neon-canvas");
     if (canvas) {
       if (typeof stopNeonCanvas === "function") stopNeonCanvas();
-      stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic, app.state.meta, { animate: !!app.state.showIllustration });
+      stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic || topicName, app.state.meta, { animate: app.state.showIllustration !== false });
+      
+      const toggleBtn = document.getElementById("btn-toggle-visualizer-animation");
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+          app.state.showIllustration = app.state.showIllustration === false ? true : false;
+          renderStatement(app);
+        });
+      }
     }
   }
   updateIllustrationButton(app);
@@ -874,6 +915,13 @@ export function initStatement(app) {
   };
   const btnAiIllustration = document.getElementById("btn-ai-illustration");
   if (btnAiIllustration) btnAiIllustration.addEventListener("click", app.generateIllustration);
+
+  app.toggleProblemVisualizer = (enabled) => {
+    if (app.state.settings) {
+      app.state.settings.enableVisualizer = enabled;
+    }
+    renderStatement(app);
+  };
 
   app.showProblemView = () => app.setView("problem");
   app.runStatementPipeline = () => { app.showProblemView(); runPipeline(app, { force: true }); };

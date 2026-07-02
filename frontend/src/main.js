@@ -723,7 +723,8 @@ function initGlobalParticles(app) {
 
     reset(init = false) {
       this.x = Math.random() * width;
-      this.y = init ? Math.random() * height : height + 25;
+      // 30% chance to reset at random Y to maintain even distribution across the map
+      this.y = (init || Math.random() < 0.3) ? Math.random() * height : height + 25;
       this.size = Math.random() * 12 + 10; // Longer comets for majestic flows
       this.width = Math.random() * 0.8 + 0.5; // Much thinner, elegant threads
       this.vx = 0;
@@ -743,8 +744,8 @@ function initGlobalParticles(app) {
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 320) {
-          const force = (320 - dist) / 320;
+        if (dist < 260) {
+          const force = (260 - dist) / 260;
           // Perpendicular swirl vector (-dy, dx)
           const swirlX = -dy / (dist + 0.1);
           const swirlY = dx / (dist + 0.1);
@@ -752,36 +753,36 @@ function initGlobalParticles(app) {
           const attractX = dx / (dist + 0.1);
           const attractY = dy / (dist + 0.1);
 
-          // Blend swirl and attraction (55% swirl, 45% attraction)
-          const vortexX = swirlX * 0.55 + attractX * 0.45;
-          const vortexY = swirlY * 0.55 + attractY * 0.45;
+          // Blend swirl and attraction (80% swirl, 20% attraction for wider orbit)
+          const vortexX = swirlX * 0.8 + attractX * 0.2;
+          const vortexY = swirlY * 0.8 + attractY * 0.2;
 
           // Apply forces, scale by proximity
-          this.vx += vortexX * force * 1.05;
-          this.vy += vortexY * force * 1.05;
+          this.vx += vortexX * force * 0.75;
+          this.vy += vortexY * force * 0.75;
 
-          // Repelling boundary at dist < 25px to prevent center clumping (creating orbiting rings)
-          if (dist < 25) {
-            const pushForce = (25 - dist) / 25;
-            this.vx -= attractX * pushForce * 1.5;
-            this.vy -= attractY * pushForce * 1.5;
+          // Repelling boundary at dist < 85px to create a beautiful orbital halo and prevent clumping
+          if (dist < 85) {
+            const pushForce = (85 - dist) / 85;
+            this.vx -= attractX * pushForce * 1.8;
+            this.vy -= attractY * pushForce * 1.8;
           }
 
           // Damping inside the gravity field to settle into smooth orbits
-          if (dist < 90) {
-            this.vx *= 0.86;
-            this.vy *= 0.86;
+          if (dist < 60) {
+            this.vx *= 0.92;
+            this.vy *= 0.92;
           }
         }
       }
 
       // Apply drag to velocities
-      this.vx *= 0.93;
-      this.vy *= 0.93;
+      this.vx *= 0.94;
+      this.vy *= 0.94;
 
       // Clamp max velocity to prevent chaotic scattering
       const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-      const maxSpeed = 4.2;
+      const maxSpeed = 3.6;
       if (speed > maxSpeed) {
         this.vx = (this.vx / speed) * maxSpeed;
         this.vy = (this.vy / speed) * maxSpeed;

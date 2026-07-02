@@ -116,6 +116,7 @@ export function renderSettings(app) {
       <div class="settings-section-title">Editor</div>
       <div class="check-row"><input id="set-autosave" type="checkbox" ${s.autosave ? "checked" : ""} /><label for="set-autosave">Autosave code while typing</label></div>
       <div class="check-row" style="margin-top:6px"><input id="set-particles" type="checkbox" ${s.enableParticles ? "checked" : ""} /><label for="set-particles">Bật hiệu ứng hạt nền (Background Particles)</label></div>
+      <div class="check-row" style="margin-top:6px"><input id="set-visualizer" type="checkbox" ${s.enableVisualizer !== false ? "checked" : ""} /><label for="set-visualizer">Bật minh họa trực quan đề bài (Problem Visualizer)</label></div>
       <div class="form-row">
         <div class="settings-group">
           <label>Tab size</label>
@@ -261,6 +262,7 @@ function wire(app) {
       epsilon: Number($("set-epsilon").value),
       autosave: $("set-autosave").checked,
       enableParticles: $("set-particles").checked,
+      enableVisualizer: $("set-visualizer").checked,
       tabSize: Number($("set-tab").value),
       theme: $("set-theme").value,
       accentColor: $("set-accent-color").value
@@ -276,6 +278,11 @@ function wire(app) {
       // Toggle background particles dynamically on setting change
       if (typeof app.toggleGlobalParticles === "function") {
         app.toggleGlobalParticles(settings.enableParticles);
+      }
+
+      // Toggle problem visualizer dynamically on setting change
+      if (typeof app.toggleProblemVisualizer === "function") {
+        app.toggleProblemVisualizer(settings.enableVisualizer);
       }
       
       app.toast("Settings saved", "ok");

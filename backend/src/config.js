@@ -54,7 +54,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   tabSize: 4,                // editor indentation width
   theme: "dark",            // "dark" | "light"
   accentColor: "amber",      // "amber" | "blue" | "green" | "orange" | "purple" | "red"
-  enableParticles: true      // background particle animation toggle
+  enableParticles: true,     // background particle animation toggle
+  enableVisualizer: true     // problem interactive visualizer toggle
 });
 
 // Starter for a per-problem special judge (SPJ). The checker is compiled once
