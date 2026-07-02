@@ -338,17 +338,18 @@ function renderStatement(app) {
           <span class="stmt-section-icon" aria-hidden="true"></span>
           <span>MINH HỌA TRỰC QUAN ĐỀ BÀI</span>
         </h2>
-        <div class="stmt-section-body" style="margin-top: 10px;">
-          <div class="visualizer-container-inner" style="position: relative; background: rgba(5, 11, 20, 0.45); border-radius: 8px; padding: 12px; border: 1px solid rgba(0, 229, 255, 0.15); box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);">
-            <div class="visualizer-canvas-wrapper" style="width: 100%; height: 260px; position: relative; border-radius: 6px; overflow: hidden; background: #03070e; border: 1px solid rgba(120, 196, 255, 0.12);">
-              <canvas id="stmt-neon-canvas" style="display: block; width: 100%; height: 100%;"></canvas>
-            </div>
-            <div class="visualizer-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px;">
-              <span class="visualizer-status" style="font-size: 11.5px; color: rgba(217, 233, 247, 0.75); font-family: monospace; letter-spacing: 0.2px;">Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
-              <button id="btn-toggle-visualizer-animation" class="stmt-copy" style="padding: 5px 12px !important; font-size: 11.5px; background: rgba(0, 229, 255, 0.1) !important; border: 1px solid rgba(0, 229, 255, 0.3) !important; color: #fff !important; border-radius: 4px; cursor: pointer; transition: all 0.2s; position: static !important; pointer-events: auto !important; height: auto !important; margin: 0 !important; width: auto !important;">
-                ${app.state.showIllustration !== false ? "⏸ Tạm dừng" : "▶ Tiếp tục"}
-              </button>
-            </div>
+        <div class="stmt-section-body" style="margin-top: 12px;">
+          <div class="visualizer-canvas-wrapper">
+            <canvas id="stmt-neon-canvas"></canvas>
+          </div>
+          <div class="visualizer-controls">
+            <span class="visualizer-status">
+              <span class="status-pulse-dot"></span>
+              <span>Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
+            </span>
+            <button id="btn-toggle-visualizer-animation" class="stmt-copy">
+              ${app.state.showIllustration !== false ? "⏸ Tạm dừng" : "▶ Tiếp tục"}
+            </button>
           </div>
         </div>
       </section>
