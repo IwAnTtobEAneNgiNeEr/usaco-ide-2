@@ -388,19 +388,19 @@ function renderStatement(app) {
         <div class="stmt-section-body spec-grid">
           ${inputHtml ? `
             <div class="spec-card input-card">
-              <div class="spec-card-title">📥 Dữ liệu vào</div>
+              <div class="spec-card-title">Dữ liệu vào</div>
               <div class="spec-card-body">${inputHtml}</div>
             </div>
           ` : ''}
           ${outputHtml ? `
             <div class="spec-card output-card">
-              <div class="spec-card-title">📤 Kết quả ra</div>
+              <div class="spec-card-title">Kết quả ra</div>
               <div class="spec-card-body">${outputHtml}</div>
             </div>
           ` : ''}
           ${constraintsHtml ? `
             <div class="spec-card constraints-card">
-              <div class="spec-card-title">⚠️ Ràng buộc</div>
+              <div class="spec-card-title">Ràng buộc</div>
               <div class="spec-card-body">${constraintsHtml}</div>
             </div>
           ` : ''}
@@ -409,12 +409,21 @@ function renderStatement(app) {
     `;
   }
 
+  let topRowHtml = "";
+  if (visualizerHtml || specsHtml) {
+    topRowHtml = `
+      <div class="stmt-top-row">
+        ${specsHtml}
+        ${visualizerHtml}
+      </div>
+    `;
+  }
+
   host.innerHTML = `
     <div class="stmt-neon-shell">
       ${heroHtml}
       <div class="stmt-neon-secondary" style="gap: 10px;">
-        ${visualizerHtml}
-        ${specsHtml}
+        ${topRowHtml}
         ${out}
       </div>
       ${analysisHtml}

@@ -1522,7 +1522,8 @@ export function initNeonCanvas(canvas, topic, meta, opts = {}) {
     ctx.clearRect(0, 0, w, h);
     
     const rows = 9, cols = 15;
-    const cellS = 18;
+    // Calculate cellS dynamically to fit perfectly in current canvas dimensions
+    const cellS = Math.floor(Math.min((w - 24) / cols, (h - 24) / rows));
     const startX = w/2 - (cols*cellS)/2;
     const startY = h/2 - (rows*cellS)/2;
     
@@ -1560,7 +1561,7 @@ export function initNeonCanvas(canvas, topic, meta, opts = {}) {
     if (t > 0) {
       ctx.beginPath();
       ctx.strokeStyle = "#a855f7";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = Math.max(1.5, cellS * 0.15);
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
       for(let i=0; i<Math.min(t, path.length); i++) {
@@ -1575,9 +1576,10 @@ export function initNeonCanvas(canvas, topic, meta, opts = {}) {
       if (t <= path.length) {
         const head = path[Math.max(0, t-1)];
         ctx.beginPath();
-        ctx.arc(startX + head[1]*cellS + cellS/2, startY + head[0]*cellS + cellS/2, 6, 0, PI2);
+        const headR = Math.max(3, cellS * 0.3);
+        ctx.arc(startX + head[1]*cellS + cellS/2, startY + head[0]*cellS + cellS/2, headR, 0, PI2);
         ctx.fillStyle = "#d8b4fe";
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 10;
         ctx.shadowColor = "#d8b4fe";
         ctx.fill();
         ctx.shadowBlur = 0;
