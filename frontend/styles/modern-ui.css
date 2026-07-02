@@ -469,20 +469,7 @@ textarea.input {
   content: "📋" !important;
 }
 
-/* Side-by-side Cockpit Header Layout */
-.stmt-neon-shell .stmt-top-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 10px;
-  width: 100%;
-  align-items: stretch;
-}
 
-@media (max-width: 900px) {
-  .stmt-neon-shell .stmt-top-row {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* Problem Visualizer Interactive Component Layout */
 .stmt-visualizer .visualizer-canvas-wrapper {
