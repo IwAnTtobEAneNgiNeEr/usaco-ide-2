@@ -386,7 +386,7 @@ export async function mountCmEditor(app) {
     { tag: CM.t.keyword, color: "var(--syn-kw)" },
     { tag: CM.t.controlKeyword, color: "var(--syn-ctrl)" },
     { tag: CM.t.typeName, color: "var(--syn-type)" },
-    { tag: CM.t.className, color: "var(--syn-type)" },
+    { tag: CM.t.className, color: "var(--syn-class)" },
     { tag: CM.t.number, color: "var(--syn-num)" },
     { tag: CM.t.string, color: "var(--syn-str)" },
     { tag: CM.t.comment, color: "var(--syn-cmt)", fontStyle: "italic" },
@@ -400,6 +400,7 @@ export async function mountCmEditor(app) {
     { tag: CM.t.bool, color: "var(--syn-bool)" },
     { tag: CM.t.meta, color: "var(--syn-meta)" },
     { tag: CM.t.macroName, color: "var(--syn-meta)" },
+    { tag: CM.t.namespace, color: "var(--syn-namespace)" },
     { tag: CM.t.operator, color: "var(--syn-operator)" },
     { tag: CM.t.bracket, color: "var(--syn-bracket)" }
   ]);
@@ -446,6 +447,7 @@ export async function mountCmEditor(app) {
       createRainbowBrackets(CM),
       createIndentationGuides(CM),
       createStdLibHighlighter(CM),
+      createSemanticTokenHighlighter(CM),
       tabSizeCompartment.of([
         CM.EditorState.tabSize.of(startTabSize)
       ]),
@@ -757,4 +759,212 @@ function createStdLibHighlighter(CM) {
   });
 }
 
+function createSemanticTokenHighlighter(CM) {
+  const functionMark = CM.Decoration.mark({ class: "cm-syntax-fn" });
+  const varDefMark = CM.Decoration.mark({ class: "cm-syntax-var-def" });
+  const localMark = CM.Decoration.mark({ class: "cm-syntax-local" });
+  const paramMark = CM.Decoration.mark({ class: "cm-syntax-param" });
+  const globalMark = CM.Decoration.mark({ class: "cm-syntax-global" });
+  const arrayMark = CM.Decoration.mark({ class: "cm-syntax-array" }); // New tag for C++ Array variables
+  const namespaceMark = CM.Decoration.mark({ class: "cm-syntax-namespace" });
+  const constantMark = CM.Decoration.mark({ class: "cm-syntax-constant" });
+  const macroMark = CM.Decoration.mark({ class: "cm-syntax-macro" });
+  const headerMark = CM.Decoration.mark({ class: "cm-syntax-header" });
 
+  const ALL_CAPS_RE = /^(?:[A-Z][A-Z0-9_]*|_[A-Z0-9_]+)$/;
+  const NON_FUNCTION = new Set([
+    "if", "for", "while", "switch", "return", "sizeof", "catch", "alignof",
+    "new", "delete"
+  ]);
+  const TYPE_WORDS = new Set([
+    "int", "long", "short", "char", "bool", "float", "double", "void",
+    "unsigned", "signed", "wchar_t", "size_t", "string", "wstring",
+    "vector", "map", "unordered_map", "set", "unordered_set", "multiset",
+    "pair", "tuple", "queue", "deque", "stack", "priority_queue", "list",
+    "array", "bitset", "ll", "ull", "ld", "uint", "int64_t", "uint64_t",
+    "int32_t", "complex", "auto"
+  ]);
+  const DECL_MODS = new Set([
+    "const", "constexpr", "static", "inline", "mutable", "volatile", "typename",
+    "typedef", "struct", "class", "enum", "union", "friend", "extern"
+  ]);
+
+  function addMark(builder, lineFrom, index, text, mark) {
+    builder.add(lineFrom + index, lineFrom + index + text.length, mark);
+  }
+
+  function markFunctionCalls(builder, text, lineFrom) {
+    const fnRe = /\b([A-Za-z_]\w*)\s*(?=\()/g;
+    let match;
+    while ((match = fnRe.exec(text))) {
+      const word = match[1];
+      if (NON_FUNCTION.has(word) || TYPE_WORDS.has(word) || DECL_MODS.has(word)) continue;
+      addMark(builder, lineFrom, match.index, word, functionMark);
+    }
+  }
+
+  function looksLikeDeclarationPrefix(prefix) {
+    const words = prefix.match(/[A-Za-z_]\w*/g) || [];
+    if (!words.length) return false;
+    return words.every((word) => TYPE_WORDS.has(word) || DECL_MODS.has(word));
+  }
+
+  function markParameterNames(builder, params, baseOffset) {
+    const names = [];
+    for (const part of params.split(",")) {
+      const ids = [...part.matchAll(/[A-Za-z_]\w*/g)].map((m) => ({ word: m[0], index: m.index }));
+      for (let i = ids.length - 1; i >= 0; i -= 1) {
+        const cand = ids[i];
+        if (TYPE_WORDS.has(cand.word) || DECL_MODS.has(cand.word)) continue;
+        addMark(builder, baseOffset, cand.index, cand.word, paramMark);
+        names.push(cand.word);
+        break;
+      }
+    }
+    return names;
+  }
+
+  function markDeclarations(builder, text, lineFrom, braceDepth, activeParams, globals, activeLocals, arrays) {
+    const clean = text.replace(/\/\/.*$/, "");
+    const declMatch = clean.match(/^\s*(.+?)\b([A-Za-z_]\w*)\s*(?=(\(|\[|=|,|;))/);
+    if (!declMatch) return null;
+    const prefix = declMatch[1];
+    const firstName = declMatch[2];
+    if (!looksLikeDeclarationPrefix(prefix)) return null;
+
+    const rest = clean.slice(clean.indexOf(firstName, prefix.length));
+    const fnSig = rest.match(/^\s*([A-Za-z_]\w*)\s*\(([^()]*)\)/);
+    if (fnSig) {
+      addMark(builder, lineFrom, clean.indexOf(fnSig[1], prefix.length), fnSig[1], functionMark);
+      const paramsOffset = clean.indexOf(fnSig[2]);
+      const paramNames = paramsOffset >= 0 ? markParameterNames(builder, fnSig[2], lineFrom + paramsOffset) : [];
+      return { kind: "function", params: paramNames };
+    }
+
+    const isArray = rest.slice(firstName.length).trim().startsWith("[");
+    const declarationMark = isArray ? arrayMark : (braceDepth === 0 ? globalMark : (activeParams.has(firstName) ? paramMark : localMark));
+    addMark(builder, lineFrom, clean.indexOf(firstName, prefix.length), firstName, declarationMark);
+    if (isArray) {
+      arrays.add(firstName);
+    } else {
+      if (braceDepth === 0) globals.add(firstName);
+      else activeLocals.add(firstName);
+    }
+
+    const varRe = /,\s*([A-Za-z_]\w*)(?=\s*(?:\[|=|,|;))/g;
+    const declared = [firstName];
+    let match;
+    while ((match = varRe.exec(rest))) {
+      const name = match[1];
+      const isVarArray = rest.slice(match.index + match[0].length).trim().startsWith("[");
+      const absolute = clean.indexOf(name, clean.indexOf(firstName, prefix.length) + firstName.length);
+      if (absolute >= 0) {
+        addMark(builder, lineFrom, absolute, name, isVarArray ? arrayMark : (braceDepth === 0 ? globalMark : localMark));
+      }
+      if (isVarArray) {
+        arrays.add(name);
+      } else {
+        if (braceDepth === 0) globals.add(name);
+        else activeLocals.add(name);
+      }
+      declared.push(name);
+    }
+    return { kind: "decl", names: declared };
+  }
+
+  function markSymbolUsages(builder, text, lineFrom, params, globals, locals, arrays) {
+    const wordRe = /\b[A-Za-z_]\w*\b/g;
+    let match;
+    while ((match = wordRe.exec(text))) {
+      const word = match[0];
+      if (TYPE_WORDS.has(word) || DECL_MODS.has(word) || NON_FUNCTION.has(word)) continue;
+      if (arrays.has(word)) {
+        addMark(builder, lineFrom, match.index, word, arrayMark);
+      } else if (params.has(word)) {
+        addMark(builder, lineFrom, match.index, word, paramMark);
+      } else if (locals.has(word)) {
+        addMark(builder, lineFrom, match.index, word, localMark);
+      } else if (globals.has(word)) {
+        addMark(builder, lineFrom, match.index, word, globalMark);
+      }
+    }
+  }
+
+  return CM.ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = this.getDecorations(view);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.getDecorations(update.view);
+      }
+    }
+    getDecorations(view) {
+      const builder = new CM.RangeSetBuilder();
+      const doc = view.state.doc;
+      const globals = new Set();
+      const arrays = new Set(); // Stores declared C++ array variables
+      const scopeStack = [];
+      let braceDepth = 0;
+
+      for (let lineNo = 1; lineNo <= doc.lines; lineNo += 1) {
+          const line = doc.line(lineNo);
+          const text = line.text;
+          const lineFrom = line.from;
+          const paramsInScope = new Set(scopeStack.flatMap((entry) => Array.from(entry.params)));
+          const localsInScope = new Set(scopeStack.flatMap((entry) => Array.from(entry.locals)));
+
+          if (/^\s*#/.test(text)) {
+            const headerMatch = text.match(/<[^>\n]+>|"[^"\n]+"/);
+            if (headerMatch) {
+              const headerFrom = lineFrom + headerMatch.index;
+              builder.add(headerFrom, headerFrom + headerMatch[0].length, headerMark);
+            }
+            const macroMatch = text.match(/^\s*#\s*(define|ifdef|ifndef|endif|pragma|include)\b/);
+            if (macroMatch) {
+              const macroFrom = lineFrom + macroMatch[0].lastIndexOf(macroMatch[1]);
+              builder.add(macroFrom, macroFrom + macroMatch[1].length, macroMark);
+            }
+          }
+
+          markFunctionCalls(builder, text, lineFrom);
+          const activeLocals = scopeStack.length ? scopeStack[scopeStack.length - 1].locals : new Set();
+          const declaration = markDeclarations(builder, text, lineFrom, braceDepth, paramsInScope, globals, activeLocals, arrays);
+          markSymbolUsages(builder, text, lineFrom, paramsInScope, globals, localsInScope, arrays);
+          const namespaceRe = /\b[A-Za-z_]\w*(?=\s*::)/g;
+          let match;
+          while ((match = namespaceRe.exec(text))) {
+            builder.add(lineFrom + match.index, lineFrom + match.index + match[0].length, namespaceMark);
+          }
+
+          const constantRe = /\b(?:[A-Z][A-Z0-9_]*|_[A-Z0-9_]+)\b/g;
+          while ((match = constantRe.exec(text))) {
+            if (ALL_CAPS_RE.test(match[0])) {
+              builder.add(lineFrom + match.index, lineFrom + match.index + match[0].length, constantMark);
+            }
+          }
+
+          for (const ch of text) {
+            if (ch === "{") {
+              braceDepth += 1;
+              if (declaration && declaration.kind === "function" && text.includes("{") && braceDepth > 0) {
+                scopeStack.push({ depth: braceDepth, params: new Set(declaration.params || []), locals: new Set() });
+              } else {
+                scopeStack.push({ depth: braceDepth, params: new Set(), locals: new Set() });
+              }
+            }
+            if (ch === "}") {
+              braceDepth = Math.max(0, braceDepth - 1);
+              while (scopeStack.length && scopeStack[scopeStack.length - 1].depth > braceDepth) {
+                scopeStack.pop();
+              }
+            }
+          }
+      }
+
+      return builder.finish();
+    }
+  }, {
+    decorations: v => v.decorations
+  });
+}

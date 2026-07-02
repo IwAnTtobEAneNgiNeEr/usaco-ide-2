@@ -24,9 +24,26 @@
   --syn-kw: #c678dd;
   --syn-ctrl: #e06c75;
   --syn-type: #e5c07b;
+  --syn-class: #d19a66;
   --syn-fn: #61afef;
+  --syn-prop: #56b6c2;
+  --syn-var: #abb2bf;
+  --syn-var-def: #e5c07b;
+  --syn-local: #8be9fd;
+  --syn-param: #c678dd;
+  --syn-global: #56b6c2;
+  --syn-array: #c678dd; /* Default One Dark array color (magenta/purple) */
+  --syn-bool: #d19a66;
   --syn-num: #d19a66;
   --syn-str: #98c379;
+  --syn-char: #7bd88f;
+  --syn-meta: #e06c75;
+  --syn-operator: #56b6c2;
+  --syn-bracket: #7f848e;
+  --syn-namespace: #7aa2f7;
+  --syn-constant: #e5c07b;
+  --syn-macro: #ff7b72;
+  --syn-header: #98c379;
 
   /* ---- Editor appearance ---- */
   --code-font: var(--mono);
@@ -350,10 +367,27 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .tok-kw  { color: var(--syn-kw); }
 .tok-ctrl { color: var(--syn-ctrl); }
 .tok-type { color: var(--syn-type); }
+.tok-class { color: var(--syn-class); }
 .tok-fn  { color: var(--syn-fn); }
+.tok-prop { color: var(--syn-prop); }
+.tok-var { color: var(--syn-var); }
+.tok-var-def { color: var(--syn-var-def); }
+.tok-local { color: var(--syn-local); }
+.tok-param { color: var(--syn-param); }
+.tok-global { color: var(--syn-global); }
+.tok-bool { color: var(--syn-bool); }
 .tok-num { color: var(--syn-num); }
-.tok-str, .tok-char { color: var(--syn-str); }
-.tok-pre { color: var(--syn-ctrl); }
+.tok-str { color: var(--syn-str); }
+.tok-char { color: var(--syn-char); }
+.tok-pre { color: var(--syn-meta); }
+.tok-meta { color: var(--syn-meta); }
+.tok-op { color: var(--syn-operator); }
+.tok-bracket { color: var(--syn-bracket); }
+.tok-namespace { color: var(--syn-namespace); }
+.tok-const { color: var(--syn-constant); }
+.tok-macro { color: var(--syn-macro); font-weight: 600; }
+.tok-header { color: var(--syn-header); }
+.tok-std-lib { color: var(--syn-std-lib); }
 
 /* --- CodeMirror 6 host (injected by editor-cm.js) --- */
 .cm-editor-host { width: 100%; height: 100%; overflow: hidden; }
@@ -404,6 +438,16 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
   color: var(--syn-std-lib) !important;
   font-weight: 550;
 }
+.cm-syntax-fn, .cm-syntax-fn * { color: var(--syn-fn) !important; }
+.cm-syntax-var-def, .cm-syntax-var-def * { color: var(--syn-var-def) !important; }
+.cm-syntax-local, .cm-syntax-local * { color: var(--syn-local) !important; }
+.cm-syntax-param, .cm-syntax-param * { color: var(--syn-param) !important; }
+.cm-syntax-global, .cm-syntax-global * { color: var(--syn-global) !important; }
+.cm-syntax-array, .cm-syntax-array * { color: var(--syn-array) !important; font-weight: 550; }
+.cm-syntax-namespace, .cm-syntax-namespace * { color: var(--syn-namespace) !important; }
+.cm-syntax-constant, .cm-syntax-constant * { color: var(--syn-constant) !important; }
+.cm-syntax-macro, .cm-syntax-macro * { color: var(--syn-macro) !important; font-weight: 600; }
+.cm-syntax-header, .cm-syntax-header * { color: var(--syn-header) !important; }
 
 /* ---------------- Right panel tabs ---------------- */
 .panel-tabs { display: flex; gap: 2px; padding: 7px 10px 0; border-bottom: 1px solid var(--border); flex: none; overflow-x: auto; background: var(--panel); }

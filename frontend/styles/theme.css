@@ -335,9 +335,26 @@
   --syn-kw: #8959a8;
   --syn-ctrl: #c82829;
   --syn-type: #9a6700;
+  --syn-class: #b26b00;
   --syn-fn: #4271ae;
+  --syn-prop: #0c7d9d;
+  --syn-var: #1f2937;
+  --syn-var-def: #b45309;
+  --syn-local: #0284c7;
+  --syn-param: #9333ea;
+  --syn-global: #0369a1;
+  --syn-array: #9333ea; /* Default light theme array color (purple) */
+  --syn-bool: #b45309;
   --syn-num: #c2410c;
   --syn-str: #4d7c0f;
+  --syn-char: #15803d;
+  --syn-meta: #b91c1c;
+  --syn-operator: #0f766e;
+  --syn-bracket: #6b7280;
+  --syn-namespace: #2563eb;
+  --syn-constant: #b45309;
+  --syn-macro: #b91c1c;
+  --syn-header: #15803d;
 
   --syn-bracket-0: #b58900;
   --syn-bracket-1: #d33682;

@@ -1595,29 +1595,6 @@ body,
 }
 
 /* ========================================================================
-   PREMIUM NEON C++ SYNTAX HIGHLIGHTING (IDE UPGRADE)
-   ======================================================================== */
-
-/* Fallback values for editor variables, no !important so user settings cascade */
-.cm-editor {
-  --syn-kw: var(--syn-kw, #ff79c6);
-  --syn-ctrl: var(--syn-ctrl, #ff5555);
-  --syn-type: var(--syn-type, #50fa7b);
-  --syn-class: var(--syn-class, #bd93f9);
-  --syn-fn: var(--syn-fn, #f1fa8c);
-  --syn-prop: var(--syn-prop, #f1fa8c);
-  --syn-var: var(--syn-var, #ffb86c);
-  --syn-var-def: var(--syn-var-def, #ffb86c);
-  --syn-bool: var(--syn-bool, #ff5555);
-  --syn-num: var(--syn-num, #ff5555);
-  --syn-str: var(--syn-str, #f1fa8c);
-  --syn-cmt: var(--syn-cmt, #6272a4);
-  --syn-meta: var(--syn-meta, #ff79c6);
-  --syn-operator: var(--syn-operator, #8be9fd);
-  --syn-bracket: var(--syn-bracket, #6272a4);
-}
-
-/* ========================================================================
    VISUAL COHESION AND CONTRAST BETWEEN STATEMENT AND EDITOR
    ======================================================================== */
 
@@ -1648,12 +1625,6 @@ body,
 }
 
 /* Dynamic syntax highlighting is driven by editor-appearance.js variables on the document root */
-
-/* Ensure standard library highlighter uses the correct color */
-.cm-std-library, .cm-std-library * {
-  color: #8be9fd !important; /* Dracula Cyan */
-  font-weight: 600 !important;
-}
 
 /* Highlight Matching Brackets */
 .cm-editor .cm-matchingBracket {
