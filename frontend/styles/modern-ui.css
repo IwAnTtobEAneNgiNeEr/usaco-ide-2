@@ -444,6 +444,12 @@ textarea.input {
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-examples { --section-accent: var(--neon-amber); }
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-notes { --section-accent: var(--neon-blue); }
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-subtasks { --section-accent: var(--neon-pink); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-visualizer { --section-accent: var(--neon-cyan); }
+
+/* Icon content overrides */
+.stmt-neon-shell .stmt-visualizer .stmt-section-icon::before {
+  content: "🎨" !important;
+}
 
 
 /* Label: no ugly arrows/diamonds. The icon is a geometric neon node. */

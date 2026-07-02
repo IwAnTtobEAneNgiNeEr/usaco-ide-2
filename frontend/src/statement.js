@@ -254,6 +254,9 @@ function renderStatement(app) {
     return;
   }
   
+  status(app, ""); // Hide the instructions banner since statement is loaded
+  
+  
   const sections = parseSections(raw).map((s) => {
     const body = s.lines.join("\n");
     let html;
@@ -332,17 +335,17 @@ function renderStatement(app) {
     visualizerHtml = `
       <section class="stmt-section stmt-visualizer">
         <h2 class="stmt-section-label">
-          <span class="stmt-section-icon" aria-hidden="true">🎨</span>
+          <span class="stmt-section-icon" aria-hidden="true"></span>
           <span>MINH HỌA TRỰC QUAN ĐỀ BÀI</span>
         </h2>
-        <div class="stmt-section-body">
-          <div class="visualizer-container-inner" style="position: relative; background: rgba(10, 25, 50, 0.35); border: 1px solid rgba(0, 229, 255, 0.22); border-radius: 12px; padding: 16px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); backdrop-filter: blur(10px);">
-            <div class="visualizer-canvas-wrapper" style="width: 100%; height: 260px; position: relative; border-radius: 8px; overflow: hidden; background: rgba(5, 11, 20, 0.7); border: 1px dashed rgba(0, 229, 255, 0.15);">
+        <div class="stmt-section-body" style="margin-top: 10px;">
+          <div class="visualizer-container-inner" style="position: relative; background: rgba(5, 11, 20, 0.45); border-radius: 8px; padding: 12px; border: 1px solid rgba(0, 229, 255, 0.15); box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);">
+            <div class="visualizer-canvas-wrapper" style="width: 100%; height: 260px; position: relative; border-radius: 6px; overflow: hidden; background: #03070e; border: 1px solid rgba(120, 196, 255, 0.12);">
               <canvas id="stmt-neon-canvas" style="display: block; width: 100%; height: 100%;"></canvas>
             </div>
-            <div class="visualizer-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
-              <span class="visualizer-status" style="font-size: 12px; color: rgba(217, 233, 247, 0.85); font-family: monospace;">Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
-              <button id="btn-toggle-visualizer-animation" class="stmt-copy" style="padding: 6px 14px !important; font-size: 12px; background: rgba(0, 229, 255, 0.15) !important; border: 1px solid rgba(0, 229, 255, 0.4) !important; color: #fff !important; border-radius: 6px; cursor: pointer; transition: all 0.2s; position: static !important; pointer-events: auto !important;">
+            <div class="visualizer-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px;">
+              <span class="visualizer-status" style="font-size: 11.5px; color: rgba(217, 233, 247, 0.75); font-family: monospace; letter-spacing: 0.2px;">Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
+              <button id="btn-toggle-visualizer-animation" class="stmt-copy" style="padding: 5px 12px !important; font-size: 11.5px; background: rgba(0, 229, 255, 0.1) !important; border: 1px solid rgba(0, 229, 255, 0.3) !important; color: #fff !important; border-radius: 4px; cursor: pointer; transition: all 0.2s; position: static !important; pointer-events: auto !important; height: auto !important; margin: 0 !important; width: auto !important;">
                 ${app.state.showIllustration !== false ? "⏸ Tạm dừng" : "▶ Tiếp tục"}
               </button>
             </div>
@@ -365,19 +368,22 @@ function renderStatement(app) {
   highlightTokens(host);
 
   if (isVisualizerEnabled && app.state.canvasScene) {
-    const canvas = document.getElementById("stmt-neon-canvas");
-    if (canvas) {
-      if (typeof stopNeonCanvas === "function") stopNeonCanvas();
-      stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic || topicName, app.state.meta, { animate: app.state.showIllustration !== false });
-      
-      const toggleBtn = document.getElementById("btn-toggle-visualizer-animation");
-      if (toggleBtn) {
-        toggleBtn.addEventListener("click", () => {
-          app.state.showIllustration = app.state.showIllustration === false ? true : false;
-          renderStatement(app);
-        });
+    // Run canvas initialization in a requestAnimationFrame to avoid 0-size parent layout races
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById("stmt-neon-canvas");
+      if (canvas) {
+        if (typeof stopNeonCanvas === "function") stopNeonCanvas();
+        stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic || topicName, app.state.meta, { animate: app.state.showIllustration !== false });
+        
+        const toggleBtn = document.getElementById("btn-toggle-visualizer-animation");
+        if (toggleBtn) {
+          toggleBtn.addEventListener("click", () => {
+            app.state.showIllustration = app.state.showIllustration === false ? true : false;
+            renderStatement(app);
+          });
+        }
       }
-    }
+    });
   }
   updateIllustrationButton(app);
 
