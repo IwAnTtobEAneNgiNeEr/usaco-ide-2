@@ -116,28 +116,30 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
  
 /* Specific buttons inside topbar */
 .topbar .btn-run {
-  background: var(--btn-run) !important;
-  border-color: var(--btn-run) !important;
-  color: var(--on-accent) !important;
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
   border-radius: 8px !important;
   padding: 6px 10px !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 .topbar .btn-run:hover:not(:disabled) {
-  background: var(--btn-run-h) !important;
-  border-color: var(--btn-run-h) !important;
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
 }
 .topbar .btn-judge {
-  background: var(--btn-judge) !important;
-  border-color: var(--btn-judge) !important;
+  background: #1f9d57 !important;
+  border-color: #1f9d57 !important;
   color: #ffffff !important;
   border-radius: 8px !important;
   padding: 6px 10px !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 .topbar .btn-judge:hover:not(:disabled) {
-  background: var(--btn-judge-h) !important;
-  border-color: var(--btn-judge-h) !important;
+  background: #18b462 !important;
+  border-color: #18b462 !important;
+  color: #ffffff !important;
 }
 
 /* Focus timer */

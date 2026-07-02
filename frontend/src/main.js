@@ -705,73 +705,130 @@ function initGlobalParticles(app) {
   });
 
   const particles = [];
-  const maxParticles = 240; // High-density premium starry sky
+  const maxParticles = 380; // High-density premium starry sky
   
-  // Premium analogous space/cyan-violet palette (no childish rainbow/gay elements)
+  // Premium analogous space/cyan-violet palette (no childish rainbow elements)
   const colors = [
-    "rgba(0, 229, 255, 0.8)",   // Neon Cyan
-    "rgba(56, 189, 248, 0.8)",  // Sky Blue
-    "rgba(99, 102, 241, 0.8)",  // Indigo Blue
-    "rgba(167, 139, 250, 0.75)", // Soft Violet
-    "rgba(224, 242, 254, 0.65)"  // Glass White / Ice shine
+    "rgba(0, 229, 255, 0.85)",   // Neon Cyan
+    "rgba(56, 189, 248, 0.85)",  // Sky Blue
+    "rgba(99, 102, 241, 0.85)",  // Indigo Blue
+    "rgba(167, 139, 250, 0.8)",  // Soft Violet
+    "rgba(224, 242, 254, 0.75)"  // Glass White / Ice shine
   ];
+
+  let mouseX = null;
+  let mouseY = null;
+  let isMouseDown = false;
+  let lastMouseX = null;
+  let lastMouseY = null;
+  let mouseVelocity = 0;
+  
+  // Click Wave shockwave object (Animation 1)
+  let clickShockwave = { x: 0, y: 0, radius: 0, maxRadius: 180, active: false };
+  const temporarySparks = [];
 
   class Particle {
     constructor() {
+      // 3 types: "dust" (60%), "comet" (30%), "meteor" (10%) for depth-of-field starry sky
+      const rand = Math.random();
+      if (rand < 0.6) this.type = "dust";
+      else if (rand < 0.9) this.type = "comet";
+      else this.type = "meteor";
+
       this.reset(true);
     }
 
     reset(init = false) {
       this.x = Math.random() * width;
-      // 30% chance to reset at random Y to maintain even distribution across the map
       this.y = (init || Math.random() < 0.3) ? Math.random() * height : height + 25;
-      this.size = Math.random() * 12 + 10; // Longer comets for majestic flows
-      this.width = Math.random() * 0.8 + 0.5; // Much thinner, elegant threads
+      
+      if (this.type === "dust") {
+        this.size = Math.random() * 2 + 1; // Tiny twinkles
+        this.width = Math.random() * 0.4 + 0.3;
+        this.baseSpeedY = -(Math.random() * 0.15 + 0.15); // Very slow drift
+      } else if (this.type === "comet") {
+        this.size = Math.random() * 10 + 8; // Medium comets
+        this.width = Math.random() * 0.6 + 0.4;
+        this.baseSpeedY = -(Math.random() * 0.3 + 0.4);
+      } else {
+        this.size = Math.random() * 18 + 16; // Large glowing meteors
+        this.width = Math.random() * 0.8 + 0.8;
+        this.baseSpeedY = -(Math.random() * 0.5 + 0.8);
+      }
+
       this.vx = 0;
       this.vy = 0;
       this.phase = Math.random() * Math.PI * 2;
-      this.twinkleSpeed = Math.random() * 0.003 + 0.0015; // Speed of twinkling phase
+      this.twinkleSpeed = Math.random() * 0.003 + 0.0015;
       this.color = colors[Math.floor(Math.random() * colors.length)];
     }
 
     update(mouseX, mouseY) {
-      // Natural organic wave drift (micro-turbulence)
-      const baseVx = Math.sin(this.y * 0.015 + this.phase) * 0.35;
-      const baseVy = -0.55;
+      // 1. Natural organic drift
+      const baseVx = Math.sin(this.y * 0.012 + this.phase) * 0.3;
+      const baseVy = this.baseSpeedY;
 
-      // Mouse swirling vortex field attraction force
+      // 2. Click Shockwave push interaction (Animation 1)
+      if (clickShockwave.active) {
+        const sDx = this.x - clickShockwave.x;
+        const sDy = this.y - clickShockwave.y;
+        const sDist = Math.sqrt(sDx * sDx + sDy * sDy);
+        if (sDist < clickShockwave.radius && sDist > clickShockwave.radius - 40) {
+          const pushForce = (1 - (clickShockwave.radius - sDist) / 40) * 4.5;
+          const angle = Math.atan2(sDy, sDx);
+          this.vx += Math.cos(angle) * pushForce;
+          this.vy += Math.sin(angle) * pushForce;
+        }
+      }
+
+      // 3. Mouse attraction forces
       if (mouseX !== null && mouseY !== null) {
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+
         if (dist < 260) {
           const force = (260 - dist) / 260;
-          // Perpendicular swirl vector (-dy, dx)
-          const swirlX = -dy / (dist + 0.1);
-          const swirlY = dx / (dist + 0.1);
-          // Attraction vector (dx, dy)
           const attractX = dx / (dist + 0.1);
           const attractY = dy / (dist + 0.1);
 
-          // Blend swirl and attraction (80% swirl, 20% attraction for wider orbit)
-          const vortexX = swirlX * 0.8 + attractX * 0.2;
-          const vortexY = swirlY * 0.8 + attractY * 0.2;
+          if (isMouseDown) {
+            // Animation 2: Mouse Click & Hold - Vortex Blackhole Gravity
+            // Strong attraction directly to the cursor, twisting tightly
+            const swirlX = -dy / (dist + 0.1);
+            const swirlY = dx / (dist + 0.1);
+            
+            this.vx += (attractX * 0.65 + swirlX * 0.35) * force * 2.8;
+            this.vy += (attractY * 0.65 + swirlY * 0.35) * force * 2.8;
+            
+            if (dist < 30) {
+              this.vx *= 0.85;
+              this.vy *= 0.85;
+            }
+          } else {
+            // Standard Hover behavior: Swirling orbital rings
+            const swirlX = -dy / (dist + 0.1);
+            const swirlY = dx / (dist + 0.1);
+            
+            const vortexX = swirlX * 0.85 + attractX * 0.15;
+            const vortexY = swirlY * 0.85 + attractY * 0.15;
 
-          // Apply forces, scale by proximity
-          this.vx += vortexX * force * 0.75;
-          this.vy += vortexY * force * 0.75;
+            this.vx += vortexX * force * 0.85;
+            this.vy += vortexY * force * 0.85;
 
-          // Repelling boundary at dist < 85px to create a beautiful orbital halo and prevent clumping
-          if (dist < 85) {
-            const pushForce = (85 - dist) / 85;
-            this.vx -= attractX * pushForce * 1.8;
-            this.vy -= attractY * pushForce * 1.8;
+            // Repelling boundary at dist < 85px to create a halo ring
+            if (dist < 85) {
+              const pushForce = (85 - dist) / 85;
+              this.vx -= attractX * pushForce * 1.6;
+              this.vy -= attractY * pushForce * 1.6;
+            }
           }
 
-          // Damping inside the gravity field to settle into smooth orbits
-          if (dist < 60) {
-            this.vx *= 0.92;
-            this.vy *= 0.92;
+          // Animation 3: Cursor Heat Wave (Speed Excitation)
+          if (mouseVelocity > 6 && dist < 140) {
+            const speedExcitation = (mouseVelocity - 6) * 0.08;
+            this.vx += (Math.random() - 0.5) * speedExcitation * 3;
+            this.vy += (Math.random() - 0.5) * speedExcitation * 3;
           }
         }
       }
@@ -780,9 +837,9 @@ function initGlobalParticles(app) {
       this.vx *= 0.94;
       this.vy *= 0.94;
 
-      // Clamp max velocity to prevent chaotic scattering
+      // Clamp speed
       const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-      const maxSpeed = 3.6;
+      const maxSpeed = this.type === "meteor" ? 4.5 : (this.type === "comet" ? 3.6 : 1.8);
       if (speed > maxSpeed) {
         this.vx = (this.vx / speed) * maxSpeed;
         this.vy = (this.vy / speed) * maxSpeed;
@@ -793,64 +850,81 @@ function initGlobalParticles(app) {
       this.y += this.vy + baseVy;
 
       // Reset when particle goes off screen
-      if (this.y < -30 || this.x < -30 || this.x > width + 30) {
+      if (this.y < -30 || this.x < -30 || this.x > width + 30 || this.y > height + 30) {
         this.reset(false);
       }
     }
 
     draw(mouseX, mouseY) {
-      const baseVx = Math.sin(this.y * 0.015 + this.phase) * 0.35;
-      const baseVy = -0.55;
-      const speedX = this.vx + baseVx;
-      const speedY = this.vy + baseVy;
-      const angle = Math.atan2(speedY, speedX);
+      let alpha = 0.45 + Math.sin(this.phase + Date.now() * this.twinkleSpeed) * 0.35;
 
-      const headX = this.x;
-      const headY = this.y;
-      const tailX = this.x - Math.cos(angle) * this.size;
-      const tailY = this.y - Math.sin(angle) * this.size;
-
-      // Calculate organic twinkling opacity over time
-      let alpha = 0.4 + Math.sin(this.phase + Date.now() * this.twinkleSpeed) * 0.35;
-
-      // Excite particle opacity if near cursor
       if (mouseX !== null && mouseY !== null) {
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          alpha += (120 - dist) / 120 * 0.4;
+        if (dist < 140) {
+          alpha += (140 - dist) / 140 * 0.45;
+          if (isMouseDown) alpha += 0.2;
         }
       }
-      ctx.globalAlpha = Math.max(0.1, Math.min(1.0, alpha));
+      ctx.globalAlpha = Math.max(0.08, Math.min(1.0, alpha));
 
-      // Draw bright glowing head core
-      ctx.beginPath();
-      ctx.arc(headX, headY, this.width * 1.6, 0, Math.PI * 2);
-      ctx.fillStyle = this.color;
-      ctx.fill();
-
-      // Create faded gradient comet tail
-      const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
-      grad.addColorStop(0, this.color);
-      grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-
-      ctx.beginPath();
-      ctx.moveTo(headX, headY);
-      ctx.lineTo(tailX, tailY);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = this.width;
-      ctx.lineCap = "round";
-      ctx.stroke();
-
-      // Draw micro-sparks along the tail for 35% of comets
-      if (this.phase % 3 < 1) {
+      if (this.type === "dust") {
         ctx.beginPath();
-        const midX = headX - (tailX - headX) * 0.4;
-        const midY = headY - (tailY - headY) * 0.4;
-        ctx.arc(midX, midY, 0.6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
         ctx.fill();
+      } else {
+        const baseVx = Math.sin(this.y * 0.012 + this.phase) * 0.3;
+        const baseVy = this.baseSpeedY;
+        const speedX = this.vx + baseVx;
+        const speedY = this.vy + baseVy;
+        const angle = Math.atan2(speedY, speedX);
+
+        const headX = this.x;
+        const headY = this.y;
+        
+        const speedLen = Math.sqrt(speedX * speedX + speedY * speedY);
+        const dynamicSize = this.size * (1 + speedLen * 0.25);
+        
+        const tailX = this.x - Math.cos(angle) * dynamicSize;
+        const tailY = this.y - Math.sin(angle) * dynamicSize;
+
+        // Draw glowing head core (Animation 4: Multi-layered glowing heads)
+        ctx.beginPath();
+        ctx.arc(headX, headY, this.width * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        if (this.type === "meteor") {
+          ctx.beginPath();
+          ctx.arc(headX, headY, this.width * 2.8, 0, Math.PI * 2);
+          ctx.fillStyle = this.color.replace("0.85", "0.2").replace("0.8", "0.2").replace("0.75", "0.2");
+          ctx.fill();
+        }
+
+        // Draw faded gradient tail
+        const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
+        grad.addColorStop(0, this.color);
+        grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+        ctx.beginPath();
+        ctx.moveTo(headX, headY);
+        ctx.lineTo(tailX, tailY);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = this.width;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Draw micro-sparks along the tail
+        if (this.type === "meteor" || (this.type === "comet" && this.phase % 4 < 1)) {
+          ctx.beginPath();
+          const midX = headX - (tailX - headX) * 0.35;
+          const midY = headY - (tailY - headY) * 0.35;
+          ctx.arc(midX, midY, 0.7, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+          ctx.fill();
+        }
       }
     }
   }
@@ -860,21 +934,65 @@ function initGlobalParticles(app) {
     particles.push(new Particle());
   }
 
-  let mouseX = null;
-  let mouseY = null;
-
   document.addEventListener("mousemove", (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
+    
+    if (lastMouseX !== null && lastMouseY !== null) {
+      const dx = mouseX - lastMouseX;
+      const dy = mouseY - lastMouseY;
+      mouseVelocity = Math.sqrt(dx * dx + dy * dy);
+    }
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+  });
+
+  document.addEventListener("mousedown", (e) => {
+    if (e.target.closest("input, textarea, button, .cm-editor, a, #btn-deactivate-visualizer")) return;
+    isMouseDown = true;
+  });
+
+  document.addEventListener("mouseup", () => {
+    isMouseDown = false;
+  });
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("input, textarea, button, .cm-editor, a")) return;
+    
+    clickShockwave = {
+      x: e.clientX,
+      y: e.clientY,
+      radius: 0,
+      maxRadius: 180,
+      active: true
+    };
+
+    for (let i = 0; i < 22; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 3.5 + 2.5;
+      temporarySparks.push({
+        x: e.clientX,
+        y: e.clientY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1.0,
+        decay: Math.random() * 0.035 + 0.02,
+        size: Math.random() * 1.6 + 0.8
+      });
+    }
   });
 
   document.addEventListener("mouseleave", () => {
     mouseX = null;
     mouseY = null;
+    isMouseDown = false;
+    lastMouseX = null;
+    lastMouseY = null;
+    mouseVelocity = 0;
   });
 
   function animate() {
-    // If settings explicitly disables particles, stop animation loop
     if (app.state.settings && app.state.settings.enableParticles === false) {
       canvas.style.display = "none";
       animationFrameId = null;
@@ -885,12 +1003,79 @@ function initGlobalParticles(app) {
     canvas.style.display = "block";
     
     ctx.globalCompositeOperation = "screen";
+
+    if (clickShockwave.active) {
+      clickShockwave.radius += 10;
+      if (clickShockwave.radius > clickShockwave.maxRadius) {
+        clickShockwave.active = false;
+      }
+    }
+
+    // Animation 4: Draw thin glowing Constellation lines between particles near the mouse
+    if (mouseX !== null && mouseY !== null) {
+      const mouseRange = 120;
+      const connectionRange = 46;
+      
+      for (let i = 0; i < particles.length; i++) {
+        const p1 = particles[i];
+        const mDx = mouseX - p1.x;
+        const mDy = mouseY - p1.y;
+        const mDist = Math.sqrt(mDx * mDx + mDy * mDy);
+        
+        if (mDist < mouseRange) {
+          let connectionsCount = 0;
+          for (let j = i + 1; j < particles.length; j++) {
+            if (connectionsCount >= 3) break;
+            
+            const p2 = particles[j];
+            const pDx = p2.x - p1.x;
+            const pDy = p2.y - p1.y;
+            const pDist = Math.sqrt(pDx * pDx + pDy * pDy);
+
+            if (pDist < connectionRange) {
+              const alpha = 0.08 * (1 - pDist / connectionRange) * (1 - mDist / mouseRange);
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(147, 197, 253, ${alpha})`;
+              ctx.lineWidth = 0.45;
+              ctx.stroke();
+              connectionsCount++;
+            }
+          }
+        }
+      }
+    }
+
     for (let i = 0; i < particles.length; i++) {
       particles[i].update(mouseX, mouseY);
       particles[i].draw(mouseX, mouseY);
     }
-    ctx.globalCompositeOperation = "source-over";
 
+    for (let i = temporarySparks.length - 1; i >= 0; i--) {
+      const sp = temporarySparks[i];
+      sp.x += sp.vx;
+      sp.y += sp.vy;
+      sp.vx *= 0.96;
+      sp.vy *= 0.96;
+      sp.life -= sp.decay;
+      if (sp.life <= 0) {
+        temporarySparks.splice(i, 1);
+        continue;
+      }
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+      ctx.fillStyle = sp.color;
+      ctx.globalAlpha = sp.life;
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = sp.color;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    mouseVelocity *= 0.9;
+
+    ctx.globalCompositeOperation = "source-over";
     animationFrameId = requestAnimationFrame(animate);
   }
 
