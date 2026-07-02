@@ -325,7 +325,18 @@ function renderStatement(app) {
     </div>
   `;
 
-  const out = sections.filter((section) => section.type !== "description").map(sectionHtml).join("");
+  const inputSec = sections.find(s => s.type === "input");
+  const outputSec = sections.find(s => s.type === "output");
+  const constraintsSec = sections.find(s => s.type === "constraints");
+
+  const remainingSections = sections.filter((s) => 
+    s.type !== "description" && 
+    s.type !== "input" && 
+    s.type !== "output" && 
+    s.type !== "constraints"
+  );
+  
+  const out = remainingSections.map(sectionHtml).join("");
   const analysisHtml = renderAnalysisHtml(meta.analysis);
 
   // Dedicated Problem Visualizer Block
@@ -362,11 +373,48 @@ function renderStatement(app) {
     `;
   }
 
+  let specsHtml = "";
+  if (inputSec || outputSec || constraintsSec) {
+    const inputHtml = inputSec ? inputSec.html : "";
+    const outputHtml = outputSec ? outputSec.html : "";
+    const constraintsHtml = constraintsSec ? constraintsSec.html : "";
+
+    specsHtml = `
+      <section class="stmt-section stmt-specifications">
+        <h2 class="stmt-section-label">
+          <span class="stmt-section-icon" aria-hidden="true"></span>
+          <span>QUY CÁCH &amp; RÀNG BUỘC</span>
+        </h2>
+        <div class="stmt-section-body spec-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 4px;">
+          ${inputHtml ? `
+            <div class="spec-col-input" style="padding-right: 12px; border-right: 1px solid rgba(255, 255, 255, 0.04);">
+              <h3 style="font-size: 11px; color: rgb(var(--neon-cyan)); margin: 0 0 6px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Dữ liệu vào</h3>
+              <div style="font-size: 12px; color: rgba(217, 233, 247, 0.9); line-height: 1.45;">${inputHtml}</div>
+            </div>
+          ` : ''}
+          ${outputHtml ? `
+            <div class="spec-col-output">
+              <h3 style="font-size: 11px; color: rgb(var(--neon-mint)); margin: 0 0 6px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Kết quả ra</h3>
+              <div style="font-size: 12px; color: rgba(217, 233, 247, 0.9); line-height: 1.45;">${outputHtml}</div>
+            </div>
+          ` : ''}
+          ${constraintsHtml ? `
+            <div class="spec-row-constraints" style="grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.04); padding-top: 10px; margin-top: 4px;">
+              <h3 style="font-size: 11px; color: rgb(var(--neon-violet)); margin: 0 0 6px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Ràng buộc</h3>
+              <div style="font-size: 12px; color: rgba(217, 233, 247, 0.9); line-height: 1.45;">${constraintsHtml}</div>
+            </div>
+          ` : ''}
+        </div>
+      </section>
+    `;
+  }
+
   host.innerHTML = `
     <div class="stmt-neon-shell">
       ${heroHtml}
-      <div class="stmt-neon-secondary">
+      <div class="stmt-neon-secondary" style="gap: 10px;">
         ${visualizerHtml}
+        ${specsHtml}
         ${out}
       </div>
       ${analysisHtml}

@@ -392,12 +392,12 @@ textarea.input {
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(132px, 164px) minmax(0, 1fr);
-  gap: 20px;
+  gap: 12px;
   align-items: start;
   overflow: hidden;
-  padding: 22px 24px;
+  padding: 12px 14px;
   border: 1px solid rgba(var(--section-accent), .34);
-  border-radius: 14px;
+  border-radius: 10px;
   background:
     radial-gradient(420px 150px at 0% 0%, rgba(var(--section-accent), .145), transparent 72%),
     radial-gradient(420px 180px at 100% -20%, rgba(var(--neon-violet), .06), transparent 70%),
@@ -444,26 +444,30 @@ textarea.input {
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-examples { --section-accent: var(--neon-amber); }
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-notes { --section-accent: var(--neon-blue); }
 .stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-subtasks { --section-accent: var(--neon-pink); }
-.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-visualizer { --section-accent: var(--neon-violet); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-visualizer { --section-accent: var(--neon-blue); }
+.stmt-neon-shell .stmt-neon-secondary > .stmt-section.stmt-specifications { --section-accent: var(--neon-cyan); }
 
 /* Icon content overrides */
 .stmt-neon-shell .stmt-visualizer .stmt-section-icon::before {
   content: "🎨" !important;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6) !important;
-  border-color: rgba(168, 85, 247, 0.8) !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6) !important;
+  border-color: rgba(59, 130, 246, 0.8) !important;
+}
+.stmt-neon-shell .stmt-specifications .stmt-section-icon::before {
+  content: "📋" !important;
 }
 
 /* Problem Visualizer Interactive Component Layout */
 .stmt-visualizer .visualizer-canvas-wrapper {
   width: 100%;
-  height: 250px;
+  height: 130px; /* Highly compact height to save screen space */
   position: relative;
   border-radius: 8px;
   overflow: hidden;
   background: transparent !important; /* Transparent to blend seamlessly with statement background */
   border: none !important; /* Remove inner border to prevent double border clashing */
   box-shadow: none !important;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .stmt-visualizer .visualizer-canvas-wrapper canvas {
@@ -476,10 +480,10 @@ textarea.input {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: rgba(168, 85, 247, 0.04);
-  border: 1px solid rgba(168, 85, 247, 0.15);
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.15);
   border-radius: 6px;
 }
 
@@ -495,15 +499,15 @@ textarea.input {
 .stmt-visualizer .status-pulse-dot {
   width: 6px;
   height: 6px;
-  background-color: #a855f7;
+  background-color: #3b82f6;
   border-radius: 50%;
-  box-shadow: 0 0 8px #a855f7;
-  animation: pulse-glow-violet 1.5s infinite;
+  box-shadow: 0 0 8px #3b82f6;
+  animation: pulse-glow-blue 1.5s infinite;
 }
 
-@keyframes pulse-glow-violet {
+@keyframes pulse-glow-blue {
   0% { transform: scale(0.9); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #a855f7; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #3b82f6; }
   100% { transform: scale(0.9); opacity: 0.5; }
 }
 
@@ -511,8 +515,8 @@ textarea.input {
   padding: 5px 12px !important;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(168, 85, 247, 0.12) !important;
-  border: 1px solid rgba(168, 85, 247, 0.4) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
   color: #fff !important;
   border-radius: 4px;
   cursor: pointer;
@@ -523,9 +527,9 @@ textarea.input {
 }
 
 .stmt-visualizer #btn-toggle-visualizer-animation:hover {
-  background: rgba(168, 85, 247, 0.25) !important;
-  border-color: #a855f7 !important;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+  background: rgba(59, 130, 246, 0.25) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }
 
 
@@ -590,15 +594,15 @@ textarea.input {
   padding: 0;
   color: var(--neon-copy);
   font-family: var(--sans);
-  font-size: 14.7px;
+  font-size: 12.8px;
   font-weight: 620;
-  line-height: 1.72;
+  line-height: 1.45;
   letter-spacing: -.002em;
   text-wrap: pretty;
 }
 .stmt-neon-shell .stmt-section-body > :first-child { margin-top: 0; }
 .stmt-neon-shell .stmt-section-body > :last-child { margin-bottom: 0; }
-.stmt-neon-shell .stmt-section-body p { max-width: 70ch; margin: 0 0 12px; }
+.stmt-neon-shell .stmt-section-body p { max-width: 70ch; margin: 0 0 8px; }
 .stmt-neon-shell .stmt-section-body strong { color: #fff; font-weight: 820; }
 .stmt-neon-shell .stmt-section-body li::marker { color: rgb(var(--section-accent)); }
 .stmt-neon-shell .stmt-section-body code {
