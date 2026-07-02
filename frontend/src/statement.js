@@ -344,56 +344,38 @@ function renderStatement(app) {
   
   if (isVisualizerEnabled && !app.state.canvasScene && supportsNeonCanvas(topicName, meta)) {
     app.state.canvasScene = "predefined";
-    app.state.showIllustration = true;
+    app.state.showIllustration = false; // Start off collapsed/hidden by default to save vertical space!
   }
 
   let visualizerHtml = "";
-  if (isVisualizerEnabled && app.state.canvasScene) {
-    if (!app.state.visualizerActivated) {
-      visualizerHtml = `
-        <section class="stmt-section stmt-visualizer">
-          <h2 class="stmt-section-label">
-            <span class="stmt-section-icon" aria-hidden="true"></span>
-            <span>MINH HỌA TRỰC QUAN ĐỀ BÀI</span>
-          </h2>
-          <div class="stmt-section-body" style="margin-top: 8px;">
-            <div id="btn-activate-visualizer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; border: 1px dashed rgba(59, 130, 246, 0.35); border-radius: 8px; background: rgba(14, 25, 48, 0.45); cursor: pointer; transition: all 0.2s ease;">
-              <span style="font-size: 18px; margin-bottom: 4px;">🎨</span>
-              <span style="font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">BẤM ĐỂ KHỞI CHẠY MINH HỌA TRỰC QUAN</span>
-              <span style="font-size: 9.5px; color: rgba(217, 233, 247, 0.55); margin-top: 2px;">Nhấp để hiển thị mô phỏng đồ họa thuật toán sinh động</span>
+  if (isVisualizerEnabled && app.state.canvasScene && app.state.showIllustration) {
+    visualizerHtml = `
+      <section class="stmt-section stmt-visualizer">
+        <h2 class="stmt-section-label">
+          <span class="stmt-section-icon" aria-hidden="true"></span>
+          <span>MINH HỌA TRỰC QUAN ĐỀ BÀI</span>
+        </h2>
+        <div class="stmt-section-body" style="margin-top: 8px;">
+          <div class="visualizer-canvas-wrapper">
+            <canvas id="stmt-neon-canvas"></canvas>
+          </div>
+          <div class="visualizer-controls">
+            <span class="visualizer-status">
+              <span class="status-pulse-dot"></span>
+              <span>Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
+            </span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button id="btn-toggle-visualizer-animation" class="stmt-copy" style="padding: 5px 12px !important; font-size: 11px; font-weight: 600; background: rgba(59, 130, 246, 0.12) !important; border: 1px solid rgba(59, 130, 246, 0.4) !important; color: #fff !important; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;">
+                ${app.state.showIllustration !== false ? "⏸ Tạm dừng" : "▶ Tiếp tục"}
+              </button>
+              <button id="btn-deactivate-visualizer" class="stmt-copy" style="padding: 5px 12px !important; font-size: 11px; font-weight: 600; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #fff !important; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;">
+                Ẩn minh họa
+              </button>
             </div>
           </div>
-        </section>
-      `;
-    } else {
-      visualizerHtml = `
-        <section class="stmt-section stmt-visualizer">
-          <h2 class="stmt-section-label">
-            <span class="stmt-section-icon" aria-hidden="true"></span>
-            <span>MINH HỌA TRỰC QUAN ĐỀ BÀI</span>
-          </h2>
-          <div class="stmt-section-body" style="margin-top: 8px;">
-            <div class="visualizer-canvas-wrapper">
-              <canvas id="stmt-neon-canvas"></canvas>
-            </div>
-            <div class="visualizer-controls">
-              <span class="visualizer-status">
-                <span class="status-pulse-dot"></span>
-                <span>Trạng thái: Đang chạy minh họa thuật toán sinh động...</span>
-              </span>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <button id="btn-toggle-visualizer-animation" class="stmt-copy" style="padding: 5px 12px !important; font-size: 11px; font-weight: 600; background: rgba(59, 130, 246, 0.12) !important; border: 1px solid rgba(59, 130, 246, 0.4) !important; color: #fff !important; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;">
-                  ${app.state.showIllustration !== false ? "⏸ Tạm dừng" : "▶ Tiếp tục"}
-                </button>
-                <button id="btn-deactivate-visualizer" class="stmt-copy" style="padding: 5px 12px !important; font-size: 11px; font-weight: 600; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #fff !important; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;">
-                  Ẩn minh họa
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      `;
-    }
+        </div>
+      </section>
+    `;
   }
 
   let specsHtml = "";
@@ -445,23 +427,15 @@ function renderStatement(app) {
   `;
   highlightTokens(host);
 
-  const activateBtn = document.getElementById("btn-activate-visualizer");
-  if (activateBtn) {
-    activateBtn.onclick = () => {
-      app.state.visualizerActivated = true;
-      renderStatement(app);
-    };
-  }
-
   const deactivateBtn = document.getElementById("btn-deactivate-visualizer");
   if (deactivateBtn) {
     deactivateBtn.onclick = () => {
-      app.state.visualizerActivated = false;
+      app.state.showIllustration = false;
       renderStatement(app);
     };
   }
 
-  if (isVisualizerEnabled && app.state.canvasScene && app.state.visualizerActivated) {
+  if (isVisualizerEnabled && app.state.canvasScene && app.state.showIllustration) {
     // Run canvas initialization in a requestAnimationFrame to avoid 0-size parent layout races
     requestAnimationFrame(() => {
       const canvas = document.getElementById("stmt-neon-canvas");

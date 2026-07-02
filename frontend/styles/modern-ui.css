@@ -680,15 +680,15 @@ textarea.input {
   padding: 0;
   color: var(--neon-copy);
   font-family: var(--sans);
-  font-size: 12.8px;
+  font-size: 12px;
   font-weight: 620;
-  line-height: 1.45;
+  line-height: 1.4;
   letter-spacing: -.002em;
   text-wrap: pretty;
 }
 .stmt-neon-shell .stmt-section-body > :first-child { margin-top: 0; }
 .stmt-neon-shell .stmt-section-body > :last-child { margin-bottom: 0; }
-.stmt-neon-shell .stmt-section-body p { max-width: 70ch; margin: 0 0 8px; }
+.stmt-neon-shell .stmt-section-body p { max-width: 70ch; margin: 0 0 6px; }
 .stmt-neon-shell .stmt-section-body strong { color: #fff; font-weight: 820; }
 .stmt-neon-shell .stmt-section-body li::marker { color: rgb(var(--section-accent)); }
 .stmt-neon-shell .stmt-section-body code {
