@@ -385,23 +385,23 @@ function renderStatement(app) {
           <span class="stmt-section-icon" aria-hidden="true"></span>
           <span>QUY CÁCH &amp; RÀNG BUỘC</span>
         </h2>
-        <div class="stmt-section-body spec-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 4px;">
+        <div class="stmt-section-body spec-grid">
           ${inputHtml ? `
-            <div class="spec-col-input" style="padding-right: 12px; border-right: 1px solid rgba(255, 255, 255, 0.04);">
-              <h3 style="font-size: 11px; color: rgb(var(--neon-cyan)); margin: 0 0 6px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Dữ liệu vào</h3>
-              <div style="font-size: 12px; color: rgba(217, 233, 247, 0.9); line-height: 1.45;">${inputHtml}</div>
+            <div class="spec-card input-card">
+              <div class="spec-card-title">📥 Dữ liệu vào</div>
+              <div class="spec-card-body">${inputHtml}</div>
             </div>
           ` : ''}
           ${outputHtml ? `
-            <div class="spec-col-output">
-              <h3 style="font-size: 11px; color: rgb(var(--neon-mint)); margin: 0 0 6px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Kết quả ra</h3>
-              <div style="font-size: 12px; color: rgba(217, 233, 247, 0.9); line-height: 1.45;">${outputHtml}</div>
+            <div class="spec-card output-card">
+              <div class="spec-card-title">📤 Kết quả ra</div>
+              <div class="spec-card-body">${outputHtml}</div>
             </div>
           ` : ''}
           ${constraintsHtml ? `
-            <div class="spec-row-constraints" style="grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.04); padding-top: 10px; margin-top: 4px;">
-              <h3 style="font-size: 11px; color: rgb(var(--neon-violet)); margin: 0 0 6px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Ràng buộc</h3>
-              <div style="font-size: 12px; color: rgba(217, 233, 247, 0.9); line-height: 1.45;">${constraintsHtml}</div>
+            <div class="spec-card constraints-card">
+              <div class="spec-card-title">⚠️ Ràng buộc</div>
+              <div class="spec-card-body">${constraintsHtml}</div>
             </div>
           ` : ''}
         </div>
