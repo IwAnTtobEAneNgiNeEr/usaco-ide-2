@@ -780,7 +780,22 @@
 .dm-file-tab.active { color: var(--text, #e8e8ec); border-color: var(--accent, #e6a93e); }
 .dm-file-body { max-height: 320px; overflow: auto; }
 .dm-status { margin: 12px 0 8px; font-size: 12.5px; }
+.dm-status-verified { color: var(--ac, #35c26e); }
+.dm-status-needs-work { color: var(--wa, #e5544b); }
+.dm-status-unverified { color: var(--text-dim, #8b93a7); }
 .dm-runs { margin-top: 6px; }
+.dm-cta { margin-top: 14px; }
+.dm-secondary { margin-top: 8px; }
+/* Minimal edit surface for GridPathfinder.cpp — a plain monospace textarea,
+   deliberately not a second CodeMirror instance. */
+.dm-edit-area {
+  width: 100%; min-height: 340px; margin-top: 10px; resize: vertical;
+  font-family: var(--mono, monospace); font-size: 12.5px; line-height: 1.5;
+  color: var(--text, #e8e8ec); background: var(--panel-2, #12161d);
+  border: 1px solid var(--border, #2c2c35); border-radius: 8px; padding: 12px;
+  tab-size: 4; white-space: pre; overflow: auto;
+}
+.dm-edit-area:focus { outline: none; border-color: var(--accent, #e6a93e); }
 
 @media (max-width: 720px) {
   .mo-evidence { grid-template-columns: 1fr; }

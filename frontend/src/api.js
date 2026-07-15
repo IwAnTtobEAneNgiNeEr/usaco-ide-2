@@ -200,6 +200,10 @@ export const api = {
   derivedArtifacts: (id) => get(`/api/problems/${id}/derived`),
   createGridPathfinder: (id, evidenceId) => post(`/api/problems/${id}/derived/grid-pathfinder`, { evidenceId }),
   getDerivedArtifact: (id, artifactId) => get(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}`),
+  // Edit loop: read/write only GridPathfinder.cpp; the original main.cpp is
+  // never touched (backend enforces this). Re-run verify after saving.
+  getDerivedSource: (id, artifactId) => get(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/source`),
+  saveDerivedSource: (id, artifactId, source) => put(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/source`, { source }),
   verifyDerivedArtifact: (id, artifactId, suite) => post(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/verify`, { suite }),
   activateRequirementChange: (id, artifactId, changeId) => post(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/requirement-changes/${encodeURIComponent(changeId)}/activate`, {}),
 

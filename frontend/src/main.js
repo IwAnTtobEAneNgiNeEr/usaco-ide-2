@@ -19,7 +19,7 @@ import { initWaReview } from "./features/wa-review.js?v=2.4";
 import { initGameReview } from "./features/game-review.js?v=3.1";
 import { initMoment } from "./features/moment.js?v=2.8"; // supersedes verdict-rail's listener (chips live on inside the card)
 import { initAnalysis } from "./features/analysis.js?v=1.1"; // "Phân tích code này" — evidence-based, Verified Artifact Loop P3
-import { initDerivedModule } from "./features/derived-module.js?v=1.0"; // "Phát triển thành module" — GridPathfinder, Verified Artifact Loop P4
+import { initDerivedModule } from "./features/derived-module.js?v=1.1"; // "Phát triển thành module" — GridPathfinder + edit surface, Verified Artifact Loop P4
 import { initFlashQuiz } from "./features/flash-quiz.js?v=1.3"; // câu hỏi = lỗi thật từ Student Model
 import { initArena } from "./features/arena.js?v=1.5"; // ⚔ Luyện tập xếp hạng: HUD + match strip + app.arena helpers
 import { initActivityWorkspace } from "./features/activity-workspace.js?v=1.3";
