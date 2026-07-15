@@ -52,11 +52,11 @@ function renderTestsSummary(app) {
   const results = app.state.testResults || {};
   const statuses = tests.map((t) => results[t.id] && results[t.id].status).filter(Boolean);
   if (statuses.length === 0) {
-    app.el.testsSummary.textContent = `${tests.length} test case${tests.length === 1 ? "" : "s"}`;
+    app.el.testsSummary.textContent = `${tests.length} test`;
     return;
   }
   const passed = statuses.filter((s) => s === "AC").length;
-  app.el.testsSummary.innerHTML = `${tests.length} tests · <b style="color:var(--ac)">${passed} AC</b> / ${statuses.length} run`;
+  app.el.testsSummary.innerHTML = `${tests.length} test · <b style="color:var(--ac)">${passed} AC</b> / ${statuses.length} đã chạy`;
 }
 
 export function renderTests(app) {
@@ -67,7 +67,7 @@ export function renderTests(app) {
   renderTestsSummary(app);
 
   if (tests.length === 0) {
-    list.innerHTML = `<div class="tests-empty">Chưa có test. Bấm <b>+ Add test</b>, hoặc mở tab <b>Problem</b> để AI tự tạo test từ đề bài.</div>`;
+    list.innerHTML = `<div class="tests-empty">Chưa có test. Bấm <b>+ Thêm test</b>, hoặc mở <b>Đề bài</b> để AI tự tạo test.</div>`;
     return;
   }
 
@@ -80,16 +80,16 @@ export function renderTests(app) {
         <span class="tcard-prev">in: ${escapeHtml(preview(t.input))} · out: ${escapeHtml(preview(t.expected))}</span>
         <span class="tcard-time"></span>
         <div class="tcard-btns">
-          <button class="btn btn-ghost btn-sm" data-act="run">Run</button>
-          <button class="btn btn-ghost btn-sm" data-act="viz" title="Vẽ input này thành hình">👁</button>
-          <button class="btn btn-ghost btn-sm" data-act="toggle">Edit</button>
+          <button class="btn btn-ghost btn-sm" data-act="run">Chạy</button>
+          <button class="btn btn-ghost btn-sm" data-act="viz" title="Vẽ input này thành hình">◉</button>
+          <button class="btn btn-ghost btn-sm" data-act="toggle">Sửa</button>
           <button class="btn btn-ghost btn-sm btn-danger-ghost" data-act="del">✕</button>
         </div>
       </div>
       <div class="tcard-body">
-        <div class="tc-field"><label>Name</label><input class="tc-name" value="${escapeHtml(t.name)}" /></div>
+        <div class="tc-field"><label>Tên</label><input class="tc-name" value="${escapeHtml(t.name)}" /></div>
         <div class="tc-field"><label>Input (stdin)</label><textarea class="tc-input" spellcheck="false">${escapeHtml(t.input)}</textarea></div>
-        <div class="tc-field"><label>Expected output</label><textarea class="tc-expected" spellcheck="false">${escapeHtml(t.expected)}</textarea></div>
+        <div class="tc-field"><label>Output mong đợi</label><textarea class="tc-expected" spellcheck="false">${escapeHtml(t.expected)}</textarea></div>
         ${t.reason ? `<div class="ai-reason">${escapeHtml(t.reason)}</div>` : ""}
         <pre class="tc-out"></pre>
       </div>

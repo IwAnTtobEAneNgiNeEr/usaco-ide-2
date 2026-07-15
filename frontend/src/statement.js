@@ -7,7 +7,8 @@
 import { api } from "./api.js";
 import { renderMeta } from "./editor.js";
 import { renderMarkdown, escapeHtml, renderMath } from "./md.js";
-import { initNeonCanvas, supportsNeonCanvas } from "./statement-neon-canvas.js";
+import { initNeonCanvas } from "./statement-neon-canvas.js";
+import { supportsNeonCanvas } from "./statement-neon-canvas.js";
 
 let stopNeonCanvas = null;
 
@@ -191,6 +192,101 @@ function highlightTokens(host) {
   }
 }
 
+// CF-style rank badge for an Elo value — shared by the main reader hero and
+// the reusable sheet builder below.
+function rankFor(elo) {
+  let rankColor = "#a0a0a0"; let rankName = "Newbie";
+  if (elo >= 1200) { rankColor = "#50ff96"; rankName = "Pupil"; }
+  if (elo >= 1400) { rankColor = "#50c8ff"; rankName = "Specialist"; }
+  if (elo >= 1600) { rankColor = "#a050ff"; rankName = "Expert"; }
+  if (elo >= 1900) { rankColor = "#ff50a0"; rankName = "Candidate Master"; }
+  if (elo >= 2100) { rankColor = "#ff9650"; rankName = "Master"; }
+  if (elo >= 2300) { rankColor = "#ff5050"; rankName = "Grandmaster"; }
+  if (elo >= 2400) { rankColor = "#ff0000"; rankName = "Legendary"; }
+  return { rankColor, rankName };
+}
+
+// ---------------------------------------------------------------------------
+// Reusable statement sheet — THE one reading surface of the app.
+// buildStatementSheetHtml(raw, meta) renders any Markdown statement into the
+// exact same neon-ink page the main IDE reader uses (hero + QUY CÁCH & RÀNG
+// BUỘC spec cards + labeled sections), so practice activities (Điền Lõi, Debug
+// tốc độ, Contest, Sinh Test) never drift into a second statement look.
+// Pure: no app state, no canvas/AI-analysis blocks. Callers should run
+// highlightTokens(host) + renderMath(host) after inserting the HTML.
+// ---------------------------------------------------------------------------
+export function buildStatementSheetHtml(raw, meta = {}) {
+  const text = String(raw || "");
+  if (!text.trim()) {
+    return '<div class="stmt-empty">Chưa có nội dung đề.</div>';
+  }
+  const sections = parseSections(text).map((s) => {
+    const body = s.lines.join("\n");
+    let html;
+    if (s.type === "description") html = renderDescription(body);
+    else if (s.type === "examples") html = renderExamplesGrid(body);
+    else html = renderMarkdown(body);
+    return { type: s.type, label: s.label, html };
+  });
+
+  const elo = parseInt(meta.elo, 10) || 0;
+  const { rankColor, rankName } = rankFor(elo);
+  const eloChip = elo
+    ? `<div class="stmt-elo-chip" style="--rank-c: ${rankColor};">
+        <span class="stmt-elo-dot"></span>
+        <span class="stmt-elo-num">${elo}</span>
+        <span class="stmt-elo-label">ELO</span>
+        <span class="stmt-elo-sep"></span>
+        <span class="stmt-elo-rank">${rankName}</span>
+      </div>`
+    : (meta.topic ? `<div class="stmt-elo-chip"><span class="stmt-elo-rank">${escapeHtml(String(meta.topic))}</span></div>` : "");
+
+  const descHtml = sections.find((s) => s.type === "description")?.html || "";
+  const heroHtml = `
+    <div class="stmt-neon-hero">
+      <div class="stmt-neon-hero-left">
+        <div class="stmt-neon-hero-badges">
+          <div class="stmt-neon-badge-problem"><span class="icon">📄</span> ${escapeHtml(meta.kicker || "BÀI TOÁN")}</div>
+          ${eloChip}
+        </div>
+        <h1 class="stmt-neon-hero-title">${escapeHtml(meta.title || "Bài luyện")}</h1>
+        <div class="stmt-neon-hero-desc">${descHtml}</div>
+      </div>
+    </div>`;
+
+  const inputSec = sections.find((s) => s.type === "input");
+  const outputSec = sections.find((s) => s.type === "output");
+  const constraintsSec = sections.find((s) => s.type === "constraints");
+  let specsHtml = "";
+  if (inputSec || outputSec || constraintsSec) {
+    specsHtml = `
+      <section class="stmt-section stmt-specifications">
+        <h2 class="stmt-section-label"><span class="stmt-section-icon" aria-hidden="true"></span><span>QUY CÁCH &amp; RÀNG BUỘC</span></h2>
+        <div class="stmt-section-body spec-grid">
+          ${inputSec ? `<div class="spec-card input-card"><div class="spec-card-title">Dữ liệu vào</div><div class="spec-card-body">${inputSec.html}</div></div>` : ""}
+          ${outputSec ? `<div class="spec-card output-card"><div class="spec-card-title">Kết quả ra</div><div class="spec-card-body">${outputSec.html}</div></div>` : ""}
+          ${constraintsSec ? `<div class="spec-card constraints-card"><div class="spec-card-title">Ràng buộc</div><div class="spec-card-body">${constraintsSec.html}</div></div>` : ""}
+        </div>
+      </section>`;
+  }
+
+  const rest = sections
+    .filter((s) => s.type !== "description" && s.type !== "input" && s.type !== "output" && s.type !== "constraints")
+    .map(sectionHtml)
+    .join("");
+
+  return `
+    <div class="stmt-neon-shell">
+      ${heroHtml}
+      <div class="stmt-neon-secondary" style="gap: 10px;">
+        ${specsHtml}
+        ${rest}
+      </div>
+    </div>`;
+}
+
+export { highlightTokens };
+
 function parseSections(raw) {
   const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
   const sections = [];
@@ -275,21 +371,28 @@ function renderStatement(app) {
   // Extract meta
   const meta = app.state.meta || {};
   let usacoTier = meta.usacoTier || "";
-  let cfRating = meta.cfRating || "";
+  let cfRating = meta.cfRating || (meta.analysis && meta.analysis.cfRating) || meta.rating || "";
   let diffText = usacoTier || (cfRating ? `CF ${cfRating}` : meta.difficulty || "Unrated");
   let topicName = (meta.topic || (meta.analysis && meta.analysis.tags && meta.analysis.tags[0]) || "").toLowerCase();
   if (topicName.length > 20) topicName = topicName.substring(0, 20) + "...";
 
-  // Calculate Elo rating
-  const dText = diffText.toLowerCase();
+  // Rating chỉ hiện khi có dữ liệu thật (analysis.elo / cfRating). Trước đây
+  // khối này BỊA một số Elo từ chữ độ khó (easy→1000, medium→1500…) và hiển
+  // thị như số thật — vi phạm luật "không tự chế rating". Không có số →
+  // "Chưa xếp".
   let elo = (meta.analysis && meta.analysis.elo) ? parseInt(meta.analysis.elo) : 0;
   if (!elo) {
-      if (/medium|vừa/i.test(dText)) elo = 1500;
-      else if (/hard|khó/i.test(dText)) elo = 1900;
-      else if (/extreme|chuyên|chuyên gia/i.test(dText)) elo = 2400;
-      else elo = 1000;
+    elo = parseInt(cfRating) || 0;
   }
-  
+  const ratingEstimated = elo > 0 && !(meta.analysis && meta.analysis.ratingConfirmed);
+
+  // --rank-c is a DELIBERATE 3rd color system, not an accidental one
+  // (README-LOOPS-UX-CRITIQUE.md §4.3): it mirrors Codeforces rating-tier
+  // colors, a domain convention CP students already recognize from CF
+  // handles. It labels a TITLE (this problem's difficulty tier), never a UI
+  // state — so it must stay independent of --accent and --section-accent.
+  // Scope: this badge only. Do not reuse --rank-c for buttons, borders, or
+  // anything that isn't literally a rating/rank badge.
   let rankColor = "#a0a0a0"; let rankName = "Newbie";
   if (elo >= 1200) { rankColor = "#50ff96"; rankName = "Pupil"; }
   if (elo >= 1400) { rankColor = "#50c8ff"; rankName = "Specialist"; }
@@ -299,7 +402,38 @@ function renderStatement(app) {
   if (elo >= 2300) { rankColor = "#ff5050"; rankName = "Grandmaster"; }
   if (elo >= 2400) { rankColor = "#ff0000"; rankName = "Legendary"; }
 
-  const eloPercent = Math.min(100, Math.max(5, (elo / 3000) * 100));
+  const eloChipHtml = elo > 0
+    ? `<div class="stmt-elo-chip" style="--rank-c: ${rankColor};" title="${ratingEstimated ? "Ước lượng bởi AI — chưa xác nhận qua trận rated" : "Rating đã xác nhận"}">
+        <span class="stmt-elo-dot"></span>
+        <span class="stmt-elo-num">${ratingEstimated ? "~" : ""}${elo}</span>
+        <span class="stmt-elo-label">ELO</span>
+        <span class="stmt-elo-sep"></span>
+        <span class="stmt-elo-rank">${rankName}</span>
+      </div>`
+    : `<div class="stmt-elo-chip stmt-elo-unrated"><span class="stmt-elo-rank">Chưa xếp</span></div>`;
+
+  // Dòng danh tính Brief (artifact contract): nguồn provider·collection
+  // (fallback source cũ), origin, loại activity, gốc dẫn xuất. Chỉ hiện
+  // field có dữ liệu thật — không bịa giá trị cho bài cũ.
+  const briefOriginLabels = { imported: "nhập ngoài", ocr: "OCR", "user-authored": "tự viết", "ai-generated": "AI tạo", derived: "dẫn xuất" };
+  const briefSrc = [meta.provider, meta.collection].filter(Boolean).join(" · ") || meta.source || "";
+  // Bài AC cũ khai báo thẳng trạng thái "đã giải" ngay ở Brief (history là
+  // nguồn sự thật, newest-first). AC lịch sử là evidence quá khứ — mở lại là
+  // luyện tập, không phải trận mới; arena strip lo phần rated/friendly.
+  const lastAc = Array.isArray(meta.history)
+    ? meta.history.find((h) => h && h.type === "judge" && h.verdict === "AC")
+    : null;
+  const solvedChip = lastAc
+    ? `<span class="stmt-brief-solved">✓ Đã giải · ${escapeHtml(new Date(lastAc.at).toLocaleDateString("vi-VN"))} — mở lại để luyện</span>`
+    : "";
+  const briefParts = [
+    solvedChip,
+    briefSrc && `<span class="stmt-brief-src">${escapeHtml(briefSrc)}</span>`,
+    briefOriginLabels[meta.origin] && `<span class="stmt-brief-origin">gốc: ${escapeHtml(briefOriginLabels[meta.origin])}</span>`,
+    meta.activityKind === "algorithm-module" && `<span class="stmt-brief-kind">Module thuật toán</span>`,
+    meta.derivedFrom && `<button type="button" class="stmt-brief-derived" data-open-problem="${escapeHtml(String(meta.derivedFrom.id || meta.derivedFrom))}" title="Mở artifact gốc">⑂ Phát triển từ: ${escapeHtml(String(meta.derivedFrom.title || meta.derivedFrom.id || meta.derivedFrom))}</button>`,
+  ].filter(Boolean);
+  const briefMetaHtml = briefParts.length ? `<div class="stmt-brief-meta">${briefParts.join('<span class="stmt-brief-dot"></span>')}</div>` : "";
 
   const descHtml = sections.find(s => s.type === "description")?.html || "";
   const heroVisualHtml = heroIllustration(app);
@@ -308,15 +442,10 @@ function renderStatement(app) {
       <div class="stmt-neon-hero-left">
         <div class="stmt-neon-hero-badges">
           <div class="stmt-neon-badge-problem"><span class="icon">📄</span> BÀI TOÁN</div>
-          <div class="stmt-elo-chip" style="--rank-c: ${rankColor};">
-            <span class="stmt-elo-dot"></span>
-            <span class="stmt-elo-num">${elo}</span>
-            <span class="stmt-elo-label">ELO</span>
-            <span class="stmt-elo-sep"></span>
-            <span class="stmt-elo-rank">${rankName}</span>
-          </div>
+          ${eloChipHtml}
         </div>
         <h1 class="stmt-neon-hero-title">${escapeHtml(meta.title || "Untitled")}</h1>
+        ${briefMetaHtml}
         <div class="stmt-neon-hero-desc">
           ${descHtml}
         </div>
@@ -329,12 +458,7 @@ function renderStatement(app) {
   const outputSec = sections.find(s => s.type === "output");
   const constraintsSec = sections.find(s => s.type === "constraints");
 
-  const remainingSections = sections.filter((s) => 
-    s.type !== "description" && 
-    s.type !== "input" && 
-    s.type !== "output" && 
-    s.type !== "constraints"
-  );
+  const remainingSections = sections.filter((section) => section.type !== "description").filter((section) => section.type !== "input" && section.type !== "output" && section.type !== "constraints");
   
   const out = remainingSections.map(sectionHtml).join("");
   const analysisHtml = renderAnalysisHtml(meta.analysis);
@@ -441,7 +565,7 @@ function renderStatement(app) {
       const canvas = document.getElementById("stmt-neon-canvas");
       if (canvas) {
         if (typeof stopNeonCanvas === "function") stopNeonCanvas();
-        stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic || topicName, app.state.meta, { animate: app.state.showIllustration !== false });
+        stopNeonCanvas = initNeonCanvas(canvas, app.state.meta?.topic, app.state.meta, { animate: !!app.state.showIllustration });
         
         const toggleBtn = document.getElementById("btn-toggle-visualizer-animation");
         if (toggleBtn) {
@@ -777,7 +901,7 @@ async function ensureProblem(app) {
 
 async function runPipeline(app, { force = false, regen = false } = {}) {
   if (!app.state.currentId) return;
-  const statement = app.el.ioStatement.value;
+  let statement = app.el.ioStatement.value;
   if (!statement.trim()) {
     if (force) app.toast("Đề bài đang trống.", "err");
     return;
@@ -806,6 +930,12 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
       code: app.getEditorValue(),
       regen // explicit "re-analyze / regenerate" bypasses the server-side disk cache
     }, { signal: pipelineAbort.signal });
+
+    if (res.statement) {
+      app.el.ioStatement.value = res.statement;
+      app.state.savedStatement = res.statement;
+      statement = res.statement;
+    }
 
     if (res.analysis) {
       renderAnalysis(app, res.analysis);
@@ -944,6 +1074,11 @@ export async function requestCanvasIllustration(app, opts = {}) {
 }
 
 export function loadProblemView(app) {
+  // README-LOOPS.md §3.2 / README-AUTOPILOT.md M6 — the one signal Game
+  // Review's formula reserved a slot for but never had data for ("đọc đề
+  // trước khi code"). Fire-and-forget; never blocks opening the problem.
+  if (app.state.currentId) api.recordEvent(app.state.currentId, "open-statement", {});
+
   app.state._processedHash = hashOf(app.el.ioStatement.value);
   app.state._pipelineBusy = false;
   app.state._pipelinePending = false;
@@ -976,6 +1111,16 @@ export function initStatement(app) {
         btn.textContent = "✓"; btn.classList.add("done");
         setTimeout(() => { btn.textContent = "⧉"; btn.classList.remove("done"); }, 1200);
       }).catch(() => { if (app.toast) app.toast("Không copy được", "err"); });
+    });
+
+    // "Phát triển từ…" — mở artifact gốc của một bài dẫn xuất (delegated,
+    // survives re-renders). Không đổi gì nếu bài gốc đã bị xóa: selectProblem
+    // tự toast lỗi.
+    el.statementRendered.addEventListener("click", (e) => {
+      const link = e.target.closest("[data-open-problem]");
+      if (!link) return;
+      const id = link.dataset.openProblem;
+      if (id && app.selectProblem) app.selectProblem(id);
     });
   }
 

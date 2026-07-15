@@ -256,3 +256,47 @@ test("extractSamples reads compressed AI example blocks after structure normaliz
   assert.equal(s[0].input, "08 29 58\n08 30 02");
   assert.equal(s[0].output, "08:29:58\n08:29:59\n08:30:00");
 });
+
+// ---- three real bugs found + fixed 2026-07-07 (workspace audit after user
+// report "mọi thứ vẫn giao hữu") — each reproduced on an actual pasted statement.
+
+test("extractSamples handles Codeforces' glued 'InputCopy'/'OutputCopy' paste artifact", () => {
+  const s = ["Examples", "InputCopy", "5 6", "1 2 2", "OutputCopy", "1 4 3 5"].join("\n");
+  assert.deepEqual(extractSamples(s), [{ input: "5 6\n1 2 2", output: "1 4 3 5" }]);
+});
+
+test("extractSamples: an Output-side label INSIDE an examples section never ends that section", () => {
+  const s = ["# Ví dụ", "", "```", "5", "1 2 2 7 9", "```", "**Kết quả**", "```", "6", "```", "**Giải thích**:", "vì abc"].join("\n");
+  assert.deepEqual(extractSamples(s), [{ input: "5\n1 2 2 7 9", output: "6" }]);
+});
+
+test("extractSamples: 'Ví dụ' directly followed by raw input data (no explicit Input label) still works", () => {
+  const s = ["Ví dụ", "4 5", "1 2 1", "1 3 4", "2 3 2", "Đầu ra", "6"].join("\n");
+  assert.deepEqual(extractSamples(s), [{ input: "4 5\n1 2 1\n1 3 4\n2 3 2", output: "6" }]);
+});
+
+test("extractSamples strips a stray fence-language hint line ('text'/'plaintext') left by a naive markdown converter", () => {
+  const s = ["Ví dụ:", "Input 01:", "", "text", "6 7", "0 3 6", "Output 01:", "text", "28"].join("\n");
+  assert.deepEqual(extractSamples(s), [{ input: "6 7\n0 3 6", output: "28" }]);
+});
+
+test("extractSamples: the implicit-input heuristic never fabricates a sample from real prose", () => {
+  const s = [
+    "Đề bài không có ví dụ nào cả, chỉ mô tả định dạng mà thôi cho rõ ràng hơn nhé bạn.",
+    "Output", "In ra một số nguyên duy nhất là kết quả bài toán yêu cầu ở trên.",
+  ].join("\n");
+  assert.deepEqual(extractSamples(s), []);
+});
+
+test("extractSamples: an unrecognized '## heading' appended right after the last example still closes it (Synthesizer 'nâng cấp' bug, 2026-07-07)", () => {
+  // Real bug: the Synthesizer's "upgrade this problem" flow appends a new
+  // section (its own arbitrary title, e.g. "## Bản nâng cấp của: X") straight
+  // after the original statement. Because that heading isn't a recognized
+  // section keyword, the trailing example's output block ran to EOF and
+  // swallowed the whole appended section into the sample's expected output.
+  const s = [
+    "Ví dụ", "Input", "3\n1 2 3", "Output", "6",
+    "", "## Bản nâng cấp của: Something", "Ràng buộc mới rất khó.",
+  ].join("\n");
+  assert.deepEqual(extractSamples(s), [{ input: "3\n1 2 3", output: "6" }]);
+});

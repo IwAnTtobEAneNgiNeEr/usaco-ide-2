@@ -72,7 +72,7 @@ function setStderr(app, text, isCE = false) {
   if (btnExplain) {
     btnExplain.classList.toggle("hidden", !hasErr || !isCE);
     btnExplain.disabled = false;
-    btnExplain.textContent = "✨ Giải thích lỗi";
+    btnExplain.textContent = "Giải thích lỗi";
   }
   
   const box = document.getElementById("ai-ce-explanation");
@@ -121,7 +121,7 @@ function renderRunOutput(app, r) {
   setStderr(app, r.stderr, r.verdict === "CE");
   // Full side-by-side diff (expected box vs actual stdout) when wrong.
   app.state._diffTests = r.verdict === "WA"
-    ? [{ name: "stdin run", expected: app.el.ioExpected.value, actual: r.stdout }]
+    ? [{ name: "stdin run", input: app.el.ioInput.value, expected: app.el.ioExpected.value, actual: r.stdout }]
     : [];
   renderSideDiff(app, 0);
   showCoachAsk(app, r.compilerMissing ? "CE" : r.verdict);
@@ -264,7 +264,10 @@ function renderSideDiff(app, idx) {
   const checkerNote = t.checkerMessage
     ? `<div class="sdiff-checker">⚖ checker: ${escapeHtml(t.checkerMessage)}</div>`
     : "";
-  box.innerHTML = tabs + checkerNote +
+  const inputNote = t.input
+    ? `<div class="sdiff-stdin"><span>stdin</span><pre>${escapeHtml(t.input)}</pre></div>`
+    : "";
+  box.innerHTML = tabs + inputNote + checkerNote +
     `<div class="sdiff"><div class="sdiff-row sdiff-headrow"><span class="sdiff-ln"></span>` +
     `<span class="sdiff-cell sdiff-h">expected</span><span class="sdiff-cell sdiff-h">actual</span></div>` +
     lineDiffRows(t.expected, t.actual) + `</div>`;
@@ -330,9 +333,15 @@ async function showHistoryDetail(app, at, itemEl) {
 
 export function initRunner(app) {
   // Line-number gutters for the console.
-  attachGutter(app.el.ioInput, app.el.inGutter);
-  attachGutter(app.el.ioExpected, app.el.expGutter);
-  attachGutter(app.el.outputStdout, app.el.outGutter, { editable: false });
+  const refreshInGutter = attachGutter(app.el.ioInput, app.el.inGutter);
+  const refreshExpGutter = attachGutter(app.el.ioExpected, app.el.expGutter);
+  const refreshOutGutter = attachGutter(app.el.outputStdout, app.el.outGutter, { editable: false });
+  app.refreshIoGutters = () => {
+    refreshInGutter();
+    refreshExpGutter();
+    refreshOutGutter();
+  };
+  if (app.bus) app.bus.on("problem:opened", () => setTimeout(app.refreshIoGutters, 0));
 
   app.el.btnRun.addEventListener("click", () => app.runOne());
   app.el.btnJudge.addEventListener("click", () => app.judgeAll());
@@ -415,7 +424,7 @@ export function initRunner(app) {
         }
       } finally {
         if (!btnExplainCE.disabled) {
-          btnExplainCE.textContent = "✨ Giải thích lỗi";
+          btnExplainCE.textContent = "Giải thích lỗi";
         }
         btnExplainCE.classList.remove("btn-stop");
         explainAbort = null;
@@ -440,6 +449,7 @@ export function initRunner(app) {
     try {
       await app.saveCodeNow();
       await app.flushIo();
+      if (app.refreshIoGutters) app.refreshIoGutters();
       const r = await api.run(app.state.currentId, app.getEditorValue(), { signal: runAbort.signal });
       renderRunOutput(app, r);
       app.bus && app.bus.emit("verdict", { kind: "run", verdict: r.compilerMissing ? "CE" : r.verdict });
@@ -472,7 +482,11 @@ export function initRunner(app) {
       const r = await api.judge(app.state.currentId, app.getEditorValue(), undefined, { signal: judgeAbort.signal });
       renderJudgeOutput(app, r);
       applyTestResults(app, r.results);
-      app.bus && app.bus.emit("verdict", { kind: "judge", verdict: r.compilerMissing ? "CE" : r.verdict, summary: r.summary });
+      app.state.lastJudge = r; // verdict rail / autopsy read the failing test from here
+      // r.arena (⚔ Đấu Trường): match transition + rating delta, computed by the
+      // backend inside the same judge round-trip — the moment card reveals it
+      // with zero extra fetches. Absent on older backends; consumers null-check.
+      app.bus && app.bus.emit("verdict", { kind: "judge", verdict: r.compilerMissing ? "CE" : r.verdict, summary: r.summary, arena: r.arena || null });
       await app.syncMeta();
       return r;
     } catch (err) {

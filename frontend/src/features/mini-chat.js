@@ -39,17 +39,17 @@ const KW_RE = new RegExp("\\b(" + COACH_KEYWORDS.map((k) => k.replace(/[-/\\^$*+
 
 const SECTIONS = [
   // Lead punchline — first line of every answer (the conclusion, made prominent).
-  { re: /^(chẩn đoán|chan doan|kết luận|ket luan)\b/i, cls: "diag", icon: "🩺" },
-  { re: /^(trả lời nhanh|tra loi nhanh|tóm lại|tom lai|chốt lại|chốt)\b/i, cls: "sum", icon: "⚡" },
-  { re: /^(hint|gợi ý|gợi y|ý tưởng|y tuong)\b/i, cls: "hint", icon: "💡" },
-  { re: /^(approach|hướng tiếp cận|cách tiếp cận|huong tiep can)\b/i, cls: "approach", icon: "🧭" },
-  { re: /^(observation|nhận xét|quan sát)\b/i, cls: "obs", icon: "🔍" },
-  { re: /^(mistake|lỗi sai|lỗi tư duy|lỗi|sai lầm|sai sót thường gặp|sai sót)\b/i, cls: "mistake", icon: "❌" },
-  { re: /^(bằng chứng|bang chung|ví dụ phản chứng|phản ví dụ|counter-example|counterexample)\b/i, cls: "evid", icon: "🔬" },
-  { re: /^(suggested fix|cách sửa|hướng sửa|sửa lỗi|fix)\b/i, cls: "fix", icon: "✅" },
-  { re: /^(next step|bước tiếp theo|tiếp theo)\b/i, cls: "next", icon: "📌" },
-  { re: /^(current step|bước hiện tại)\b/i, cls: "cur", icon: "📍" },
-  { re: /^(final goal|mục tiêu cuối|mục tiêu)\b/i, cls: "goal", icon: "🎯" }
+  { re: /^(chẩn đoán|chan doan|kết luận|ket luan)\b/i, cls: "diag", icon: "!" },
+  { re: /^(trả lời nhanh|tra loi nhanh|tóm lại|tom lai|chốt lại|chốt)\b/i, cls: "sum", icon: "=" },
+  { re: /^(hint|gợi ý|gợi y|ý tưởng|y tuong)\b/i, cls: "hint", icon: "·" },
+  { re: /^(approach|hướng tiếp cận|cách tiếp cận|huong tiep can)\b/i, cls: "approach", icon: "→" },
+  { re: /^(observation|nhận xét|quan sát)\b/i, cls: "obs", icon: "◉" },
+  { re: /^(mistake|lỗi sai|lỗi tư duy|lỗi|sai lầm|sai sót thường gặp|sai sót)\b/i, cls: "mistake", icon: "×" },
+  { re: /^(bằng chứng|bang chung|ví dụ phản chứng|phản ví dụ|counter-example|counterexample)\b/i, cls: "evid", icon: "≠" },
+  { re: /^(suggested fix|cách sửa|hướng sửa|sửa lỗi|fix)\b/i, cls: "fix", icon: "✓" },
+  { re: /^(next step|bước tiếp theo|tiếp theo)\b/i, cls: "next", icon: "→" },
+  { re: /^(current step|bước hiện tại)\b/i, cls: "cur", icon: "·" },
+  { re: /^(final goal|mục tiêu cuối|mục tiêu)\b/i, cls: "goal", icon: "◇" }
 ];
 
 function unescapeEntities(s) {
@@ -82,7 +82,7 @@ function buildBadges(text) {
   
   const progressMatch = text.match(/(?:progress|tiến độ):\s*(\d+\/\d+)/i);
   if (progressMatch) {
-    out.push(["warn-progress", `📈 Tiến độ: ${progressMatch[1]}`]);
+    out.push(["warn-progress", `↗ Tiến độ: ${progressMatch[1]}`]);
   }
 
   let conf = "";
@@ -279,10 +279,10 @@ export function initMiniChat(app) {
   function renderHistory(turns) {
     const v = latestVerdict();
     const hasStatement = (app.state.meta && app.state.meta.analysis) ? "đã lưu" : "có thể suy luận từ code";
-    const header = `<div style="font-size: 11.5px; color: var(--text-dim); text-align: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--border);">🧠 Đã nắm rõ Đề bài (${hasStatement}) & Code. Kết quả gần nhất: <b>${v}</b></div>`;
+    const header = `<div style="font-size: 11.5px; color: var(--text-dim); text-align: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--border);">§ Đã nắm rõ đề bài (${hasStatement}) và code. Kết quả gần nhất: <b>${v}</b></div>`;
 
     if (!turns || !turns.length) {
-      messagesEl.innerHTML = header + `<div class="coach-empty">Bạn cần gợi ý gì? Gõ câu hỏi, hoặc bấm một nút nhanh bên dưới — <b>💡 Gợi ý nhẹ</b> · <b>🧭 Hướng tiếp cận</b> · <b>❓ Vì sao WA</b>.<br>Bật <b>Lời giải</b> ở góc trên nếu muốn AI viết/sửa code. Mẹo: <kbd>Alt+W</kbd> phóng to khung để đọc dễ hơn.</div>`;
+      messagesEl.innerHTML = header + `<div class="coach-empty">Bạn cần gợi ý gì? Gõ câu hỏi, hoặc dùng nút nhanh bên dưới: <b>· Gợi ý nhẹ</b> · <b>→ Hướng tiếp cận</b> · <b>? Vì sao WA</b>.<br>Bật <b>Lời giải</b> ở góc trên nếu muốn AI viết/sửa code. Mẹo: <kbd>Alt+W</kbd> phóng to khung để đọc dễ hơn.</div>`;
       return;
     }
     messagesEl.innerHTML = header + turns.map((t) => {
@@ -566,11 +566,11 @@ export function initMiniChat(app) {
   const actionsRow = document.createElement("div");
   actionsRow.className = "coach-actions";
   actionsRow.innerHTML = `
-    <button type="button" class="btn btn-ghost btn-sm" data-qa="nudge" title="Một cú hích nhỏ, không lộ thuật toán">💡 Gợi ý nhẹ</button>
-    <button type="button" class="btn btn-ghost btn-sm" data-qa="approach" title="Dạng bài / kỹ thuật phù hợp">🧭 Hướng tiếp cận</button>
-    <button type="button" class="btn btn-ghost btn-sm" data-qa="why-wa" title="Phân tích vì sao đang Wrong Answer">❓ Vì sao WA?</button>
-    <button type="button" class="btn btn-ghost btn-sm" data-qa="why-tle" title="Độ phức tạp hiện tại vs ràng buộc">🐢 Vì sao TLE?</button>
-    <button type="button" class="btn btn-ghost btn-sm" data-qa="selection" title="Bôi đen code trong editor rồi bấm (Ctrl+Shift+E)">💬 Hỏi đoạn bôi đen</button>`;
+    <button type="button" class="btn btn-ghost btn-sm" data-qa="nudge" title="Một cú hích nhỏ, không lộ thuật toán">· Gợi ý nhẹ</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-qa="approach" title="Dạng bài / kỹ thuật phù hợp">→ Hướng tiếp cận</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-qa="why-wa" title="Phân tích vì sao đang Wrong Answer">? Vì sao WA?</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-qa="why-tle" title="Độ phức tạp hiện tại so với ràng buộc">≈ Vì sao TLE?</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-qa="selection" title="Bôi đen code trong editor rồi bấm (Ctrl+Shift+E)">§ Hỏi đoạn bôi đen</button>`;
   const composerEl = chatEl.querySelector(".coach-composer");
   chatEl.insertBefore(actionsRow, composerEl);
 

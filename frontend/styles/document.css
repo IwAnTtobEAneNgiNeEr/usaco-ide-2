@@ -1,0 +1,880 @@
+/* document.css v2 — the "tài liệu" design language, neon-ink edition.
+   (README-LOOPS.md §6 · direction chosen in README-LOOPS-UX-CRITIQUE.md §4.0-1)
+
+   Shared by Game Review (Bảng Tổng Kết Ván Đấu), WA Autopsy (Biên Bản Pháp Y)
+   and future Weekly Reports.
+
+   v1 spoke serif-Palatino + amber-Forge while Statement and Journey had
+   already committed to the ink-blue neon grammar — the tonal whiplash landed
+   exactly at the AC/WA moment. v2 joins the winning language: the same ink
+   surfaces (#0f1929 family), the same luminous top hairline, the same
+   glyph-in-box icon idiom as .stmt-section-icon. No emoji anywhere.
+
+   CINEMA RULE: document sheets are deliberately always-dark, like Statement
+   and Journey. They do NOT flip with .light-theme — every color in a sheet is
+   therefore hardcoded ink, not var(--text)/var(--panel). The verdict rail is
+   the one exception: it lives in the app shell, so it stays token-driven.
+
+   Discipline carried over from v1: zero !important, every animation finite,
+   reduced-motion safe, never animate size (measurement gotcha). */
+
+/* ---------------- Ink palette + per-document accent ---------------- */
+
+.doc-sheet {
+  /* surfaces — mirrors statement-neon.css v1.5/1.6 exactly */
+  --doc-bg: #0f1929;
+  --doc-bg-2: #0c1524;
+  --doc-bg-deep: #091321;
+  --doc-line: rgba(103, 132, 166, .24);
+  --doc-line-soft: rgba(103, 132, 166, .16);
+  /* ink */
+  --doc-ink: #edf5ff;
+  --doc-copy: #d8e3f1;
+  --doc-muted: #8ea1b8;
+  /* accent family (rgb triplets — same set as --section-accent) */
+  --doc-cyan: 67, 200, 255;
+  --doc-violet: 155, 124, 255;
+  --doc-green: 83, 220, 180;
+  --doc-amber: 255, 195, 92;
+  --doc-red: 240, 88, 79;
+  --doc-orange: 251, 146, 60;
+  --doc-blue: 111, 153, 255;
+  --doc-slate: 142, 161, 184;
+  /* the document's own accent — cyan by default (Game Review).
+     Autopsy overrides with .doc-accent-amber. */
+  --doc-accent: var(--doc-cyan);
+}
+.doc-sheet.doc-accent-amber { --doc-accent: var(--doc-amber); }
+.doc-sheet.doc-accent-violet { --doc-accent: var(--doc-violet); }
+
+/* ---------------- The sheet ---------------- */
+
+.doc-sheet {
+  position: relative;
+  overflow: hidden;
+  /* The modal body is a flex column — without this the sheet gets squashed
+     to the column height and overflow:hidden silently clips the foot. */
+  flex: none;
+  padding: 26px 30px 22px;
+  border: 1px solid rgba(82, 174, 220, .31);
+  border-radius: 12px;
+  background:
+    radial-gradient(520px 230px at 7% -12%, rgba(63, 172, 226, .11), transparent 67%),
+    radial-gradient(420px 210px at 94% 0%, rgba(143, 102, 239, .08), transparent 70%),
+    var(--doc-bg);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .03);
+  color: var(--doc-copy);
+}
+.doc-sheet::before { /* the luminous top hairline — same signature as the Statement hero */
+  content: "";
+  position: absolute;
+  top: -1px; left: 24px; right: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(76, 205, 255, .62), rgba(169, 126, 255, .38), transparent);
+  pointer-events: none;
+}
+.doc-sheet.doc-accent-amber::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 195, 92, .6), rgba(240, 88, 79, .32), transparent);
+}
+
+.doc-kicker {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: rgb(var(--doc-accent));
+  text-shadow: 0 0 14px rgba(var(--doc-accent), .18);
+  margin-bottom: 7px;
+}
+.doc-title {
+  /* Sans, heavy, tight — the .stmt-neon-hero-title voice, not serif. */
+  font-size: 24px;
+  font-weight: 760;
+  line-height: 1.16;
+  letter-spacing: -.025em;
+  color: #fff;
+  margin: 0 0 5px;
+  text-wrap: balance;
+}
+.doc-meta {
+  display: flex; flex-wrap: wrap; gap: 6px 16px;
+  font-size: 12px;
+  color: var(--doc-muted);
+  margin-bottom: 14px;
+}
+.doc-meta b { color: var(--doc-copy); font-family: var(--mono, ui-monospace, monospace); font-weight: 600; }
+
+.doc-rule {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0 14px;
+  color: rgba(var(--doc-accent), .5);
+  font-size: 9px;
+}
+.doc-rule::before, .doc-rule::after {
+  content: ""; flex: 1; height: 1px;
+  background: var(--doc-line-soft);
+}
+
+.doc-section { margin: 15px 0; }
+.doc-section-title {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--doc-muted);
+  margin-bottom: 9px;
+}
+
+/* ---------------- Glyph boxes (the .stmt-section-icon idiom) ---------------- */
+
+.doc-glyph {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px; height: 22px;
+  border: 1px solid rgba(var(--g, var(--doc-accent)), .34);
+  border-radius: 6px;
+  background: rgba(var(--g, var(--doc-accent)), .09);
+  color: rgb(var(--g, var(--doc-accent)));
+  font: 800 11px/1 var(--mono, ui-monospace, monospace);
+  box-shadow: inset 0 0 8px rgba(var(--g, var(--doc-accent)), .06);
+}
+
+/* ---------------- Insight rows (positives first, growth = next move) ---------------- */
+
+.doc-insight {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 8px 11px;
+  border-left: 2px solid transparent;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--doc-copy);
+}
+.doc-insight + .doc-insight { margin-top: 4px; }
+.doc-insight .di-icon {
+  flex: none; width: 18px; text-align: center;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+.doc-insight.di-good {
+  background: rgba(var(--doc-green), .07);
+  border-left-color: rgba(var(--doc-green), .5);
+}
+.doc-insight.di-good .di-icon { color: rgb(var(--doc-green)); }
+.doc-insight.di-grow {
+  background: rgba(var(--doc-cyan), .06);
+  border-left-color: rgba(var(--doc-cyan), .45);
+}
+.doc-insight.di-grow .di-icon { color: rgb(var(--doc-cyan)); }
+.doc-insight b { color: var(--doc-ink); font-weight: 650; }
+
+/* ---------------- Score ring + tier ---------------- */
+
+.gr-hero { display: flex; gap: 24px; align-items: center; margin: 6px 0 4px; }
+.ring-wrap { position: relative; width: 108px; height: 108px; flex: none; }
+.ring-wrap svg { width: 108px; height: 108px; transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: rgba(103, 132, 166, .2); stroke-width: 7; }
+.ring-arc {
+  fill: none;
+  stroke: rgb(var(--tier-rgb, var(--doc-accent)));
+  stroke-width: 7; stroke-linecap: round;
+  stroke-dasharray: 289.03; /* 2πr, r=46 */
+  stroke-dashoffset: 289.03;
+  filter: drop-shadow(0 0 6px rgba(var(--tier-rgb, var(--doc-accent)), .38));
+  transition: stroke-dashoffset 1.1s cubic-bezier(.22, .8, .3, 1);
+}
+.ring-wrap.is-on .ring-arc { stroke-dashoffset: var(--ring-target, 289.03); }
+.ring-label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-label .ring-num {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 30px; font-weight: 750; color: #fff; line-height: 1;
+  letter-spacing: -.02em;
+}
+.ring-label .ring-sub { font-size: 10px; color: var(--doc-muted); margin-top: 3px; letter-spacing: .06em; }
+
+.gr-hero-copy { min-width: 0; }
+
+/* Tier: one glyph family (◆), rank carried by fill count — readable without
+   reading the label (critique §4.1.3). Hue adds warmth, count carries rank. */
+.doc-tier {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-size: 12px; font-weight: 650;
+  color: rgb(var(--tier-rgb, var(--doc-accent)));
+  background: rgba(var(--tier-rgb, var(--doc-accent)), .09);
+  border: 1px solid rgba(var(--tier-rgb, var(--doc-accent)), .38);
+  border-radius: 999px;
+  padding: 4px 12px 4px 10px;
+  margin-bottom: 9px;
+  text-shadow: 0 0 12px rgba(var(--tier-rgb, var(--doc-accent)), .2);
+}
+.tier-meter {
+  display: inline-flex; gap: 3px;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px; line-height: 1;
+}
+.tier-meter span { color: rgba(var(--tier-rgb, var(--doc-accent)), .25); }
+.tier-meter span.on {
+  color: rgb(var(--tier-rgb, var(--doc-accent)));
+  text-shadow: 0 0 6px rgba(var(--tier-rgb, var(--doc-accent)), .55);
+}
+.gr-hero-line { font-size: 13.5px; color: var(--doc-copy); line-height: 1.6; }
+.gr-hero-line b { color: var(--doc-ink); }
+
+/* ---------------- Eval chart (the chess.com evaluation graph) ---------------- */
+
+.gr-eval { margin-top: 4px; }
+.gr-eval svg { display: block; width: 100%; height: auto; }
+.gr-eval .ev-grid { stroke: rgba(103, 132, 166, .16); stroke-width: 1; }
+.gr-eval .ev-grid-label {
+  fill: var(--doc-muted); font: 500 9px var(--mono, ui-monospace, monospace);
+}
+.gr-eval .ev-area { fill: rgba(var(--doc-cyan), .07); }
+.gr-eval .ev-line {
+  fill: none; stroke: rgba(var(--doc-cyan), .75); stroke-width: 1.8;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(var(--doc-cyan), .3));
+}
+.gr-eval .ev-dot { stroke: var(--doc-bg); stroke-width: 2; }
+.gr-eval .ev-time {
+  fill: var(--doc-muted); font: 500 9px var(--mono, ui-monospace, monospace);
+  text-anchor: middle;
+}
+
+/* ---------------- Move list (the chess.com move sheet) ---------------- */
+
+.gr-moves { display: flex; flex-direction: column; }
+.gr-move {
+  display: grid;
+  grid-template-columns: 26px 44px 52px 74px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--doc-line-soft);
+  font-size: 12.5px;
+}
+.gr-move:last-child { border-bottom: 0; }
+.gr-move .mv-idx {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--doc-bg-2); color: var(--doc-muted);
+  font-family: var(--mono, ui-monospace, monospace); font-size: 10px;
+}
+.gr-move .mv-time {
+  color: var(--doc-muted);
+  font-family: var(--mono, ui-monospace, monospace); font-size: 10.5px;
+}
+.gr-move .mv-tests {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  font-family: var(--mono, ui-monospace, monospace); font-size: 11.5px;
+  color: var(--doc-copy);
+}
+.gr-move .mv-delta { font-size: 10px; font-weight: 700; }
+.gr-move .mv-delta.up { color: rgb(var(--doc-green)); }
+.gr-move .mv-delta.down { color: rgb(var(--doc-red)); }
+.gr-move .mv-delta.flat { color: var(--doc-muted); }
+.gr-move .mv-class {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-width: 0;
+  color: var(--doc-copy);
+}
+.gr-move .mv-class .doc-glyph { width: 20px; height: 20px; font-size: 10px; }
+.gr-move .mv-class .mv-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr-move-note {
+  grid-column: 1 / -1;
+  padding: 0 6px 8px 38px;
+  margin-top: -3px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--doc-muted);
+  border-bottom: 1px solid var(--doc-line-soft);
+}
+
+/* Move classification colors — one variable, consumed by .doc-glyph via --g. */
+.mv-brilliant { --g: var(--doc-cyan); }
+.mv-winning   { --g: var(--doc-green); }
+.mv-great     { --g: var(--doc-blue); }
+.mv-good      { --g: var(--doc-green); }
+.mv-book      { --g: var(--doc-slate); }
+.mv-hasty     { --g: var(--doc-amber); }
+.mv-stall     { --g: var(--doc-orange); }
+.mv-blunder   { --g: var(--doc-red); }
+
+/* Eval-chart dots reuse the same mapping. */
+.gr-eval .ev-dot.mv-brilliant { fill: rgb(var(--doc-cyan)); }
+.gr-eval .ev-dot.mv-winning   { fill: rgb(var(--doc-green)); }
+.gr-eval .ev-dot.mv-great     { fill: rgb(var(--doc-blue)); }
+.gr-eval .ev-dot.mv-good      { fill: rgb(var(--doc-green)); }
+.gr-eval .ev-dot.mv-book      { fill: rgb(var(--doc-slate)); }
+.gr-eval .ev-dot.mv-hasty     { fill: rgb(var(--doc-amber)); }
+.gr-eval .ev-dot.mv-stall     { fill: rgb(var(--doc-orange)); }
+.gr-eval .ev-dot.mv-blunder   { fill: rgb(var(--doc-red)); }
+
+/* ---------------- Phase bar (time: writing vs debugging) ---------------- */
+
+.gr-phase { margin-top: 2px; }
+.gr-phase-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--doc-line-soft);
+}
+.gr-phase-bar .ph-code { background: rgba(var(--doc-cyan), .45); }
+.gr-phase-bar .ph-debug { background: rgba(var(--doc-amber), .4); }
+.gr-phase-legend {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  margin-top: 6px;
+  font-size: 10.5px; color: var(--doc-muted);
+}
+.gr-phase-legend b { color: var(--doc-copy); font-family: var(--mono, ui-monospace, monospace); font-weight: 600; }
+.gr-phase-legend .ph-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 2px;
+  margin-right: 5px; vertical-align: 0;
+}
+.gr-phase-legend .ph-dot.code { background: rgba(var(--doc-cyan), .55); }
+.gr-phase-legend .ph-dot.debug { background: rgba(var(--doc-amber), .5); }
+
+/* ---------------- Seal + fine print ---------------- */
+
+.doc-foot {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  margin-top: 18px;
+}
+.doc-fine {
+  font-size: 10.5px; color: var(--doc-muted); line-height: 1.55; max-width: 48ch;
+}
+.doc-seal {
+  flex: none; width: 64px; height: 64px; border-radius: 50%;
+  border: 1.5px solid rgba(var(--doc-accent), .55);
+  box-shadow:
+    inset 0 0 0 3px var(--doc-bg),
+    inset 0 0 0 4.5px rgba(var(--doc-accent), .3),
+    0 0 14px rgba(var(--doc-accent), .12);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: rgb(var(--doc-accent));
+  transform: rotate(-8deg);
+  font-family: var(--mono, ui-monospace, monospace);
+  text-align: center;
+  user-select: none;
+}
+.doc-seal .seal-top { font-size: 7.5px; letter-spacing: .14em; }
+.doc-seal .seal-mid { font-size: 14px; font-weight: 800; line-height: 1.2; letter-spacing: -.04em; }
+.doc-seal .seal-bot { font-size: 7px; letter-spacing: .12em; color: var(--doc-muted); }
+
+/* Honesty band — shown whenever the reference is NOT sample-verified. */
+.doc-warn {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 1px solid rgba(var(--doc-amber), .45);
+  border-left-width: 2px;
+  background: rgba(var(--doc-amber), .07);
+  color: var(--doc-copy);
+  border-radius: 7px;
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.doc-warn .doc-glyph { --g: var(--doc-amber); width: 20px; height: 20px; font-size: 11px; }
+.doc-warn b { color: var(--doc-ink); }
+
+/* ---------------- Evidence blocks (Autopsy) ---------------- */
+
+.doc-input-block { position: relative; }
+.doc-pre {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  background: var(--doc-bg-deep);
+  border: 1px solid var(--doc-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+  color: #f2f7ff;
+}
+.doc-io { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.doc-io .io-cell { min-width: 0; }
+.doc-io .io-label {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--doc-muted); margin-bottom: 5px; font-weight: 650;
+}
+.doc-io .io-cell.is-expected .io-label { color: rgb(var(--doc-green)); }
+.doc-io .io-cell.is-expected .doc-pre { border-left: 2px solid rgba(var(--doc-green), .5); }
+.doc-io .io-cell.is-student .io-label { color: rgb(var(--doc-amber)); }
+.doc-io .io-cell.is-student .doc-pre { border-left: 2px solid rgba(var(--doc-amber), .5); }
+.doc-shrink-stats {
+  display: flex; flex-wrap: wrap; gap: 8px 18px;
+  font-size: 12px; color: var(--doc-muted);
+}
+.doc-shrink-stats b { color: var(--doc-copy); font-family: var(--mono, ui-monospace, monospace); font-weight: 600; }
+
+/* ---------------- Buttons inside a sheet ----------------
+   Shell .btn colors flip with the theme; sheets are cinema-dark, so buttons
+   get ink-safe colors here (readable in light theme too). */
+
+.doc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+.doc-sheet .btn {
+  background: rgba(var(--doc-cyan), .06);
+  border: 1px solid rgba(113, 145, 180, .32);
+  color: #cfdcea;
+  box-shadow: none;
+}
+.doc-sheet .btn:hover:not(:disabled) {
+  border-color: rgba(var(--doc-accent), .6);
+  background: rgba(var(--doc-accent), .1);
+  color: #fff;
+}
+.doc-sheet .btn:disabled { opacity: .45; }
+.doc-sheet .btn-ai {
+  border-color: rgba(var(--doc-violet), .45);
+  background: rgba(var(--doc-violet), .1);
+  color: #ded2ff;
+}
+.doc-sheet .btn-ai:hover:not(:disabled) {
+  border-color: rgba(var(--doc-violet), .75);
+  background: rgba(var(--doc-violet), .18);
+  color: #f4efff;
+}
+.doc-sheet .btn .b-glyph {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-weight: 700;
+  margin-right: 2px;
+  opacity: .85;
+}
+
+/* ---------------- Wider stages for the documents ---------------- */
+
+#game-review-modal .modal-wide { width: min(780px, 94vw); }
+#autopsy-modal .modal-wide { width: min(720px, 94vw); }
+
+/* ---------------- Post-verdict rail (the flow connector) ----------------
+   Shell UI — token-driven (theme-adaptive), EXCEPT the primary chip, which
+   borrows the color of the verdict that just happened so the moment carries
+   through (critique §4.1.5). --rail-rgb is set by [data-verdict]. */
+
+.verdict-rail { margin: 10px 0 2px; }
+.verdict-rail.hidden { display: none; }
+.verdict-rail[data-verdict="AC"] { --rail-rgb: 52, 210, 126; }
+.verdict-rail[data-verdict="WA"] { --rail-rgb: 240, 88, 79; }
+.verdict-rail[data-verdict="RE"] { --rail-rgb: 167, 139, 250; }
+.verdict-rail[data-verdict="TLE"] { --rail-rgb: 251, 146, 60; }
+.verdict-rail[data-verdict="CE"] { --rail-rgb: 148, 163, 184; }
+
+.rail-title {
+  font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 7px;
+  display: flex; align-items: center; gap: 8px;
+}
+.rail-title::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
+.rail-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.rail-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 4px 12px 4px 5px;
+  font-size: var(--text-caption, 12px);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.rail-chip .rc-g {
+  display: inline-grid; place-items: center;
+  width: 19px; height: 19px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel-3);
+  color: var(--text-dim);
+  font: 700 10px/1 var(--mono, ui-monospace, monospace);
+  transition: inherit;
+}
+.rail-chip:hover {
+  border-color: rgba(var(--rail-rgb, var(--accent-rgb)), .5);
+  color: var(--text);
+  background: var(--panel-3);
+}
+.rail-chip:hover .rc-g { color: var(--text); }
+.rail-chip.rail-primary {
+  border-color: rgba(var(--rail-rgb, var(--accent-rgb)), .6);
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .1);
+  color: color-mix(in srgb, rgb(var(--rail-rgb, var(--accent-rgb))) 72%, white);
+  font-weight: 600;
+}
+.rail-chip.rail-primary .rc-g {
+  border-color: rgba(var(--rail-rgb, var(--accent-rgb)), .5);
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .14);
+  color: color-mix(in srgb, rgb(var(--rail-rgb, var(--accent-rgb))) 80%, white);
+}
+.rail-chip.rail-primary:hover { background: rgba(var(--rail-rgb, var(--accent-rgb)), .18); }
+.rail-chip .rc-hint { font-size: 10px; color: var(--text-dim); font-weight: 400; }
+
+/* ---------------- "Khoảnh Khắc" — the autopilot card (shell family) ----------------
+   Lives in the app shell (the old rail slot), so it is TOKEN-DRIVEN and flips
+   with the theme — unlike the cinema doc sheets. Verdict tint arrives through
+   --rail-rgb from .verdict-rail[data-verdict] above. */
+
+.mo-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-2);
+  padding: 12px 14px 12px;
+  margin-bottom: 8px;
+}
+.mo-card::before { /* verdict-tinted top hairline — the moment carries its color */
+  content: "";
+  position: absolute;
+  top: -1px; left: 18px; right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--rail-rgb, var(--accent-rgb)), .65), transparent);
+  pointer-events: none;
+}
+
+.mo-head {
+  display: flex; align-items: center; gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.mo-glyph {
+  display: inline-grid; place-items: center;
+  width: 21px; height: 21px;
+  border: 1px solid rgba(var(--rail-rgb, var(--accent-rgb)), .4);
+  border-radius: 6px;
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .1);
+  color: rgb(var(--rail-rgb, var(--accent-rgb)));
+  font: 800 11px/1 var(--mono, ui-monospace, monospace);
+}
+.mo-kicker {
+  font-size: 10px; font-weight: 750;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.mo-meta {
+  flex: 1 1 100%;
+  min-width: 0;
+  padding-left: 30px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  margin-left: 0;
+}
+
+/* M4 — appears only when the backend auto-shrank a large input. */
+.mo-shrink-note {
+  margin-bottom: 8px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--rail-rgb, var(--accent-rgb)), .3);
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .06);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Evidence: the failing test, visible in 0ms. */
+.mo-evidence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.mo-io { min-width: 0; }
+.mo-io-label {
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.mo-io.is-exp .mo-io-label { color: var(--ac, #22c55e); }
+.mo-io.is-got .mo-io-label { color: var(--tle, #fb923c); }
+.mo-pre {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11.5px;
+  line-height: 1.45;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 7px 9px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 92px;
+  overflow: auto;
+  color: var(--text);
+}
+.mo-io.is-exp .mo-pre { border-left: 2px solid rgba(52, 210, 126, .45); }
+.mo-io.is-got .mo-pre { border-left: 2px solid rgba(251, 146, 60, .45); }
+.mo-firstdiff {
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.mo-firstdiff code {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+}
+.mo-firstdiff .fd-exp { color: var(--ac, #22c55e); }
+.mo-firstdiff .fd-got { color: var(--tle, #fb923c); }
+
+/* Coach zone — the diagnosis streams in here, uninvited but welcome. */
+.mo-coach {
+  margin-top: 11px;
+  padding: 9px 11px 10px;
+  border: 1px solid color-mix(in srgb, rgb(var(--rail-rgb, var(--accent-rgb))) 22%, var(--border-soft));
+  border-radius: 7px;
+  background: color-mix(in srgb, rgb(var(--rail-rgb, var(--accent-rgb))) 4%, var(--panel));
+}
+.mo-coach-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.mo-coach-who {
+  font-size: 10px; font-weight: 750;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgb(var(--rail-rgb, var(--accent-rgb)));
+}
+.mo-tag {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--rail-rgb, var(--accent-rgb)), .4);
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .09);
+  color: var(--text-muted);
+}
+.mo-coach-status { font-size: 12px; color: var(--text-dim); }
+/* Finite by rule: pulses ~9s then settles (screenshot + reduced-motion safe). */
+@keyframes moPulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+.mo-wait { animation: moPulse 1.1s ease-in-out 8; }
+.mo-why {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.mo-lines { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mo-line {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--rail-rgb, var(--accent-rgb)), .45);
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .08);
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.mo-line:hover {
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .18);
+  border-color: rgba(var(--rail-rgb, var(--accent-rgb)), .7);
+}
+.mo-hint-zone { margin-top: 9px; }
+.mo-hint {
+  margin-top: 7px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--panel-3);
+  border: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+/* M3 made visible: the Coach really does carry this diagnosis into chat. */
+.mo-coach-note { margin-top: 8px; font-size: 10.5px; color: var(--text-dim); }
+/* The primary CTA lives in a slot that fills when the diagnosis lands. */
+#mo-cta-slot .mo-next { margin-top: 11px; }
+
+/* AC celebration + the Duolingo "TIẾP" chain. */
+.mo-ac { display: flex; align-items: flex-start; gap: 13px; flex-wrap: wrap; }
+.mo-ring { position: relative; width: 48px; height: 48px; flex: none; }
+.mo-ring svg { width: 48px; height: 48px; transform: rotate(-90deg); }
+.mo-ring-track { fill: none; stroke: var(--border-soft); stroke-width: 4; }
+.mo-ring-arc {
+  fill: none;
+  stroke: rgb(var(--tier-rgb, var(--accent-rgb)));
+  stroke-width: 4; stroke-linecap: round;
+  stroke-dasharray: 125.66; /* 2πr, r=20 */
+}
+.mo-ring-num {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font: 700 13px var(--mono, ui-monospace, monospace);
+  color: var(--text);
+}
+.mo-ac-copy { min-width: 0; flex: 1 1 220px; }
+.mo-ac-copy .doc-tier { margin-bottom: 5px; padding: 2px 9px 2px 8px; font-size: 11px; }
+.mo-ac-line { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+.mo-ac-line b { color: var(--text); }
+
+/* M7 — the Duolingo momentum line, shown only when there's something real to report. */
+.mo-momentum {
+  margin-top: 9px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.mo-momentum b { color: rgb(var(--rail-rgb, var(--accent-rgb))); font-weight: 700; }
+
+.mo-next {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 13px;
+  border: 1px solid rgba(var(--rail-rgb, var(--accent-rgb)), .5);
+  border-radius: 9px;
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .1);
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s ease, border-color .15s ease;
+}
+.mo-next:hover {
+  background: rgba(var(--rail-rgb, var(--accent-rgb)), .17);
+  border-color: rgba(var(--rail-rgb, var(--accent-rgb)), .75);
+}
+.mo-next-kicker {
+  font-size: 9.5px; font-weight: 750;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: rgb(var(--rail-rgb, var(--accent-rgb)));
+}
+.mo-next-title { font-size: 13px; font-weight: 650; color: var(--text); }
+.mo-next-why { font-size: 11px; color: var(--text-dim); }
+
+.mo-ce-err { max-height: 120px; }
+.mo-actions { margin-top: 10px; }
+
+/* "⋯ Thêm" — kho tool gấp lại sau 2 secondary chips (CTA policy ≤2).
+   Overflow chứa cả ar-doors (kèo) lẫn chip phụ; đóng mặc định. */
+.mo-more-toggle { opacity: .75; }
+.mo-more-toggle[aria-expanded="true"] { opacity: 1; }
+.mo-overflow { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border, #2c2c35); }
+.mo-overflow.hidden { display: none; }
+.mo-overflow .ar-doors { margin-top: 0; }
+
+/* ---- "Phân tích code này" (features/analysis.js) ----------------------------
+   Cùng ngôn ngữ tài liệu với Game Review; tái dùng mo-evidence/mo-pre. */
+.an-sub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--text-muted, #aab2c5); }
+.an-dim { color: var(--text-dim, #8b93a7); font-size: 11px; }
+.an-ev-head { margin: 12px 0 8px; font-size: 12.5px; color: var(--text-muted, #aab2c5); }
+.an-note { margin: 12px 0; padding: 10px 12px; border: 1px dashed var(--border, #2c2c35); border-radius: 8px; font-size: 12px; color: var(--text-dim, #8b93a7); }
+.an-trace { margin-top: 12px; overflow-x: auto; }
+.an-trace-table { width: 100%; border-collapse: collapse; font-family: var(--mono, monospace); font-size: 11.5px; }
+.an-trace-table th { text-align: left; padding: 5px 8px; color: var(--text-dim, #8b93a7); font-weight: 600; border-bottom: 1px solid var(--border, #2c2c35); }
+.an-trace-table td { padding: 4px 8px; border-bottom: 1px solid var(--border-soft, #22222a); vertical-align: top; }
+.an-step[data-line] { cursor: pointer; }
+.an-step[data-line]:hover td { background: var(--panel-2, #17171c); }
+.an-actions { margin-top: 14px; }
+
+/* ---- "Phát triển thành module" (features/derived-module.js) ---------------- */
+.dm-derived-from { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; font-size: 12.5px; }
+.dm-requirement { margin-bottom: 14px; }
+.dm-req-head { font-size: 12.5px; color: var(--text-muted, #aab2c5); margin-bottom: 4px; }
+.dm-req-brief { font-size: 12.5px; margin: 4px 0; }
+.dm-req-ac { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: var(--text-muted, #aab2c5); }
+.dm-file-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.dm-file-tab { font-family: var(--mono, monospace); font-size: 11px; padding: 4px 8px; border: 1px solid var(--border, #2c2c35); border-radius: 5px; background: var(--panel-2, #17171c); color: var(--text-dim, #8b93a7); cursor: pointer; }
+.dm-file-tab.active { color: var(--text, #e8e8ec); border-color: var(--accent, #e6a93e); }
+.dm-file-body { max-height: 320px; overflow: auto; }
+.dm-status { margin: 12px 0 8px; font-size: 12.5px; }
+.dm-runs { margin-top: 6px; }
+
+@media (max-width: 720px) {
+  .mo-evidence { grid-template-columns: 1fr; }
+}
+
+@container panel (max-width: 460px) {
+  .verdict-rail { margin-top: 8px; }
+  .mo-card {
+    padding: 11px 11px 12px;
+    border-radius: 10px;
+  }
+  .mo-head {
+    align-items: flex-start;
+    gap: 7px;
+  }
+  .mo-kicker {
+    font-size: 9.5px;
+    letter-spacing: .11em;
+  }
+  .mo-meta {
+    padding-left: 0;
+    font-size: 11px;
+  }
+  .mo-evidence {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .mo-pre {
+    max-height: 76px;
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 7px 8px;
+  }
+  .mo-firstdiff {
+    line-height: 1.45;
+  }
+  .mo-coach {
+    padding: 8px 9px 9px;
+  }
+  .mo-why,
+  .mo-hint {
+    font-size: 12px;
+  }
+  .mo-ac {
+    gap: 10px;
+  }
+  .mo-ring,
+  .mo-ring svg {
+    width: 42px;
+    height: 42px;
+  }
+  .mo-ac-copy {
+    flex-basis: 100%;
+  }
+  .mo-ac-line,
+  .mo-momentum,
+  .mo-next-title,
+  .mo-next-why {
+    line-height: 1.45;
+  }
+  .mo-next {
+    padding: 8px 10px;
+  }
+  .mo-actions {
+    display: grid;
+    gap: 6px;
+  }
+  .mo-actions .rail-chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ---------------- Motion (finite, one-shot, size-safe) ---------------- */
+
+@keyframes docRise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.doc-sheet, .verdict-rail .rail-chips { animation: docRise .4s ease-out 1 both; }
+.gr-move { animation: docRise .35s ease-out 1 both; }
+.gr-move:nth-child(1) { animation-delay: .05s; }
+.gr-move:nth-child(2) { animation-delay: .09s; }
+.gr-move:nth-child(3) { animation-delay: .13s; }
+.gr-move:nth-child(4) { animation-delay: .17s; }
+.gr-move:nth-child(5) { animation-delay: .21s; }
+.gr-move:nth-child(n+6) { animation-delay: .25s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-sheet, .verdict-rail .rail-chips, .gr-move { animation: none; }
+  .ring-arc { transition: none; filter: none; }
+}
+
+@media (max-width: 720px) {
+  .doc-sheet { padding: 18px 16px 16px; }
+  .gr-hero { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .doc-io { grid-template-columns: 1fr; }
+  .gr-move { grid-template-columns: 24px 40px 48px 60px minmax(0, 1fr); column-gap: 8px; }
+  .gr-move-note { padding-left: 32px; }
+}

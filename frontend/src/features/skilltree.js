@@ -14,7 +14,7 @@ const TIER_COLOR = {
   seed: "var(--st-seed)", bronze: "var(--st-bronze)", silver: "var(--st-silver)",
   gold: "var(--st-gold)", diamond: "var(--st-diamond)"
 };
-const TIER_BADGE = { seed: "🌱", bronze: "🥉", silver: "🥈", gold: "🥇", diamond: "💎" };
+const TIER_BADGE = { seed: "·", bronze: "◇", silver: "◆", gold: "✦", diamond: "❖" };
 
 const VERDICT_CLASS = { AC: "v-AC", WA: "v-WA", TLE: "v-TLE", RE: "v-RE", CE: "v-CE" };
 
@@ -58,7 +58,7 @@ function laneSvg(cluster) {
           stroke-dasharray="${(CIRC * frac).toFixed(1)} ${CIRC.toFixed(1)}" transform="rotate(-90 ${x} ${y})"/>
         <circle cx="${x}" cy="${y}" r="${R - 6}" class="st-core"/>
         <text x="${x}" y="${y - 3}" class="st-count">${t.solved}/${t.total}</text>
-        <text x="${x}" y="${y + 11}" class="st-tier-emoji">${TIER_BADGE[t.tier] || "🌱"}</text>
+        <text x="${x}" y="${y + 11}" class="st-tier-emoji">${TIER_BADGE[t.tier] || "·"}</text>
         <text x="${x}" y="${y + R + 20}" class="st-label">${escapeHtml(label)}</text>
         <title>${escapeHtml(t.topic)} · ${t.tierName} · mastery ${t.mastery}/100</title>
       </g>`;
@@ -73,7 +73,7 @@ function renderMap(data) {
   if (!data.clusters.length) {
     return `
       <div class="st-empty">
-        <div class="st-empty-glyph">🗺️</div>
+        <div class="st-empty-glyph">◇</div>
         <h3>Bản đồ của bạn đang chờ ngôi sao đầu tiên</h3>
         <p>Gắn <b>topic</b> cho bài tập (dp, graphs, chặt nhị phân…) — mỗi chủ đề bạn luyện sẽ thắp sáng một node trên bản đồ này.</p>
         <button class="btn btn-primary" data-action="st-new">＋ Tạo bài có topic</button>
@@ -129,7 +129,7 @@ function renderDetail(t) {
     </div>
     <div class="st-lastat">Hoạt động gần nhất: ${rel}</div>
     <div class="st-actions">
-      <button class="btn btn-primary btn-sm" data-action="st-train" data-topic="${escapeHtml(t.topic)}" type="button">🎯 Luyện chủ đề này</button>
+      <button class="btn btn-primary btn-sm" data-action="st-train" data-topic="${escapeHtml(t.topic)}" type="button">Luyện chủ đề này</button>
       <button class="btn btn-ghost btn-sm" data-action="st-new" data-topic="${escapeHtml(t.topic)}" type="button">＋ Bài mới</button>
     </div>
     <div class="st-problist-head">Bài tập (${(t.problems || []).length})</div>
@@ -162,7 +162,7 @@ export function initSkillTree(app) {
     overlay.innerHTML = `
       <div class="modal st-modal">
         <div class="st-head">
-          <h2 class="modal-title">🗺️ Bản đồ kỹ năng</h2>
+          <h2 class="modal-title">Bản đồ kỹ năng</h2>
           <span id="st-totals" class="st-totals"></span>
           <span class="toolbar-spacer"></span>
           <button id="st-close" class="btn btn-ghost btn-sm" type="button">✕ Đóng</button>

@@ -46,13 +46,13 @@ function matchScore(query, target) {
   return total;
 }
 
-const VERDICT_ICON = { AC: "🟢", WA: "🔴", TLE: "🟡", RE: "🟠", CE: "🟣" };
+const VERDICT_ICON = { AC: "✓", WA: "×", TLE: "≈", RE: "!", CE: ";" };
 
 function buildActions(app) {
   const click = (id) => () => document.getElementById(id)?.click();
   const has = () => Boolean(app.state.currentId);
   return [
-    { icon: "🏠", label: "Về trang chủ Hành trình", kw: "home journey trang chu hanh trinh", kbd: "", run: () => app.goHome && app.goHome() },
+    { icon: "⌂", label: "Về trang chủ Hành trình", kw: "home journey trang chu hanh trinh", kbd: "", run: () => app.goHome && app.goHome() },
     ...listWorkspaces().map((w, i) => ({
       icon: w.icon, label: `Workspace: ${w.name}`,
       kw: `workspace khong gian moi truong ${w.name} ${w.id} che do lam viec`,
@@ -61,34 +61,36 @@ function buildActions(app) {
     })),
     { icon: "↩", label: "Đặt lại bố cục (Reset layout)", kw: "reset dat lai bo cuc layout mac dinh khoi phuc do rong", kbd: "", run: () => app.workspace && app.workspace.resetLayout() },
     { icon: "＋", label: "Tạo bài mới", kw: "new problem tao bai moi them", kbd: "Ctrl·N", run: () => app.openMetaModal(null) },
-    { icon: "🎲", label: "Bài ngẫu nhiên (chưa giải)", kw: "random ngau nhien bai chua giai luyen tap practice", kbd: "", run: () => app.openRandomProblem && app.openRandomProblem() },
+    { icon: "◇", label: "Tạo bài phù hợp", kw: "personalized topic elo bai phu hop luyen tap", kbd: "", run: () => app.openRandomProblem && app.openRandomProblem() },
     { icon: "▶", label: "Chạy code (Run)", kw: "run chay code thuc thi", kbd: "Ctrl·↵", when: has, run: () => app.runOne && app.runOne() },
-    { icon: "⚖️", label: "Chấm bài (Judge all)", kw: "judge cham bai nop submit", kbd: "Ctrl·⇧·↵", when: has, run: () => app.judgeAll && app.judgeAll() },
-    { icon: "💾", label: "Lưu code", kw: "save luu", kbd: "Ctrl·S", when: has, run: () => app.saveCodeNow && app.saveCodeNow() },
-    { icon: "📝", label: "Xem đề bài (Problem view)", kw: "statement de bai problem view dan anh paste", kbd: "", when: has, run: () => app.setView("problem") },
+    { icon: "≡", label: "Chấm tất cả", kw: "judge cham bai nop submit", kbd: "Ctrl·⇧·↵", when: has, run: () => app.judgeAll && app.judgeAll() },
+    { icon: "▣", label: "Lưu code", kw: "save luu", kbd: "Ctrl·S", when: has, run: () => app.saveCodeNow && app.saveCodeNow() },
+    { icon: "§", label: "Xem đề bài", kw: "statement de bai problem view dan anh paste", kbd: "", when: has, run: () => app.setView("problem") },
     { icon: "‹/›", label: "Quay lại Code view", kw: "code editor viet", kbd: "", when: has, run: () => app.setView("code") },
     { icon: "⊟", label: "Đề + Code cạnh nhau (Split)", kw: "split de bai code canh nhau side by side song song doc va code", kbd: "Ctrl·⇧·M", when: has, run: () => app.setLayoutMode("split") },
-    { icon: "🤖", label: "Hỏi AI Coach", kw: "coach chat ai hoi tro giup", kbd: "Ctrl·;", when: has, run: () => { app.setTab("coach"); app.focusCoachInput && app.focusCoachInput(); } },
+    { icon: "?", label: "Hỏi AI Coach", kw: "coach chat ai hoi tro giup", kbd: "Ctrl·;", when: has, run: () => { app.setTab("coach"); app.focusCoachInput && app.focusCoachInput(); } },
     { icon: "⤢", label: "Phóng to / thu nhỏ Coach (đọc rộng)", kw: "coach phong to mo rong wide focus doc rong expand", kbd: "Alt·W", when: has, run: () => app.toggleCoachFocus && app.toggleCoachFocus() },
     { icon: "↔", label: "Đặt lại độ rộng panel", kw: "panel width do rong reset dat lai mac dinh resize keo", kbd: "", run: () => app.resetPanelWidth && app.resetPanelWidth() },
-    { icon: "🧪", label: "Mở Lab (Stress test + Big-O)", kw: "lab stress test complexity do phuc tap", kbd: "", when: has, run: click("btn-stress") },
-    { icon: "🔍", label: "AI Review code", kw: "review soi code danh gia", kbd: "", when: has, run: click("btn-review") },
-    { icon: "⚡", label: "Thư viện Snippets", kw: "snippets thu vien thuat toan mau template", kbd: "", when: has, run: click("btn-snippets") },
-    { icon: "🧬", label: "Tạo test bằng AI", kw: "generate tests tao test ai sinh", kbd: "", when: has, run: () => { app.setTab("tests"); click("btn-ai-generate-tests")(); } },
-    { icon: "🏆", label: "AI Contest Generator", kw: "contest cuoc thi giai dau", kbd: "", run: click("btn-contests") },
-    { icon: "📊", label: "Thống kê & Ôn tập (Dashboard)", kw: "stats dashboard thong ke tien do on tap review queue", kbd: "", run: click("btn-dashboard") },
-    { icon: "📕", label: "Sổ tay lỗi sai", kw: "mistakes so tay loi sai wa journal nhat ky", kbd: "", run: () => app.openMistakeBook && app.openMistakeBook() },
-    { icon: "🎓", label: "Giải thích lời giải", kw: "defense giai thich loi giai van dap hieu bai explain", kbd: "", when: has, run: () => app.openDefense && app.openDefense() },
-    { icon: "📂", label: "Mở thư mục trong VS Code", kw: "vscode folder thu muc mo", kbd: "", when: has, run: click("btn-open-folder") },
-    { icon: "📋", label: "Copy toàn bộ code", kw: "copy sao chep", kbd: "", when: has, run: click("btn-copy") },
-    { icon: "🧘", label: "Bật/tắt Zen Focus", kw: "zen focus tap trung", kbd: "Alt·Z", run: () => app.toggleZenMode() },
-    { icon: "🕐", label: "Tab Run console", kw: "run console stdin tab", kbd: "", when: has, run: () => app.setTab("run") },
-    { icon: "✅", label: "Tab Tests", kw: "tests tab kiem thu", kbd: "", when: has, run: () => app.setTab("tests") },
-    { icon: "🗒️", label: "Tab Notes", kw: "notes ghi chu tab", kbd: "", when: has, run: () => app.setTab("notes") },
-    { icon: "🕑", label: "Tab History", kw: "history lich su tab", kbd: "", when: has, run: () => app.setTab("history") },
-    { icon: "⚙️", label: "Tab Settings", kw: "settings cai dat cau hinh api key tab", kbd: "", run: () => app.setTab("settings") },
-    { icon: "📖", label: "Hướng dẫn sử dụng", kw: "guide huong dan help", kbd: "", run: click("btn-guide") },
-    { icon: "⌨️", label: "Bảng phím tắt", kw: "shortcuts phim tat", kbd: "?", run: () => document.getElementById("shortcuts-modal")?.classList.remove("hidden") }
+    { icon: "≈", label: "Mở Sinh Test / Stress Test", kw: "lab stress sinh test generator brute performance", kbd: "", when: has, run: click("btn-stress") },
+    { icon: "◉", label: "AI soi code", kw: "review soi code danh gia", kbd: "", when: has, run: click("btn-review") },
+    { icon: "§", label: "Thư viện Snippets", kw: "snippets thu vien thuat toan mau template", kbd: "", when: has, run: click("btn-snippets") },
+    { icon: "+", label: "Tạo test bằng AI", kw: "generate tests tao test ai sinh", kbd: "", when: has, run: () => { app.setTab("tests"); click("btn-ai-generate-tests")(); } },
+    { icon: "#", label: "Tạo cuộc thi bằng AI", kw: "contest cuoc thi giai dau", kbd: "", run: click("btn-contests") },
+    { icon: "%", label: "Thống kê và ôn tập", kw: "stats dashboard thong ke tien do on tap review queue", kbd: "", run: click("btn-dashboard") },
+    { icon: "🧩", label: "Điền Lõi (fix tư duy code)", kw: "dien loi core fill fix tu duy code doan cot loi transition dp", kbd: "", run: () => app.openCorefill && app.openCorefill() },
+    { icon: "⚡", label: "Luyện debug tốc độ (Bug Rush)", kw: "rush dap loi bug fix sua nhanh arcade toc do soi debug", kbd: "", run: () => app.openRush && app.openRush() },
+    { icon: "!", label: "Sổ tay lỗi sai", kw: "mistakes so tay loi sai wa journal nhat ky", kbd: "", run: () => app.openMistakeBook && app.openMistakeBook() },
+    { icon: "¶", label: "Giải thích lời giải", kw: "defense giai thich loi giai van dap hieu bai explain", kbd: "", when: has, run: () => app.openDefense && app.openDefense() },
+    { icon: "↗", label: "Mở thư mục trong VS Code", kw: "vscode folder thu muc mo", kbd: "", when: has, run: click("btn-open-folder") },
+    { icon: "▤", label: "Sao chép toàn bộ code", kw: "copy sao chep", kbd: "", when: has, run: click("btn-copy") },
+    { icon: "—", label: "Bật/tắt Zen Focus", kw: "zen focus tap trung", kbd: "Alt·Z", run: () => app.toggleZenMode() },
+    { icon: "▶", label: "Tab Run", kw: "run console stdin tab", kbd: "", when: has, run: () => app.setTab("run") },
+    { icon: "✓", label: "Tab Tests", kw: "tests tab kiem thu", kbd: "", when: has, run: () => app.setTab("tests") },
+    { icon: "✎", label: "Tab Notes", kw: "notes ghi chu tab", kbd: "", when: has, run: () => app.setTab("notes") },
+    { icon: "↻", label: "Tab History", kw: "history lich su tab", kbd: "", when: has, run: () => app.setTab("history") },
+    { icon: "≡", label: "Tab Cài đặt", kw: "settings cai dat cau hinh api key tab", kbd: "", run: () => app.setTab("settings") },
+    { icon: "?", label: "Hướng dẫn sử dụng", kw: "guide huong dan help", kbd: "", run: click("btn-guide") },
+    { icon: "⌨", label: "Bảng phím tắt", kw: "shortcuts phim tat", kbd: "?", run: () => document.getElementById("shortcuts-modal")?.classList.remove("hidden") }
   ];
 }
 
@@ -129,7 +131,7 @@ export function initCommandPalette(app) {
       .map((a) => ({ ...a, kind: "action", target: norm(a.label + " " + a.kw) }));
     const problems = (app.state.problems || []).map((p) => ({
       kind: "problem",
-      icon: VERDICT_ICON[p.lastVerdict] || (p.status === "solved" ? "🟢" : "⚪"),
+      icon: VERDICT_ICON[p.lastVerdict] || (p.status === "solved" ? "✓" : "·"),
       label: p.title,
       sub: [p.topic, p.source, p.difficulty !== "unrated" ? p.difficulty : ""].filter(Boolean).join(" · "),
       kbd: "",
@@ -220,7 +222,7 @@ export function initCommandPalette(app) {
   btn.id = "btn-cmdk";
   btn.className = "btn btn-ghost btn-sm";
   btn.title = "Bảng lệnh nhanh (Ctrl+K)";
-  btn.innerHTML = `🔎 Lệnh <kbd>Ctrl·K</kbd>`;
+  btn.innerHTML = `⌘ Lệnh <kbd>Ctrl·K</kbd>`;
   if (chips && chips.parentNode) chips.parentNode.insertBefore(btn, chips.nextSibling);
   btn.addEventListener("click", open);
 

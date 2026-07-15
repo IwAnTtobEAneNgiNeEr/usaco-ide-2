@@ -1,41 +1,51 @@
 // main.js — bootstraps USACO IDE 2.0, owns shared state, and wires modules.
 
-import { api } from "./api.js?v=2.3";
+import { api } from "./api.js?v=2.7";
 import { initLayout, setTab, setView, setLayoutMode, cycleLayoutMode, getSavedLayoutMode } from "./layout.js?v=2.5";
-import { initProblems, renderProblems } from "./problems.js?v=2.3";
+import { initProblems, renderProblems } from "./problems.js?v=2.4";
 import { initEditor, renderMeta, setEditorFiles } from "./editor.js?v=2.3";
-import { mountCmEditor } from "./editor-cm.js?v=2.3";
-import { initTests, renderTests } from "./testcases.js?v=2.3";
-import { initRunner, renderHistory } from "./runner.js?v=2.4";
-import { initSettings } from "./settings.js?v=2.3";
-import { initStatement, loadProblemView } from "./statement.js?v=2.9";
-import { initTimer } from "./timer.js?v=2.3";
+import { mountCmEditor } from "./editor-cm.js?v=2.4";
+import { initTests, renderTests } from "./testcases.js?v=2.4";
+import { initRunner, renderHistory } from "./runner.js?v=2.8";
+import { initSettings } from "./settings.js?v=2.4";
+import { initStatement, loadProblemView } from "./statement.js?v=3.2";
+import { initTimer } from "./timer.js?v=2.5";
 import { initHints } from "./hints.js?v=2.3";
 import { initNotes } from "./notes.js?v=2.3";
 import { initSidebarToggle } from "./features/sidebar-toggle.js?v=2.4";
 import { initTopicFilter } from "./features/topic-filter.js?v=2.3";
 import { initDesktopShell } from "./features/desktop-launcher.js?v=2.3";
-import { initWaReview } from "./features/wa-review.js?v=2.3";
-import { initSnippets } from "./features/snippets.js?v=2.3";
-import { initCodeReview } from "./features/code-review.js?v=2.3";
-import { initLab } from "./features/lab.js?v=2.3";
-import { initDashboard } from "./features/dashboard.js?v=2.3";
-import { initMiniChat } from "./features/mini-chat.js?v=2.5";
-import { initSynthesizer } from "./features/synthesizer.js?v=2.3";
-import { initContests } from "./features/contests.js?v=2.3";
-import { initJourney } from "./features/journey.js?v=2.3";
-import { initCommandPalette } from "./features/command-palette.js?v=2.4";
-import { initMistakeBook } from "./features/mistake-book.js?v=2.3";
+import { initWaReview } from "./features/wa-review.js?v=2.4";
+import { initGameReview } from "./features/game-review.js?v=3.1";
+import { initMoment } from "./features/moment.js?v=2.8"; // supersedes verdict-rail's listener (chips live on inside the card)
+import { initAnalysis } from "./features/analysis.js?v=1.1"; // "Phân tích code này" — evidence-based, Verified Artifact Loop P3
+import { initDerivedModule } from "./features/derived-module.js?v=1.0"; // "Phát triển thành module" — GridPathfinder, Verified Artifact Loop P4
+import { initFlashQuiz } from "./features/flash-quiz.js?v=1.3"; // câu hỏi = lỗi thật từ Student Model
+import { initArena } from "./features/arena.js?v=1.5"; // ⚔ Luyện tập xếp hạng: HUD + match strip + app.arena helpers
+import { initActivityWorkspace } from "./features/activity-workspace.js?v=1.3";
+import { initRush } from "./features/rush.js?v=1.3";
+import { initCorefill } from "./features/corefill.js?v=1.4";
+import { initAutopsy } from "./features/autopsy.js?v=2.0";
+import { initSnippets } from "./features/snippets.js?v=2.1";
+import { initCodeReview } from "./features/code-review.js?v=2.5";
+import { initLab } from "./features/lab.js?v=3.2";
+import { initDashboard } from "./features/dashboard.js?v=2.4";
+import { initMiniChat } from "./features/mini-chat.js?v=2.7";
+import { initSynthesizer } from "./features/synthesizer.js?v=2.5";
+import { initContests } from "./features/contests.js?v=3.1";
+import { initJourney } from "./features/journey.js?v=3.4";
+import { initCommandPalette } from "./features/command-palette.js?v=2.7";
+import { initMistakeBook } from "./features/mistake-book.js?v=2.5";
 import { initBoss } from "./features/boss.js?v=2.3";
-import { initDefense } from "./features/defense.js?v=2.3";
-import { initVisualizer } from "./features/visualizer.js?v=2.3";
-import { initSkillTree } from "./features/skilltree.js?v=2.3";
-import { initSpj } from "./features/spj.js?v=2.3";
-import { initWelcome } from "./features/welcome.js?v=2.3";
+import { initDefense } from "./features/defense.js?v=2.4";
+import { initVisualizer } from "./features/visualizer.js?v=2.4";
+import { initSkillTree } from "./features/skilltree.js?v=2.4";
+import { initSpj } from "./features/spj.js?v=2.5";
+import { initWelcome } from "./features/welcome.js?v=2.4";
 import { initOverflowMenus } from "./features/overflow-menu.js?v=2.3";
-import { initEditorAppearance } from "./features/editor-appearance.js?v=2.3";
+import { initEditorAppearance } from "./features/editor-appearance.js?v=2.4";
 import { createBus } from "./core/bus.js";
-import { initWorkspaces } from "./features/workspaces.js?v=1.0";
+import { initWorkspaces } from "./features/workspaces.js?v=1.1";
 import { initPanelSignals, clearTabAttn } from "./features/panel-signals.js?v=1.0";
 
 const $ = (id) => document.getElementById(id);
@@ -270,6 +280,8 @@ app.loadProblem = async (id) => {
     app.state.tests = tests;
     app.state.openTests = new Set();
     app.state.testResults = {};
+    app.state.lastJudge = null; // stale verdicts belong to the previous problem
+    app.bus && app.bus.emit("problem:opened", { id });
 
     app.el.editorEmpty.classList.add("hidden");
     app.el.editorShell.classList.remove("hidden");
@@ -429,7 +441,7 @@ app.toggleZenMode = () => {
   if (btn) {
     btn.classList.toggle("btn-primary", isZen);
     btn.classList.toggle("btn-ghost", !isZen);
-    btn.innerHTML = isZen ? "🧘 Zen ON" : "🧘 Zen";
+    btn.textContent = isZen ? "Zen ON" : "Zen";
   }
 };
 
@@ -664,9 +676,12 @@ function initShortcuts() {
 }
 
 // ---------------- Cursor Tracking Glow Overlay ----------------
+let mouseGlowStarted = false;
 function initMouseGlow() {
+  if (mouseGlowStarted) return;
+  mouseGlowStarted = true;
   document.addEventListener("mousemove", (e) => {
-    const target = e.target.closest(".coach-card-sec, .stmt-section, .prob-item, .analysis-card, .examples-card, .gentests-card, .console-block, .settings-card, .code-stack, .neon-ai-analysis-container");
+    const target = e.target.closest(".coach-card-sec, .stmt-section, .prob-item, .analysis-card, .examples-card, .gentests-card, .console-block, .settings-card, .code-stack, .neon-ai-analysis-container, .aw-tool-context, .aw-toolguide-rail, .aw-console-ready, .aw-controls, .aw-output-block, .aw-tests, .aw-live-log");
     if (!target) return;
     const rect = target.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -676,13 +691,12 @@ function initMouseGlow() {
   });
 }
 
-// ---------------- Global Particles Background (Google Antigravity style) ----------------
 function initGlobalParticles(app) {
   let backdrop = document.getElementById("global-backdrop");
   if (!backdrop) {
     backdrop = document.createElement("div");
     backdrop.id = "global-backdrop";
-    backdrop.style.cssText = "position:fixed; inset:0; z-index:0; background: linear-gradient(180deg, #07101f 0%, #050b14 100%); pointer-events:none;";
+    backdrop.style.cssText = "position:fixed; inset:0; z-index:0; background:var(--bg); pointer-events:none;";
     document.body.appendChild(backdrop);
   }
 
@@ -994,13 +1008,15 @@ function initGlobalParticles(app) {
 
   function animate() {
     if (app.state.settings && app.state.settings.enableParticles === false) {
-      canvas.style.display = "none";
+      canvas.style.setProperty("display", "none", "important");
+      backdrop.style.setProperty("display", "none", "important");
       animationFrameId = null;
       return;
     }
 
     ctx.clearRect(0, 0, width, height);
-    canvas.style.display = "block";
+    canvas.style.setProperty("display", "block", "important");
+    backdrop.style.setProperty("display", "block", "important");
     
     ctx.globalCompositeOperation = "screen";
 
@@ -1079,8 +1095,12 @@ function initGlobalParticles(app) {
     animationFrameId = requestAnimationFrame(animate);
   }
 
+  // Settings may enable this for the current session.
   app.toggleGlobalParticles = (enable) => {
     if (enable) {
+      canvas.style.removeProperty("display");
+      backdrop.style.removeProperty("display");
+      initMouseGlow();
       if (!animationFrameId) {
         animate();
       }
@@ -1090,19 +1110,18 @@ function initGlobalParticles(app) {
         animationFrameId = null;
       }
       ctx.clearRect(0, 0, width, height);
-      canvas.style.display = "none";
+      canvas.style.setProperty("display", "none", "important");
+      backdrop.style.setProperty("display", "none", "important");
     }
   };
 
-  // Start particles based on settings
-  const start = app.state.settings ? app.state.settings.enableParticles !== false : true;
-  app.toggleGlobalParticles(start);
+  // Decorative motion is off until settings finishes loading.
+  app.toggleGlobalParticles(false);
 }
 
 // ---------------- Boot ----------------
 async function boot() {
   collectRefs();
-  initMouseGlow();
 
   try {
     const { settings } = await api.getSettings();
@@ -1130,6 +1149,13 @@ async function boot() {
   initTimer(app);
   initHints(app);
   initWaReview(app);
+  initGameReview(app);
+  initAutopsy(app);     // defines app.openAutopsy — must init before the moment card uses it
+  initFlashQuiz(app);   // defines app.openFlashQuiz — planner CTA + Journey plan card open it
+  initAnalysis(app);    // defines app.openCodeAnalysis — must init before the moment card offers the chip
+  initDerivedModule(app); // defines app.openDerivedModule — must init before the moment card offers the chip
+  initMoment(app);      // Khoảnh Khắc autopilot — owns the #verdict-rail slot (bus "verdict"/"problem:opened"/"timer:done")
+  initActivityWorkspace(app); // one canonical editor/statement/result surface for every code-bearing mini-topic
   initSnippets(app);
   initCodeReview(app);
   initLab(app);
@@ -1139,6 +1165,9 @@ async function boot() {
   initContests(app);
   initDefense(app);        // wraps refreshSynthAvail to toggle the 🎓 toolbar button — after initSynthesizer
   initJourney(app);        // wraps syncMeta/clearEditor — keep before palette
+  initArena(app);          // ⚔ Luyện tập xếp hạng shell: HUD chip + match strip + app.arena helpers (after journey so the chip row exists)
+  initRush(app);           // adapter into the canonical activity workspace
+  initCorefill(app);       // adapter into the canonical activity workspace
   initMistakeBook(app);    // defines app.openMistakeBook (palette + home use it)
   initBoss(app);           // listens for journey:painted to fill the boss slot
   initVisualizer(app);     // 🔬 test-case visualizer (Run console + test cards)
@@ -1146,12 +1175,19 @@ async function boot() {
   initCommandPalette(app); // places its trigger next to the journey chips
   initEditorAppearance(app); // applies saved fonts/theme/colors live; settings renders its UI
   await initSettings(app);
+  app.toggleGlobalParticles(true);
   initMetaModal();
   initShortcuts();
   initDropGuard();
   initAnimationThrottle();
   initAiActivity();
   initOverflowMenus();   // topbar "⋯ More" + editor "Tools ▾" dropdowns
+
+  const btnRush = document.getElementById("btn-rush");
+  if (btnRush) btnRush.addEventListener("click", () => app.openRush && app.openRush());
+
+  const btnCorefill = document.getElementById("btn-corefill");
+  if (btnCorefill) btnCorefill.addEventListener("click", () => app.openCorefill && app.openCorefill());
 
   const btnGuide = document.getElementById("btn-guide");
   const guideModal = document.getElementById("guide-modal");

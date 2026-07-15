@@ -901,6 +901,15 @@ function createSemanticTokenHighlighter(CM) {
     }
     getDecorations(view) {
       const builder = new CM.RangeSetBuilder();
+      // RangeSetBuilder yêu cầu add theo thứ tự vị trí tăng dần, nhưng các pass
+      // (header/macro, calls, declarations, usages...) quét cùng một dòng theo
+      // thứ tự pass chứ không theo vị trí — gom hết rồi sort trước khi add.
+      const pendingMarks = [];
+      const collector = {
+        add(from, to, mark) {
+          if (to > from) pendingMarks.push({ from, to, mark });
+        }
+      };
       const doc = view.state.doc;
       const globals = new Set();
       const arrays = new Set(); // Stores declared C++ array variables
@@ -918,29 +927,29 @@ function createSemanticTokenHighlighter(CM) {
             const headerMatch = text.match(/<[^>\n]+>|"[^"\n]+"/);
             if (headerMatch) {
               const headerFrom = lineFrom + headerMatch.index;
-              builder.add(headerFrom, headerFrom + headerMatch[0].length, headerMark);
+              collector.add(headerFrom, headerFrom + headerMatch[0].length, headerMark);
             }
             const macroMatch = text.match(/^\s*#\s*(define|ifdef|ifndef|endif|pragma|include)\b/);
             if (macroMatch) {
               const macroFrom = lineFrom + macroMatch[0].lastIndexOf(macroMatch[1]);
-              builder.add(macroFrom, macroFrom + macroMatch[1].length, macroMark);
+              collector.add(macroFrom, macroFrom + macroMatch[1].length, macroMark);
             }
           }
 
-          markFunctionCalls(builder, text, lineFrom);
+          markFunctionCalls(collector, text, lineFrom);
           const activeLocals = scopeStack.length ? scopeStack[scopeStack.length - 1].locals : new Set();
-          const declaration = markDeclarations(builder, text, lineFrom, braceDepth, paramsInScope, globals, activeLocals, arrays);
-          markSymbolUsages(builder, text, lineFrom, paramsInScope, globals, localsInScope, arrays);
+          const declaration = markDeclarations(collector, text, lineFrom, braceDepth, paramsInScope, globals, activeLocals, arrays);
+          markSymbolUsages(collector, text, lineFrom, paramsInScope, globals, localsInScope, arrays);
           const namespaceRe = /\b[A-Za-z_]\w*(?=\s*::)/g;
           let match;
           while ((match = namespaceRe.exec(text))) {
-            builder.add(lineFrom + match.index, lineFrom + match.index + match[0].length, namespaceMark);
+            collector.add(lineFrom + match.index, lineFrom + match.index + match[0].length, namespaceMark);
           }
 
           const constantRe = /\b(?:[A-Z][A-Z0-9_]*|_[A-Z0-9_]+)\b/g;
           while ((match = constantRe.exec(text))) {
             if (ALL_CAPS_RE.test(match[0])) {
-              builder.add(lineFrom + match.index, lineFrom + match.index + match[0].length, constantMark);
+              collector.add(lineFrom + match.index, lineFrom + match.index + match[0].length, constantMark);
             }
           }
 
@@ -962,6 +971,10 @@ function createSemanticTokenHighlighter(CM) {
           }
       }
 
+      pendingMarks.sort((a, b) => a.from - b.from || a.to - b.to);
+      for (const m of pendingMarks) {
+        builder.add(m.from, m.to, m.mark);
+      }
       return builder.finish();
     }
   }, {

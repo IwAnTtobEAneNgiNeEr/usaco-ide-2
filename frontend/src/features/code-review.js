@@ -1,7 +1,7 @@
 // code-review.js — AI Code Reviewer. Sends the current code + statement to the
 // AI and renders a structured diagnosis (bugs, complexity, overflow/UB risks,
 // missing edge cases, style). It points at problems; it does not hand over a
-// full optimal solution. Builds its own modal; triggered by #btn-review.
+// full optimal solution. Uses the same L2 tool-workspace grammar as Snippets.
 
 import { api } from "../api.js";
 import { escapeHtml } from "../md.js";
@@ -11,15 +11,16 @@ function buildModal() {
   if (existing) return existing;
   const overlay = document.createElement("div");
   overlay.id = "review-modal";
-  overlay.className = "modal-overlay hidden";
+  overlay.className = "review-workspace hidden";
+  overlay.setAttribute("aria-label", "Soi code");
   overlay.innerHTML = `
-    <div class="modal modal-wide">
-      <h2 class="modal-title">🔍 AI soi code</h2>
-      <p class="panel-hint">AI chỉ ra bug, độ phức tạp, rủi ro tràn số/UB và edge case còn thiếu trong code hiện tại. Không viết hộ lời giải.</p>
-      <div id="review-body" class="mistakes-body"></div>
-      <div class="modal-actions">
-        <button type="button" id="review-close" class="btn btn-ghost">Đóng</button>
-      </div>
+    <div class="review-panel">
+      <header class="review-head">
+        <div><span class="review-kicker">Phân tích tĩnh bằng AI</span><h2>Soi code</h2></div>
+        <button type="button" id="review-close" class="btn btn-ghost btn-sm">× Đóng</button>
+      </header>
+      <p class="review-intro">Chỉ ra bug, độ phức tạp, rủi ro tràn số/UB và edge case còn thiếu. Không viết hộ lời giải.</p>
+      <div id="review-body" class="review-body"></div>
     </div>`;
   document.body.appendChild(overlay);
   return overlay;
@@ -31,12 +32,12 @@ function render(review) {
     : "";
   return [
     review.tongQuan ? `<p class="mk-overview">${escapeHtml(review.tongQuan)}</p>` : "",
-    list("🐞 Lỗi / nghi vấn", review.loi, "mk-bad"),
+    list("× Lỗi / nghi vấn", review.loi, "mk-bad"),
     review.doPhucTap ? `<div class="mk-section"><div class="mk-label mk-tech">⏱ Độ phức tạp</div><p class="mk-overview">${escapeHtml(review.doPhucTap)}</p></div>` : "",
-    list("⚠ Rủi ro (tràn số / UB)", review.rui_ro, "mk-warn"),
-    list("➕ Edge case dễ thiếu", review.edgeCase),
+    list("! Rủi ro (tràn số / UB)", review.rui_ro, "mk-warn"),
+    list("＋ Edge case dễ thiếu", review.edgeCase),
     list("✦ Gợi ý cách viết", review.style, "mk-tech")
-  ].join("") || `<p class="muted">AI không tìm thấy vấn đề rõ ràng nào. Code có vẻ ổn 👍</p>`;
+  ].join("") || `<p class="muted">AI không tìm thấy vấn đề rõ ràng nào. Code có vẻ ổn.</p>`;
 }
 
 export function initCodeReview(app) {
@@ -49,6 +50,10 @@ export function initCodeReview(app) {
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
 
   let reviewAbort = null;
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || modal.classList.contains("hidden")) return;
+    if (reviewAbort) reviewAbort.abort(); else close();
+  });
   const triggerLabel = trigger.textContent;
 
   trigger.addEventListener("click", async () => {

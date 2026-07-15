@@ -1,6 +1,6 @@
 // snippets.js — Algorithm Snippet Library. A curated set of correct, concise
 // C++ competitive-programming templates, searchable, inserted at the editor
-// cursor (or copied). Builds its own modal; triggered by #btn-snippets.
+// cursor (or copied). Builds its own tools workspace; triggered by #btn-snippets.
 
 const SNIPPETS = [
   {
@@ -54,27 +54,66 @@ const SNIPPETS = [
 ];
 
 import { escapeHtml } from "../md.js";
+import { highlightCpp } from "../highlight.js";
+
+const USER_SNIPPETS_KEY = "usaco2.userSnippets";
+
+function loadUserSnippets() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(USER_SNIPPETS_KEY) || "[]");
+    return Array.isArray(raw) ? raw.filter((s) => s && s.name && s.code) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUserSnippets(items) {
+  try {
+    localStorage.setItem(USER_SNIPPETS_KEY, JSON.stringify(items.slice(0, 40)));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function buildModal() {
-  const existing = document.getElementById("snippets-modal");
+  const existing = document.getElementById("snippets-workspace");
   if (existing) return existing;
   const overlay = document.createElement("div");
-  overlay.id = "snippets-modal";
-  overlay.className = "modal-overlay hidden";
+  overlay.id = "snippets-workspace";
+  overlay.className = "snip-workspace hidden";
+  overlay.setAttribute("aria-label", "Thư viện thuật toán");
   overlay.innerHTML = `
-    <div class="modal modal-wide snip-modal">
-      <h2 class="modal-title">⚡ Thư viện thuật toán</h2>
+    <div class="snip-panel">
+      <div class="snip-head">
+        <div class="snip-heading">
+          <span class="snip-kicker">Công cụ code</span>
+          <h2 class="modal-title">Thư viện thuật toán</h2>
+          <p>Khung kỹ thuật chuẩn: tìm nhanh, xem trước có syntax, chèn đúng vị trí con trỏ.</p>
+        </div>
+        <button type="button" id="snip-close" class="aw-close" aria-label="Đóng">×</button>
+      </div>
       <input id="snip-search" class="input" placeholder="Tìm: dsu, dijkstra, segment tree, sieve…" autocomplete="off" />
       <div class="snip-body">
         <div id="snip-list" class="snip-list"></div>
         <div class="snip-preview">
+          <div class="snip-preview-bar">
+            <span class="file-tab" id="snip-preview-name">snippet.cpp</span>
+            <span class="toolbar-spacer"></span>
+            <button type="button" id="snip-copy" class="btn btn-ghost btn-sm" disabled>⧉ Copy</button>
+            <button type="button" id="snip-insert" class="btn btn-primary btn-sm" disabled>↳ Chèn tại con trỏ</button>
+          </div>
           <pre id="snip-code" class="snip-code"><span class="muted">Chọn một mẫu để xem.</span></pre>
         </div>
       </div>
-      <div class="modal-actions">
-        <button type="button" id="snip-close" class="btn btn-ghost">Đóng</button>
-        <button type="button" id="snip-copy" class="btn btn-ghost" disabled>Copy</button>
-        <button type="button" id="snip-insert" class="btn btn-primary" disabled>↳ Chèn tại con trỏ</button>
+      <div class="snip-actions">
+        <span class="snip-actions-hint">Bôi đen code trong editor rồi lưu để tự xây thư viện của riêng em.</span>
+        <span class="toolbar-spacer"></span>
+        <span id="snip-save-name-wrap" class="snip-save-wrap hidden">
+          <input id="snip-save-name" class="input" maxlength="40" placeholder="Tên snippet…" />
+          <button type="button" id="snip-save-confirm" class="btn btn-primary btn-sm">Lưu</button>
+        </span>
+        <button type="button" id="snip-save-selection" class="btn btn-ghost btn-sm">＋ Lưu đoạn đang chọn</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -90,26 +129,45 @@ export function initSnippets(app) {
   const searchEl = modal.querySelector("#snip-search");
   const insertBtn = modal.querySelector("#snip-insert");
   const copyBtn = modal.querySelector("#snip-copy");
+  const saveSelectionBtn = modal.querySelector("#snip-save-selection");
   let selected = null;
+  let userSnippets = loadUserSnippets();
+
+  const allSnippets = () => [
+    ...SNIPPETS.map((s) => ({ ...s, source: "built-in" })),
+    ...userSnippets.map((s) => ({ ...s, source: "user", tags: s.tags || ["custom"] }))
+  ];
 
   const renderList = (q = "") => {
     const ql = q.trim().toLowerCase();
-    const items = SNIPPETS.filter((s) =>
-      !ql || s.name.toLowerCase().includes(ql) || s.tags.some((t) => t.includes(ql)));
+    const merged = allSnippets();
+    const items = merged.filter((s) =>
+      !ql || s.name.toLowerCase().includes(ql) || (s.tags || []).some((t) => String(t).includes(ql)));
     listEl.innerHTML = items.length
       ? items.map((s) => {
-          const i = SNIPPETS.indexOf(s);
+          const i = merged.indexOf(s);
           return `<button class="snip-item ${selected === i ? "on" : ""}" data-i="${i}">
-            <span class="snip-name">${escapeHtml(s.name)}</span>
-            <span class="snip-tags">${s.tags.slice(0, 3).map((t) => `<span>${escapeHtml(t)}</span>`).join("")}</span>
+            <span class="snip-index">${String(i + 1).padStart(2, "0")}</span>
+            <span class="snip-main">
+              <span class="snip-name">${escapeHtml(s.name)}</span>
+              <span class="snip-tags">${(s.tags || []).slice(0, 3).map((t) => `<span>${escapeHtml(t)}</span>`).join("")}${s.source === "user" ? `<span class="snip-tag-user">của em</span>` : ""}</span>
+            </span>
           </button>`;
         }).join("")
-      : `<div class="snip-empty muted">Không có mẫu nào khớp.</div>`;
+      : `<div class="snip-empty muted">Không có mẫu khớp bộ lọc. Chọn một đoạn code trong editor rồi bấm <b>Lưu đoạn đang chọn</b> để tạo snippet riêng.</div>`;
   };
 
+  const previewName = modal.querySelector("#snip-preview-name");
   const pick = (i) => {
+    const item = allSnippets()[i];
+    if (!item) return;
     selected = i;
-    codeEl.textContent = SNIPPETS[i].code;
+    codeEl.innerHTML = highlightCpp(item.code);
+    if (previewName) {
+      previewName.textContent = item.name.toLowerCase()
+        .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 28) + ".cpp";
+    }
     insertBtn.disabled = false;
     copyBtn.disabled = false;
     listEl.querySelectorAll(".snip-item").forEach((b) => b.classList.toggle("on", Number(b.dataset.i) === i));
@@ -124,25 +182,72 @@ export function initSnippets(app) {
   const close = () => modal.classList.add("hidden");
   modal.querySelector("#snip-close").addEventListener("click", close);
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.classList.contains("hidden")) close();
+  });
 
   copyBtn.addEventListener("click", async () => {
-    if (selected == null) return;
-    try { await navigator.clipboard.writeText(SNIPPETS[selected].code); app.toast("Đã copy mẫu", "ok"); }
+    const item = selected == null ? null : allSnippets()[selected];
+    if (!item) return;
+    try { await navigator.clipboard.writeText(item.code); app.toast("Đã copy mẫu", "ok"); }
     catch { app.toast("Không copy được — chọn và Ctrl+C thủ công.", "err"); }
   });
 
   insertBtn.addEventListener("click", () => {
-    if (selected == null || !app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
-    const snippet = SNIPPETS[selected].code;
-    app.insertAtCursor(snippet);
+    const item = selected == null ? null : allSnippets()[selected];
+    if (!item || !app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
+    app.insertAtCursor(item.code);
     close();
     app.setView("code");
     app.toast("Đã chèn mẫu", "ok");
   });
 
-  trigger.addEventListener("click", () => {
-    if (selected == null) { insertBtn.disabled = true; copyBtn.disabled = true; }
+  // window.prompt is unavailable in the Electron shell — the name is asked
+  // through an inline input row instead (same fix as journey's rename).
+  const saveWrap = modal.querySelector("#snip-save-name-wrap");
+  const saveNameInput = modal.querySelector("#snip-save-name");
+  const saveConfirmBtn = modal.querySelector("#snip-save-confirm");
+  let pendingSelectionCode = "";
+
+  const commitSave = () => {
+    const name = (saveNameInput.value || "").trim();
+    if (!name || !pendingSelectionCode.trim()) { saveWrap.classList.add("hidden"); return; }
+    userSnippets = [{ name, tags: ["custom"], code: pendingSelectionCode }, ...userSnippets];
+    if (!saveUserSnippets(userSnippets)) {
+      app.toast("Không lưu được snippet cá nhân.", "err");
+      return;
+    }
+    pendingSelectionCode = "";
+    saveWrap.classList.add("hidden");
+    selected = SNIPPETS.length;
     renderList(searchEl.value);
+    pick(selected);
+    app.toast("Đã lưu snippet cá nhân.", "ok");
+  };
+  saveConfirmBtn.addEventListener("click", commitSave);
+  saveNameInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commitSave(); }
+    else if (e.key === "Escape") { e.stopPropagation(); saveWrap.classList.add("hidden"); }
+  });
+
+  saveSelectionBtn.addEventListener("click", () => {
+    const ed = app.el.codeEditor;
+    const code = ed && ed.selectionStart !== ed.selectionEnd
+      ? ed.value.slice(ed.selectionStart, ed.selectionEnd)
+      : "";
+    if (!code.trim()) {
+      app.toast("Chọn một đoạn code trong editor trước.", "err");
+      return;
+    }
+    pendingSelectionCode = code;
+    saveWrap.classList.remove("hidden");
+    saveNameInput.value = "";
+    saveNameInput.focus();
+  });
+
+  trigger.addEventListener("click", () => {
+    renderList(searchEl.value);
+    if (selected == null && allSnippets().length) pick(0);
     modal.classList.remove("hidden");
     setTimeout(() => searchEl.focus(), 30);
   });

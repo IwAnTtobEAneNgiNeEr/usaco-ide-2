@@ -1,7 +1,7 @@
 export function supportsNeonCanvas(topic, meta) {
   const analysis = meta?.analysis || {};
   const text = [meta?.title, topic, ...(analysis.tags || []), ...(analysis.kyThuat || [])].join(" ").toLowerCase();
-  return /(kmp|knapsack|dijkstra|monotonic stack|convex hull|kruskal|prim|sliding window|binary search|flood fill|\bbfs\b|\bdfs\b|\blis\b|segment tree|fenwick|trie|n-queens|hanoi|prefix sum|bitmask|topological|\blca\b|sieve|prime|max flow|hoán vị|permutation|queue|stack|greedy|merge sort|quick sort|string|array|mê cung|đồng hồ|clock|timeline|robot|pathfinding|grid|đường đi|lưới)/i.test(text);
+  return /(kmp|knapsack|dijkstra|monotonic stack|convex hull|kruskal|prim|sliding window|binary search|flood fill|\bbfs\b|\bdfs\b|\blis\b|segment tree|fenwick|trie|n-queens|hanoi|prefix sum|bitmask|topological|\blca\b|sieve|prime|max flow|hoán vị|permutation|queue|stack|greedy|merge sort|quick sort|string|array|mê cung|đồng hồ|clock|timeline|robot|pathfinding|grid|đường đi|lưới|bàn cờ|cờ vua|cờ\b|chess|chessboard|quân mã|quân hậu|quân xe|quân vua|quân tượng|quân tốt|knight|queen|rook|king|bishop)/i.test(text);
 }
 
 export function initNeonCanvas(canvas, topic, meta, opts = {}) {
@@ -2339,14 +2339,213 @@ export function initNeonCanvas(canvas, topic, meta, opts = {}) {
         if (isSelected) { fill = "rgba(52, 211, 153, 0.4)"; stroke = "#34d399"; }
         else if (isConflict) { fill = "rgba(100,100,100,0.3)"; stroke = "rgba(255,255,255,0.1)"; }
       }
-      
-      if (i === t) { ctx.shadowBlur = 10; ctx.shadowColor = stroke; }
-      
-      ctx.beginPath();
+    ctx.beginPath();
       ctx.roundRect(cx + a.start*scale, cy + i*14, (a.end - a.start)*scale, 8, 4);
       ctx.fillStyle = fill; ctx.fill(); ctx.shadowBlur = 0;
       ctx.strokeStyle = stroke; ctx.stroke();
     }
+  }
+
+  function renderChessboard() {
+    const w = getW(), h = getH();
+    ctx.clearRect(0, 0, w, h);
+    const rows = 6, cols = 6;
+    const size = Math.min(30, (w - 80) / cols, (h - 50) / rows);
+    const sx = (w - cols * size) / 2;
+    const sy = (h - rows * size) / 2 + 5;
+
+    const analysis = meta?.analysis || {};
+    const tTags = (analysis.tags || []).join(" ").toLowerCase();
+    const tTech = (analysis.kyThuat || []).join(" ").toLowerCase();
+    const tTitle = (meta?.title || "").toLowerCase();
+    const textToScan = tTitle + " " + tTags + " " + tTech + " " + (topic || "").toLowerCase();
+
+    const isQueen = /(hậu|queen)/i.test(textToScan);
+    const isRook = /(xe|rook)/i.test(textToScan);
+    const isKing = /(vua|king)/i.test(textToScan);
+    const isBishop = /(tượng|bishop)/i.test(textToScan);
+    const isKnight = !isQueen && !isRook && !isKing && !isBishop; // Knight as default for chess/board
+
+    let path = [];
+    let pieceChar = "♟";
+    let pieceColor = "rgba(69, 200, 255, 1)";
+    let trailColor = "rgba(69, 200, 255, 0.2)";
+
+    if (isKnight) {
+      path = [
+        {r: 5, c: 0},
+        {r: 4, c: 2},
+        {r: 2, c: 1},
+        {r: 0, c: 2},
+        {r: 1, c: 4},
+        {r: 3, c: 5},
+        {r: 5, c: 4},
+        {r: 4, c: 2}
+      ];
+      pieceChar = "♞";
+      pieceColor = "rgba(255, 183, 77, 1)"; // amber glow
+      trailColor = "rgba(50, 255, 150, 0.25)"; // green trail
+    } else if (isQueen) {
+      path = [
+        {r: 0, c: 0},
+        {r: 5, c: 5},
+        {r: 5, c: 0},
+        {r: 0, c: 5},
+        {r: 0, c: 2},
+        {r: 4, c: 2}
+      ];
+      pieceChar = "♛";
+      pieceColor = "rgba(244, 63, 94, 1)"; // rose/red
+      trailColor = "rgba(244, 63, 94, 0.2)";
+    } else if (isRook) {
+      path = [
+        {r: 0, c: 0},
+        {r: 0, c: 5},
+        {r: 4, c: 5},
+        {r: 4, c: 1},
+        {r: 1, c: 1},
+        {r: 1, c: 3}
+      ];
+      pieceChar = "♜";
+      pieceColor = "rgba(59, 130, 246, 1)"; // blue
+      trailColor = "rgba(59, 130, 246, 0.2)";
+    } else if (isKing) {
+      path = [
+        {r: 2, c: 2}, {r: 2, c: 3}, {r: 3, c: 4}, {r: 4, c: 4}, {r: 5, c: 3}, {r: 4, c: 2}
+      ];
+      pieceChar = "♚";
+      pieceColor = "rgba(234, 179, 8, 1)"; // yellow
+      trailColor = "rgba(234, 179, 8, 0.2)";
+    } else if (isBishop) {
+      path = [
+        {r: 0, c: 0}, {r: 5, c: 5}, {r: 2, c: 2}, {r: 4, c: 0}, {r: 0, c: 4}
+      ];
+      pieceChar = "♝";
+      pieceColor = "rgba(168, 85, 247, 1)"; // purple
+      trailColor = "rgba(168, 85, 247, 0.2)";
+    }
+
+    const stepDuration = 45;
+    const progress = Math.floor(frame / stepDuration) % path.length;
+    const nextProgress = (progress + 1) % path.length;
+    const t = (frame % stepDuration) / stepDuration;
+
+    const p1 = path[progress];
+    const p2 = path[nextProgress];
+    let r = p1.r, c = p1.c;
+    const dr = p2.r - p1.r;
+    const dc = p2.c - p1.c;
+
+    if (isKnight) {
+      if (Math.abs(dr) === 2) {
+        if (t < 0.6) {
+          r = p1.r + dr * (t / 0.6);
+          c = p1.c;
+        } else {
+          r = p2.r;
+          c = p1.c + dc * ((t - 0.6) / 0.4);
+        }
+      } else {
+        if (t < 0.6) {
+          c = p1.c + dc * (t / 0.6);
+          r = p1.r;
+        } else {
+          c = p2.c;
+          r = p1.r + dr * ((t - 0.6) / 0.4);
+        }
+      }
+    } else {
+      r = p1.r + (p2.r - p1.r) * t;
+      c = p1.c + (p2.c - p1.c) * t;
+    }
+
+    const visited = path.slice(0, progress + 1);
+
+    // Render the grid squares
+    for (let ri = 0; ri < rows; ri++) {
+      for (let ci = 0; ci < cols; ci++) {
+        const isDark = (ri + ci) % 2 === 1;
+        const isVisited = visited.some(p => p.r === ri && p.c === ci);
+        
+        ctx.fillStyle = isVisited 
+          ? trailColor 
+          : (isDark ? "rgba(15, 23, 42, 0.6)" : "rgba(30, 41, 59, 0.3)");
+          
+        ctx.strokeStyle = isVisited ? "rgba(50, 255, 150, 0.5)" : "rgba(100, 180, 220, 0.25)";
+        ctx.lineWidth = 1;
+        
+        const cellX = sx + ci * size;
+        const cellY = sy + ri * size;
+        
+        ctx.fillRect(cellX, cellY, size, size);
+        ctx.strokeRect(cellX, cellY, size, size);
+      }
+    }
+
+    // Outer neon frame
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = "rgba(69, 200, 255, 0.5)";
+    ctx.strokeStyle = "rgba(69, 200, 255, 0.6)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(sx - 3, sy - 3, cols * size + 6, rows * size + 6);
+    ctx.restore();
+
+    // Board labels
+    ctx.fillStyle = "rgba(148, 163, 184, 0.8)";
+    ctx.font = "bold 9px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const colsLetters = ["A", "B", "C", "D", "E", "F"];
+    for (let ci = 0; ci < cols; ci++) {
+      const x = sx + (ci + 0.5) * size;
+      ctx.fillText(colsLetters[ci], x, sy - 8);
+      ctx.fillText(colsLetters[ci], x, sy + rows * size + 8);
+    }
+
+    for (let ri = 0; ri < rows; ri++) {
+      const y = sy + (ri + 0.5) * size;
+      const labelStr = String(rows - ri);
+      ctx.fillText(labelStr, sx - 10, y);
+      ctx.fillText(labelStr, sx + cols * size + 10, y);
+    }
+
+    // Trajectory dashed lines
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    path.slice(0, progress + 1).forEach((p, idx) => {
+      const x = sx + (p.c + 0.5) * size;
+      const y = sy + (p.r + 0.5) * size;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    const px = sx + (c + 0.5) * size;
+    const py = sy + (r + 0.5) * size;
+    if (progress < path.length) {
+      ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Render piece
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = pieceColor;
+    ctx.fillStyle = pieceColor;
+    ctx.beginPath();
+    ctx.arc(px, py, size * 0.38, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `bold ${Math.floor(size * 0.55)}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(pieceChar, px, py);
   }
 
     if (!document.body.contains(canvas)) { cancelAnimationFrame(animationFrame); return; }
@@ -2359,14 +2558,9 @@ export function initNeonCanvas(canvas, topic, meta, opts = {}) {
     
 
     // Routing Logic (Ordered by specificity)
+    if (/(bàn cờ|cờ vua|cờ\b|chess|chessboard|quân mã|quân hậu|quân xe|quân vua|quân tượng|quân tốt|knight|queen|rook|king|bishop)/i.test(textToScan)) { renderChessboard(); frame++; if (shouldAnimate) animationFrame = requestAnimationFrame(loop); return; }
     if (/(clock|timeline)/i.test(textToScan)) { renderClockRollover(); frame++; if (shouldAnimate) animationFrame = requestAnimationFrame(loop); return; }
     if (/(robot|pathfinding|grid|path)/i.test(textToScan)) { renderRobotPath(); frame++; if (shouldAnimate) animationFrame = requestAnimationFrame(loop); return; }
-    if (/(clock|đồng hồ|timeline)/i.test(textToScan)) renderClockRollover();
-    else if (/(robot|pathfinding|đường đi|lưới)/i.test(textToScan)) renderRobotPath();
-    if (/(maze|mê cung)/i.test(textToScan)) renderMazeDFS();
-    else if (/(two pointers|hai con trỏ)/i.test(textToScan)) renderTwoPointers();
-    else if (/(dsu|disjoint set|union find|tập hợp rời rạc)/i.test(textToScan)) renderDSU();
-    else if (/(matrix exponentiation|nhân ma trận)/i.test(textToScan)) renderMatrixMultiply();
     else if (/(graph coloring|tô màu đồ thị|bipartite|đồ thị hai phía)/i.test(textToScan)) renderGraphColoring();
     else if (/(mo's algorithm|thuật toán mo|chia căn)/i.test(textToScan)) renderMoAlgorithm();
     else if (/(suffix array|mảng hậu tố|suffix automaton)/i.test(textToScan)) renderSuffixArray();

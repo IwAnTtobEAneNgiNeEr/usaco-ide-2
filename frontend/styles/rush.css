@@ -1,0 +1,103 @@
+/* rush.css — ⚡ Sới Đập Lỗi (Bug Rush) shell skin. A fully separate zone:
+   fixed full-viewport overlay, its own component namespace (rush-*), no
+   dependency on the IDE workbench's layout. Token-driven (loaded BEFORE
+   tokens.css so tokens stay authoritative), same convention as arena.css/
+   document.css — see index.html's stylesheet-order comment. */
+
+.rush-zone {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--sans);
+}
+.rush-zone.hidden { display: none; }
+
+.rush-shell {
+  position: relative;
+  width: min(720px, 92vw);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 32px;
+}
+
+.rush-close {
+  position: absolute; top: 4px; right: 4px;
+  background: transparent; border: none; color: var(--text-dim);
+  font-size: 18px; line-height: 1; cursor: pointer; padding: 8px;
+  border-radius: var(--radius-sm);
+}
+.rush-close:hover { color: var(--text); background: var(--bg-surface); }
+
+/* ---- intro / error / game-over ------------------------------------------- */
+
+.rush-intro { text-align: center; }
+.rush-intro-glyph { font-size: 44px; line-height: 1; }
+.rush-title { font-size: var(--text-display); margin: 0; color: var(--text); }
+.rush-sub { color: var(--text-dim); max-width: 46ch; line-height: 1.55; font-size: var(--text-body); margin: 0; }
+.rush-intro-stats { font-size: var(--text-body); color: var(--text-muted); }
+.rush-intro-note { font-size: var(--text-caption); }
+.rush-start-btn { min-width: 160px; }
+
+.rush-final-score {
+  font-family: var(--mono); font-size: 56px; font-weight: 700; color: var(--accent);
+  line-height: 1;
+}
+
+/* ---- active play ---------------------------------------------------------- */
+
+.rush-active { width: min(820px, 94vw); gap: 10px; padding: 20px; }
+
+.rush-hud { display: flex; align-items: center; width: 100%; gap: 16px; }
+.rush-hud-lives { display: flex; gap: 4px; }
+.rush-heart { color: var(--border); font-size: 18px; transition: color .15s ease; }
+.rush-heart.on { color: var(--danger); }
+.rush-hud-mid {
+  display: flex; gap: 18px; flex: 1; justify-content: center;
+  font-family: var(--mono); font-size: var(--text-body); color: var(--text-muted);
+}
+.rush-hud-mid b { color: var(--text); }
+.rush-hud-timer {
+  font-family: var(--mono); font-size: 20px; font-variant-numeric: tabular-nums;
+  min-width: 3.5ch; text-align: right; color: var(--text);
+}
+.rush-hud-timer.urgent { color: var(--danger); }
+.rush-hud-timer.expired { color: var(--danger); opacity: .55; }
+
+/* Reveal banner — a fixed-size slot (never animates box size; only opacity
+   + transform, so appearing/fading never triggers layout/reflow) sitting
+   above the editor. Empty and invisible at rest, so the editor's position
+   never jumps when it fades in — it just fades in place on top of the
+   already-loaded next drill, then fades back out on its own. */
+.rush-reveal {
+  width: 100%; min-height: 40px; box-sizing: border-box;
+  border-radius: var(--radius-md);
+  font-size: var(--text-caption);
+  padding: 8px 12px;
+  opacity: 0; transform: translateY(-6px); pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.rush-reveal.show { opacity: 1; transform: translateY(0); }
+.rush-reveal.ok  { background: rgba(52, 210, 126, .12); border: 1px solid rgba(52, 210, 126, .32); }
+.rush-reveal.bad { background: rgba(240, 88, 79, .12); border: 1px solid rgba(240, 88, 79, .32); }
+.rush-reveal-outcome { font-weight: 600; margin-right: 8px; color: var(--text); }
+.rush-reveal-summary { color: var(--text-muted); }
+.rush-reveal-card { display: block; margin-top: 2px; color: var(--text-dim); }
+
+.rush-editor-wrap {
+  width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-soft);
+}
+.rush-editor {
+  display: block; width: 100%; min-height: 320px; max-height: 52vh;
+  background: transparent; border: none; outline: none; resize: vertical;
+  color: var(--text); font-family: var(--mono); font-size: var(--text-code);
+  line-height: 1.55; padding: 14px; white-space: pre; overflow: auto;
+  box-sizing: border-box;
+}
+
+.rush-actions { display: flex; justify-content: center; width: 100%; }
+.rush-submit-btn kbd { margin-left: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rush-reveal { transition: none; }
+  .rush-heart { transition: none; }
+}

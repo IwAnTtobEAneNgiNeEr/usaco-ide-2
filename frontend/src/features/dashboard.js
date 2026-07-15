@@ -14,7 +14,7 @@ function buildModal() {
   overlay.className = "modal-overlay hidden";
   overlay.innerHTML = `
     <div class="modal modal-wide dash-modal">
-      <h2 class="modal-title">📊 Tiến độ của bạn</h2>
+      <h2 class="modal-title">Tiến độ của bạn</h2>
       <div id="dash-body" class="dash-body"></div>
       <div class="modal-actions">
         <button type="button" id="dash-close" class="btn btn-ghost">Đóng</button>
@@ -83,7 +83,7 @@ function render(s, review) {
 
   const reviewSection = `
     <div class="dash-section">
-      <div class="dash-h">🔁 Ôn tập hôm nay${review && review.length ? ` <span class="muted" style="font-weight:400">· ${review.length} bài đến lượt</span>` : ""}</div>
+      <div class="dash-h">Ôn tập hôm nay${review && review.length ? ` <span class="muted" style="font-weight:400">· ${review.length} bài đến lượt</span>` : ""}</div>
       ${renderReview(review)}
     </div>`;
 
@@ -92,7 +92,7 @@ function render(s, review) {
       ${card("Bài tập", t.problems || 0, `${solveRate}% đã giải`)}
       ${card("Đã giải", t.solved || 0)}
       ${card("Lượt chạy", t.totalRuns || 0)}
-      ${card("Chuỗi ngày", `${t.streak || 0}🔥`)}
+      ${card("Chuỗi ngày", `${t.streak || 0}`)}
       ${card("CF trung bình", t.cfAvg ? `~${t.cfAvg}` : "—")}
     </div>
 
@@ -111,7 +111,7 @@ function render(s, review) {
     </div>
 
     <div class="dash-section">
-      <div class="dash-h">🗺️ Bản đồ kỹ năng</div>
+      <div class="dash-h">Bản đồ kỹ năng</div>
       <p class="muted" style="font-size:12.5px;margin:0 0 8px">Mức thành thạo từng chủ đề (theo số lượng, độ ổn định và độ mới).</p>
       <button type="button" class="btn btn-ghost btn-sm" id="dash-open-skills">Mở bản đồ kỹ năng đầy đủ →</button>
     </div>`;

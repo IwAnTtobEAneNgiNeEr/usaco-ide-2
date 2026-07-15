@@ -46,24 +46,24 @@ export function initWelcome(app) {
     .then((h) => {
       const c = h && h.compiler;
       if (c && c.available) {
-        setCheck(document.getElementById("welcome-gpp"), "✅", c.version || "",
+        setCheck(document.getElementById("welcome-gpp"), "✓", c.version || "",
           "Sẵn sàng — bạn có thể Run / Judge ngay.", "ok");
       } else {
-        setCheck(document.getElementById("welcome-gpp"), "⚠️", "",
+        setCheck(document.getElementById("welcome-gpp"), "!", "",
           "Chưa tìm thấy g++. Cài MinGW/GCC rồi đặt đường dẫn trong Settings → Compiler.", "warn");
       }
     })
-    .catch(() => setCheck(document.getElementById("welcome-gpp"), "⚠️", "",
+    .catch(() => setCheck(document.getElementById("welcome-gpp"), "!", "",
       "Không kiểm tra được compiler — mở Settings để cấu hình.", "warn"));
 
   api.getAiSettings()
     .then((r) => {
       const ai = (r && r.ai) || r || {};
       if (ai.hasKey) {
-        setCheck(document.getElementById("welcome-ai"), "✅", "",
+        setCheck(document.getElementById("welcome-ai"), "✓", "",
           "Đã có key — các tính năng AI (Coach, tạo test, OCR cleanup…) đã bật.", "ok");
       } else {
-        setCheck(document.getElementById("welcome-ai"), "🔑", "",
+        setCheck(document.getElementById("welcome-ai"), "·", "",
           "Chưa có key (không bắt buộc). Thêm trong Settings → AI để bật trợ lý AI.", "muted");
       }
     })

@@ -34,6 +34,12 @@ test("permutation statements use a dedicated visual instead of the generic backt
   assert.match(canvas, /renderPermutation\(\)/);
 });
 
+test("chessboard statements use a dedicated chessboard visual", () => {
+  assert.match(canvas, /function renderChessboard\(\)/);
+  assert.match(canvas, /bàn cờ\|cờ vua/);
+  assert.match(canvas, /renderChessboard\(\)/);
+});
+
 test("pasted statements still auto-run and persist generated tests with provenance", () => {
   assert.match(statement, /ioStatement\.addEventListener\("input", \(\) => \{\s*scheduleSamplePreview\(\);\s*scheduleAuto\(\);\s*\}\)/s);
   assert.match(statement, /runPipeline\(app, \{ force: false \}\)/);

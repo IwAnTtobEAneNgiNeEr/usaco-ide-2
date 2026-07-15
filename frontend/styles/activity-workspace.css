@@ -1,0 +1,1250 @@
+/* One canonical coding surface shared by Core Fill, Rush, and Contest. The
+   global backdrop and Statement language remain untouched; this file only
+   arranges the existing vocabulary around one CodeMirror instance. */
+
+.activity-workspace {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.activity-workspace.hidden { display: none; }
+
+.aw-shell {
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.aw-head {
+  min-height: 64px;
+  padding: 9px 14px 9px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: var(--edge-light);
+}
+
+.aw-heading {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.aw-kicker {
+  color: var(--accent);
+  font: 700 var(--text-badge)/1 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.aw-heading h1 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-h-l);
+  font-weight: 700;
+  letter-spacing: -.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.aw-status-item {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+
+.aw-status-item b {
+  max-width: 22ch;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  text-overflow: ellipsis;
+}
+
+.aw-status-item[data-tone="danger"] b { color: var(--danger); }
+.aw-status-item[data-tone="success"] b { color: var(--success); }
+.aw-status-item[data-tone="accent"] b { color: var(--accent); }
+
+.aw-head-actions,
+.aw-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+}
+
+.aw-close {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.aw-close:hover {
+  border-color: var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.aw-close:focus-visible,
+.activity-workspace button:focus-visible,
+.activity-workspace textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.aw-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, .92fr) minmax(430px, 1.12fr) minmax(290px, .72fr);
+  background: var(--bg);
+}
+
+.aw-statement-col,
+.aw-code-col,
+.aw-result-col {
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+
+.aw-statement-col,
+.aw-result-col {
+  overflow: auto;
+}
+
+.aw-code-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-soft);
+}
+
+.aw-result-col {
+  border-right: 0;
+  background: var(--panel);
+}
+
+.aw-col-head,
+.aw-code-toolbar {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-dim);
+  font: 650 var(--text-caption)/1 var(--sans);
+}
+
+.aw-file-tabs {
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  overflow-x: auto;
+}
+
+.aw-col-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  justify-content: space-between;
+  background: var(--panel);
+}
+
+.aw-statement {
+  width: min(100%, 780px);
+  margin: 0 auto;
+  padding: 18px 18px 40px;
+  box-sizing: border-box;
+}
+
+.aw-file-tab {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: 650 var(--text-caption)/1 var(--mono);
+  cursor: pointer;
+}
+
+.aw-file-tab:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text-muted);
+}
+
+.aw-file-tab.active {
+  border-bottom-color: var(--accent);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.aw-task-note {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-save-state {
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+}
+
+.aw-editor-stack {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.aw-editor-host { width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+
+.aw-editor-host .cm-editor { height: 100%; }
+
+.aw-editor-loading,
+.aw-editor-error {
+  height: 100%;
+  padding: 24px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: var(--text-body);
+}
+
+.aw-editor-error { color: var(--danger); }
+.aw-editor-error span { color: var(--text-dim); font: var(--text-caption) var(--mono); }
+
+.aw-io-field {
+  display: block;
+  margin: 10px 12px 0;
+}
+
+.aw-controls:empty { display: none; }
+
+.aw-controls {
+  margin: 10px 12px 0;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.aw-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.aw-control-grid label,
+.aw-segment-label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-dim);
+  font: 650 var(--text-badge)/1.2 var(--mono);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.aw-control-grid input,
+.aw-control-grid select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text);
+  font: var(--text-caption) var(--mono);
+}
+
+.aw-control-span { grid-column: 1 / -1; }
+
+.aw-segment {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.aw-segment button {
+  min-height: 30px;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--text-dim);
+  font: 650 var(--text-caption) var(--sans);
+  cursor: pointer;
+}
+
+.aw-segment button.active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  color: var(--accent);
+}
+
+.aw-io-field > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-dim);
+  font: 650 var(--text-badge)/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.aw-io-field textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg-soft);
+  color: var(--text);
+  font: var(--text-code)/1.5 var(--mono);
+}
+
+.aw-io-field textarea:hover,
+.aw-io-field textarea:focus { border-color: var(--accent); }
+
+.aw-result {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aw-result-empty,
+.aw-result-loading {
+  padding: 18px 8px;
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+  text-align: center;
+}
+
+.aw-result-summary,
+.aw-feedback,
+.aw-diff-note {
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+
+.aw-result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aw-result-summary b { color: var(--text); font-family: var(--mono); }
+.aw-feedback { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); color: var(--text); }
+.aw-diff-note { color: var(--warning); font-family: var(--mono); }
+.aw-v-ok { color: var(--success); border-color: var(--success); }
+
+.aw-tests {
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.aw-live-log {
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.aw-live-row {
+  min-height: 32px;
+  padding: 5px 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+}
+
+.aw-live-row:last-child { border-bottom: 0; }
+.aw-live-row b { color: var(--text-muted); font-family: var(--mono); }
+.aw-live-row[data-status="AC"] b,
+.aw-live-row[data-status="OK"] b { color: var(--success); }
+.aw-live-row[data-status="CE"] b,
+.aw-live-row[data-status="WA"] b,
+.aw-live-row[data-status="RE"] b,
+.aw-live-row[data-status="TLE"] b { color: var(--danger); }
+
+.aw-test-row {
+  min-height: 34px;
+  padding: 5px 8px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+}
+
+.aw-test-row:last-child { border-bottom: 0; }
+.aw-test-row b { font-family: var(--mono); }
+.aw-test-row[data-status="AC"] b { color: var(--success); }
+.aw-test-row:not([data-status="AC"]) b { color: var(--danger); }
+.aw-test-index { color: var(--text-dim); font-family: var(--mono); }
+.aw-test-name { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; }
+
+.aw-failure-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.aw-output-block {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.aw-output-label {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-dim);
+  font: 650 var(--text-badge)/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.aw-output-block pre {
+  max-height: 180px;
+  margin: 0;
+  padding: 9px;
+  overflow: auto;
+  color: var(--text-muted);
+  font: var(--text-code)/1.5 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.aw-output-block.is-stderr { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+.aw-output-block.is-expected { border-color: color-mix(in srgb, var(--success) 35%, var(--border)); }
+.aw-output-block.is-actual { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+.aw-followup { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+
+/* ---- Statement sheet inside the workspace -------------------------------
+   The đề column now renders the SAME .stmt-neon-shell page as the main
+   reader; only the container geometry lives here. */
+.aw-statement-col { background: var(--bg); }
+.aw-statement .stmt-neon-shell { padding: 0; }
+
+/* ---- Điền lõi: gap checklist --------------------------------------------- */
+.cf-gaps { display: grid; gap: 6px; }
+
+.cf-gaps-head {
+  color: var(--text-dim);
+  font: 650 var(--text-badge)/1.3 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.cf-gap {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.cf-gap:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+
+.cf-gap-index {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 50%;
+  color: var(--accent);
+  font: 700 var(--text-badge)/1 var(--mono);
+}
+
+.cf-gap-label { min-width: 0; line-height: 1.35; }
+
+.cf-gap-state { color: var(--warning); font: 650 var(--text-badge)/1 var(--mono); white-space: nowrap; }
+
+.cf-gap.is-filled { opacity: .72; }
+.cf-gap.is-filled .cf-gap-state { color: var(--success); }
+.cf-gap.is-filled .cf-gap-index { border-color: var(--success); color: var(--success); }
+
+.cf-gaps-hint { color: var(--text-dim); font-size: var(--text-caption); line-height: 1.5; }
+
+/* ---- Debug tốc độ: progressive hints -------------------------------------- */
+.rush-hints { display: grid; gap: 7px; }
+
+.rush-hint {
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+.rush-hint b {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--accent);
+  font: 650 var(--text-badge)/1 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.rush-hint.is-tech { border-color: color-mix(in srgb, var(--warning) 45%, var(--border)); }
+.rush-hint.is-tech b { color: var(--warning); }
+
+.rush-hint-note { color: var(--text-dim); font-size: var(--text-caption); }
+
+/* ---- Sinh test: chế độ Thi đấu (exam plan) -------------------------------- */
+.aw-segment.aw-segment-3 { grid-template-columns: repeat(3, 1fr); }
+
+.exam-plan { display: grid; gap: 7px; }
+
+.exam-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.exam-plan-head b { color: var(--accent); font-family: var(--mono); }
+
+.exam-plan-rows {
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.exam-plan-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 62px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--panel);
+}
+
+.exam-plan-row:last-child { border-bottom: 0; }
+
+.exam-plan-id { color: var(--accent); font: 700 var(--text-badge)/1 var(--mono); }
+
+.exam-plan-name {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.exam-plan-name i {
+  display: block;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-style: normal;
+  font-size: var(--text-badge);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exam-plan-row input {
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  color: var(--text);
+  font: var(--text-caption) var(--mono);
+  text-align: right;
+}
+
+.exam-plan-note,
+.exam-plan-empty {
+  color: var(--text-dim);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.aw-state-shell {
+  min-height: 100dvh;
+  padding: 48px 24px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.aw-state-shell .aw-close { position: absolute; top: 16px; right: 16px; }
+.aw-state-shell h1 { margin: 0; color: var(--text); font-size: var(--text-display); letter-spacing: -.035em; }
+.aw-state-shell p { max-width: 52ch; margin: 0; line-height: 1.6; }
+.aw-state-error { color: var(--danger); }
+
+/* Shared problem-source layer. All four activity modes use the same entry
+   point so selecting, pasting, and AI-authoring a task never drift apart. */
+.aw-source-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(3 6 14 / .78);
+  backdrop-filter: blur(12px);
+}
+
+.aw-source-dialog {
+  width: min(980px, 100%);
+  max-height: min(760px, calc(100dvh - 48px));
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: var(--radius-md, 12px);
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgb(0 0 0 / .45);
+}
+
+.aw-source-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--border-soft); }
+.aw-source-head h2 { margin: 5px 0 4px; color: var(--text); font-size: clamp(22px, 3vw, 30px); letter-spacing: -.03em; }
+.aw-source-head p { margin: 0; color: var(--text-dim); font-size: var(--text-caption); }
+.aw-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.aw-source-card { min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--bg-soft); }
+.aw-source-card h3 { margin: 0; color: var(--text); font-size: 16px; }
+.aw-source-card p { margin: 0; color: var(--text-dim); font-size: var(--text-caption); line-height: 1.5; }
+.aw-source-label { color: var(--accent); font: 700 var(--text-badge)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.aw-source-card select, .aw-source-card textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel); color: var(--text); font: var(--text-caption) var(--mono); }
+.aw-source-card select { height: 36px; padding: 0 8px; }
+.aw-source-card textarea { min-height: 150px; padding: 9px; resize: vertical; line-height: 1.5; }
+.aw-source-card textarea:focus, .aw-source-card select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.aw-source-ai { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); background: color-mix(in srgb, var(--accent) 7%, var(--bg-soft)); }
+.aw-source-status { min-height: 20px; margin-top: 14px; color: var(--warning); font-size: var(--text-caption); }
+
+@media (max-width: 900px) { .aw-source-grid { grid-template-columns: 1fr; } .aw-source-dialog { padding: 16px; } }
+
+@media (max-width: 1180px) {
+  .aw-body { grid-template-columns: minmax(280px, .9fr) minmax(420px, 1.1fr); }
+  .aw-result-col { grid-column: 1 / -1; max-height: 40vh; border-top: 1px solid var(--border); }
+  .aw-status { display: none; }
+}
+
+@media (max-width: 760px) {
+  .aw-head { align-items: flex-start; }
+  .aw-heading { grid-template-columns: 1fr; gap: 5px; }
+  .aw-head-actions .btn kbd,
+  .aw-nav-actions { display: none; }
+  .aw-body { display: flex; flex-direction: column; overflow: auto; }
+  .aw-statement-col,
+  .aw-code-col,
+  .aw-result-col { min-height: 58vh; overflow: visible; border-right: 0; border-bottom: 1px solid var(--border); }
+  .aw-editor-host { min-height: 52vh; }
+  .aw-result-col { max-height: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-workspace *,
+  .activity-workspace *::before,
+  .activity-workspace *::after { scroll-behavior: auto !important; transition: none !important; }
+}
+
+/* -------------------------------------------------------------------------
+   IDE shell alignment
+   The activity surface intentionally borrows the main workbench's hierarchy:
+   brand topbar → problem metadata bar → three work columns. The feature owns
+   its content and controls, but it should feel like the same application.
+   ------------------------------------------------------------------------- */
+.activity-workspace .aw-topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  background: linear-gradient(180deg, var(--panel), var(--bg));
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--edge-light), 0 1px 0 rgba(0, 0, 0, .55);
+}
+
+.activity-workspace .aw-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.activity-workspace .aw-brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 1px solid rgba(var(--accent-rgb), .42);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), .26), rgba(var(--accent-rgb), .08));
+  color: #ffe2a6;
+  font: 700 12px/1 var(--mono);
+  box-shadow: var(--edge-light), 0 3px 12px -4px rgba(var(--accent-rgb), .5);
+}
+
+.activity-workspace .aw-brand-name {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+}
+
+.activity-workspace .aw-brand-name b { color: var(--accent); font-weight: 650; }
+.activity-workspace .aw-topbar-center { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+.activity-workspace .aw-topbar-title { min-width: 0; overflow: hidden; color: var(--text); font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-topbar-context { overflow: hidden; color: var(--text-dim); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-topbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 340px; }
+.activity-workspace .aw-topbar-actions .btn { min-height: 32px; }
+.activity-workspace .aw-local-badge { display: inline-flex; align-items: center; gap: 6px; margin-right: 2px; color: var(--text-dim); font: 650 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.activity-workspace .aw-local-badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px rgba(52, 210, 126, .55); }
+.activity-workspace .aw-topbar-close { width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text-dim); font-size: 19px; line-height: 1; cursor: pointer; }
+.activity-workspace .aw-topbar-close:hover { border-color: var(--border); background: var(--panel-2); color: var(--text); }
+
+.activity-workspace .aw-head {
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 7px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.activity-workspace .aw-heading { grid-template-columns: auto minmax(0, auto) minmax(0, 1fr); gap: 9px; }
+.activity-workspace .aw-heading h1 { font-size: 15px; letter-spacing: -.018em; }
+.activity-workspace .aw-kicker { font-size: 10px; letter-spacing: .085em; }
+.activity-workspace .aw-status { gap: 5px; }
+.activity-workspace .aw-status-item { padding: 3px 8px; border-radius: 999px; background: var(--panel-2); }
+.activity-workspace .aw-head-actions { gap: 6px; }
+.activity-workspace .aw-source-trigger { min-height: 28px; border-color: var(--border); color: var(--text-muted); }
+
+.activity-workspace .aw-body {
+  grid-template-columns: minmax(320px, 1fr) minmax(470px, 1.08fr) minmax(320px, .72fr);
+  background: var(--bg);
+}
+
+.activity-workspace .aw-statement-col { background: var(--bg); border-right-color: var(--border); }
+.activity-workspace .aw-code-col { background: var(--editor-bg); }
+.activity-workspace .aw-result-col { background: var(--panel); }
+.activity-workspace .aw-col-head { min-height: 42px; box-sizing: border-box; padding: 9px 12px; background: var(--panel); border-bottom-color: var(--border-soft); }
+.activity-workspace .aw-col-head > span:first-child { color: var(--text-dim); font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
+.activity-workspace .aw-statement-edit {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  color: var(--text-muted);
+  font: 650 var(--text-badge)/1 var(--sans);
+  cursor: pointer;
+}
+.activity-workspace .aw-statement-edit:hover { border-color: var(--accent); color: var(--accent-strong); }
+.activity-workspace .aw-code-toolbar { min-height: 42px; box-sizing: border-box; padding: 0 12px; background: var(--editor-bg); border-bottom-color: var(--border); }
+.activity-workspace .aw-file-tabs { gap: 2px; }
+.activity-workspace .aw-file-tab { min-height: 32px; padding: 0 10px; border-color: transparent; border-radius: 5px 5px 0 0; font-size: 11px; }
+.activity-workspace .aw-file-tab:hover { background: var(--panel-2); border-color: transparent; }
+.activity-workspace .aw-file-tab.active { background: var(--panel); border-color: var(--border); border-bottom-color: var(--accent); color: var(--text); }
+.activity-workspace .aw-task-note { color: var(--accent); font-size: 11px; font-weight: 650; }
+.activity-workspace .aw-save-state { font-size: 11px; }
+.activity-workspace #aw-save { min-height: 28px; }
+.activity-workspace .aw-editor-host .cm-editor { background: var(--editor-bg); }
+.activity-workspace .aw-editor-host .cm-content { padding-top: 10px; }
+
+.activity-workspace .aw-statement { padding: 18px 18px 36px; }
+.activity-workspace .aw-statement .stmt-neon-shell { gap: 13px; }
+.activity-workspace .aw-statement .stmt-neon-hero { border-radius: 8px; }
+.activity-workspace .aw-statement .stmt-neon-secondary { border-radius: 8px; }
+.activity-workspace .aw-result {
+  flex: none;
+  min-height: 142px;
+  overflow: auto;
+  padding: 10px 12px 12px;
+  gap: 9px;
+}
+.activity-workspace .aw-controls { margin: 10px 12px 0; padding: 10px; background: var(--panel-2); border-color: var(--border); }
+.activity-workspace .aw-io-field { margin-top: 10px; }
+.activity-workspace .aw-io-stack { margin: 10px 12px 0; }
+.activity-workspace .aw-io-stack .aw-io-field { margin: 9px 0 0; }
+.activity-workspace .aw-io-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 7px; border-bottom: 1px solid var(--border-soft); }
+.activity-workspace .aw-io-title span { color: var(--text-muted); font: 700 var(--text-badge)/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.activity-workspace .aw-io-title small { color: var(--text-dim); font-size: var(--text-badge); }
+.activity-workspace .aw-io-field > span em { color: var(--text-dim); font-style: normal; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.activity-workspace .aw-io-field > span { font-size: 10px; letter-spacing: .075em; }
+.activity-workspace .aw-io-field textarea { min-height: 72px; background: var(--editor-bg); border-color: var(--border); border-radius: var(--control-radius, 8px); }
+.activity-workspace .aw-result-empty { color: var(--text-dim); }
+
+@media (max-width: 1180px) {
+  .activity-workspace .aw-body { grid-template-columns: minmax(300px, .9fr) minmax(420px, 1.1fr); }
+  .activity-workspace .aw-result-col { grid-column: 1 / -1; max-height: 40vh; border-top: 1px solid var(--border); }
+  .activity-workspace .aw-topbar-center { justify-content: flex-start; }
+  .activity-workspace .aw-local-badge { display: none; }
+  .activity-workspace .aw-topbar-actions { min-width: 0; }
+}
+
+@media (max-width: 760px) {
+  .activity-workspace .aw-topbar { padding: 0 10px; }
+  .activity-workspace .aw-brand { min-width: auto; }
+  .activity-workspace .aw-brand-name { display: none; }
+  .activity-workspace .aw-topbar-title { max-width: 34vw; }
+  .activity-workspace .aw-topbar-context { display: none; }
+  .activity-workspace .aw-head { padding-inline: 12px; }
+  .activity-workspace .aw-body { grid-template-columns: 1fr; }
+}
+
+/* -------------------------------------------------------------------------
+   Intentional empty states
+   Short statements still need a useful landing surface. The dock is pinned
+   below the readable statement, while the result rail explains the next
+   action before the first Run/Judge instead of showing a dead black well.
+   ------------------------------------------------------------------------- */
+.activity-workspace .aw-statement-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--panel) 42%, var(--bg)));
+}
+
+.activity-workspace .aw-statement {
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow: auto;
+}
+
+.activity-workspace .aw-statement-dock {
+  flex: none;
+  margin: 0 12px 12px;
+  padding: 14px 15px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: var(--edge-light);
+}
+
+.activity-workspace .aw-dock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+  color: var(--accent);
+  font: 750 10px/1 var(--mono);
+  letter-spacing: .08em;
+}
+
+.activity-workspace .aw-dock-head b { color: var(--text-dim); font-size: 9px; font-weight: 650; }
+.activity-workspace .aw-statement-dock h2 { margin: 0 0 5px; color: var(--text); font-size: 14px; letter-spacing: -.01em; }
+.activity-workspace .aw-statement-dock > p { margin: 0 0 12px; color: var(--text-muted); font-size: 11.5px; line-height: 1.5; }
+.activity-workspace .aw-dock-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.activity-workspace .aw-dock-step { display: flex; gap: 7px; min-width: 0; padding: 8px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--panel-2); }
+.activity-workspace .aw-dock-step > b { flex: none; color: var(--accent); font: 700 10px/1 var(--mono); }
+.activity-workspace .aw-dock-step span { min-width: 0; display: grid; gap: 3px; }
+.activity-workspace .aw-dock-step strong { overflow: hidden; color: var(--text); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-dock-step small { color: var(--text-dim); font-size: 10px; line-height: 1.3; }
+
+.activity-workspace .aw-console-ready {
+  display: grid;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel-2);
+  box-shadow: var(--edge-light);
+}
+
+.activity-workspace .aw-console-ready-head { display: flex; align-items: center; gap: 9px; }
+.activity-workspace .aw-console-icon { display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1px solid rgba(var(--accent-rgb), .4); border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: 11px; }
+.activity-workspace .aw-console-ready-head span:last-child { display: grid; gap: 3px; min-width: 0; }
+.activity-workspace .aw-console-ready-head b { color: var(--text); font-size: 13px; }
+.activity-workspace .aw-console-ready-head small { overflow: hidden; color: var(--text-dim); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-console-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 6px; }
+.activity-workspace .aw-console-flow > div { display: grid; gap: 3px; min-width: 0; padding: 9px 8px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--panel); }
+.activity-workspace .aw-console-flow > div > b { color: var(--accent); font: 700 10px/1 var(--mono); }
+.activity-workspace .aw-console-flow > div > span { color: var(--text); font-size: 11px; font-weight: 650; }
+.activity-workspace .aw-console-flow > div > small { color: var(--text-dim); font-size: 9.5px; line-height: 1.25; }
+.activity-workspace .aw-console-flow > i { color: var(--text-dim); font-style: normal; font-size: 13px; text-align: center; }
+.activity-workspace .aw-console-shortcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--text-dim); font-size: 10.5px; }
+.activity-workspace .aw-console-shortcuts kbd { margin: 0; color: var(--text-muted); }
+.activity-workspace .aw-console-output-preview { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-soft); }
+.activity-workspace .aw-console-output-preview > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-dim); font: 650 10px/1 var(--mono); letter-spacing: .06em; }
+.activity-workspace .aw-console-output-preview > div b { color: var(--text-dim); font-weight: 700; }
+.activity-workspace .aw-console-output-preview p { margin: 8px 0 0; color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+
+@media (max-width: 1180px) {
+  .activity-workspace .aw-statement-dock { margin-bottom: 12px; }
+}
+
+@media (max-width: 560px) {
+  .activity-workspace .aw-dock-steps { grid-template-columns: 1fr; }
+  .activity-workspace .aw-console-flow { grid-template-columns: 1fr; }
+  .activity-workspace .aw-console-flow > i { transform: rotate(90deg); }
+}
+
+/* -------------------------------------------------------------------------
+   Activity visual system v2
+   Main IDE's current canvas is midnight-blue, not neutral black. Activities
+   inherit that same material scale locally so their editor, statement and
+   judge rail belong to one product while retaining the editor's contrast.
+   ------------------------------------------------------------------------- */
+.activity-workspace {
+  position: fixed;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(820px 420px at 4% -12%, rgba(var(--accent-rgb), .10), transparent 62%),
+    var(--bg);
+}
+
+.activity-workspace::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .015), transparent 26%, transparent 72%, rgba(255, 255, 255, .012));
+}
+
+.activity-workspace .aw-shell { position: relative; z-index: 1; }
+.activity-workspace .aw-topbar { background: color-mix(in srgb, var(--bg) 94%, transparent); border-bottom-color: var(--border); }
+.activity-workspace .aw-head { background: color-mix(in srgb, var(--panel) 92%, transparent); border-bottom-color: var(--border); }
+.activity-workspace .aw-body { background: transparent; }
+
+.activity-workspace .aw-statement-col {
+  background:
+    radial-gradient(520px 220px at 0 0, rgba(var(--accent-rgb), .055), transparent 76%),
+    linear-gradient(180deg, var(--bg), var(--bg-soft));
+  border-right-color: var(--border);
+}
+
+.activity-workspace .aw-code-col {
+  background:
+    radial-gradient(640px 300px at 55% -12%, rgba(var(--accent-rgb), .035), transparent 68%),
+    var(--editor-bg);
+  border-right-color: var(--border);
+}
+
+.activity-workspace .aw-result-col {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(480px 260px at 100% 0, rgba(var(--accent-rgb), .045), transparent 70%),
+    linear-gradient(180deg, var(--panel), var(--bg-soft));
+}
+
+.activity-workspace .aw-col-head { background: color-mix(in srgb, var(--panel) 92%, transparent); border-bottom-color: var(--border-soft); }
+.activity-workspace .aw-code-toolbar { background: color-mix(in srgb, var(--editor-bg) 92%, transparent); border-bottom-color: var(--border-soft); }
+.activity-workspace .aw-editor-host,
+.activity-workspace .aw-editor-host .cm-editor,
+.activity-workspace .aw-editor-host .cm-scroller { background: transparent; }
+.activity-workspace .aw-editor-stack { background: var(--editor-bg); }
+
+.activity-workspace .aw-statement { background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--panel) 28%, transparent)); }
+.activity-workspace .aw-statement-editor { display: grid; gap: 12px; max-width: 780px; margin: 0 auto; padding: 18px; }
+.activity-workspace .aw-statement-editor > div { display: grid; gap: 4px; }
+.activity-workspace .aw-statement-editor b { color: var(--text); font-size: var(--text-h-m); }
+.activity-workspace .aw-statement-editor span { color: var(--text-dim); font-size: var(--text-caption); line-height: 1.45; }
+.activity-workspace .aw-statement-editor textarea { width: 100%; min-height: 420px; box-sizing: border-box; resize: vertical; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none; background: var(--editor-bg); color: var(--text); font: var(--text-code)/1.55 var(--mono); }
+.activity-workspace .aw-statement-editor textarea:focus { border-color: var(--accent); box-shadow: var(--ring); }
+.activity-workspace .aw-statement-editor footer { display: flex; justify-content: flex-end; gap: 8px; }
+.activity-workspace .aw-statement-dock { background: var(--panel); border-color: var(--border); }
+.activity-workspace .aw-dock-step { background: var(--panel-2); border-color: var(--border-soft); }
+.activity-workspace .aw-controls { background: var(--panel-2); border-color: var(--border); }
+.activity-workspace .aw-io-field textarea { background: var(--editor-bg); border-color: var(--border); }
+.activity-workspace .aw-console-ready { flex: 1; background: var(--panel-2); border-color: var(--border); }
+.activity-workspace .aw-console-flow > div { background: var(--panel); border-color: var(--border-soft); }
+
+.activity-workspace .aw-file-tab.active { background: var(--panel-2); border-color: var(--border); border-bottom-color: var(--accent); }
+.activity-workspace .aw-status-item { background: var(--panel-2); border-color: var(--border-soft); }
+.activity-workspace .aw-source-trigger { background: var(--panel-2); border-color: var(--border); color: var(--text-muted); }
+
+.activity-workspace .aw-result-summary,
+.activity-workspace .aw-feedback,
+.activity-workspace .aw-output-block,
+.activity-workspace .aw-tests,
+.activity-workspace .aw-live-log { background: var(--bg-soft); border-color: var(--border-soft); }
+
+/* Tool guidance lives in the Run/Judge rail. Statement remains a pure reading
+   surface and the editor remains a clean coding surface. */
+.activity-workspace .aw-editor-stack {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.activity-workspace .aw-editor-stack .aw-editor-host {
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
+  min-height: 190px;
+  overflow: hidden;
+}
+
+.activity-workspace .aw-editor-stack .aw-editor-host.hidden { display: none; }
+.activity-workspace .aw-toolguide-rail {
+  flex: 0 0 auto;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: visible;
+  margin: 10px 12px 0;
+  padding: 13px 13px 14px;
+  border: 1px solid rgba(109, 164, 210, .22);
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(460px 130px at 0 0, rgba(var(--accent-rgb), .075), transparent 70%),
+    var(--panel);
+  animation: aw-tool-enter 220ms var(--ease) both;
+}
+
+.activity-workspace .aw-guide-head,
+.activity-workspace .aw-tool-context-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--accent);
+  font: 750 10px/1 var(--sans);
+  letter-spacing: .075em;
+}
+
+.activity-workspace .aw-guide-head b,
+.activity-workspace .aw-tool-context-head b { color: var(--text-dim); font-size: 9px; font-weight: 650; }
+.activity-workspace .aw-toolguide-rail h2 { margin: 8px 0 4px; color: var(--text); font-size: 14px; letter-spacing: -.01em; }
+.activity-workspace .aw-toolguide-rail > p { max-width: 78ch; margin: 0 0 10px; color: var(--text-muted); font-size: 11px; line-height: 1.4; }
+.activity-workspace .aw-guide-rows { display: grid; grid-template-columns: 1fr; gap: 7px; }
+.activity-workspace .aw-guide-row { display: flex; gap: 7px; min-width: 0; padding: 8px 9px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--bg-soft); }
+.activity-workspace .aw-guide-row > b { flex: none; color: var(--accent); font: 700 10px/1 var(--mono); }
+.activity-workspace .aw-guide-row span { display: grid; gap: 3px; min-width: 0; }
+.activity-workspace .aw-guide-row strong { overflow: hidden; color: var(--text); font-size: var(--text-caption); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-guide-row small { color: var(--text-muted); font-size: var(--text-badge); line-height: 1.45; }
+.activity-workspace .aw-guide-foot { margin: 10px 0 0; color: var(--text-dim); font-size: var(--text-badge); line-height: 1.45; }
+.activity-workspace .aw-guide-foot b { color: var(--text-muted); font-weight: 700; }
+
+.activity-workspace .aw-tool-context {
+  flex: none;
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  animation: aw-tool-enter 220ms var(--ease) both;
+}
+
+.activity-workspace .aw-tool-context strong { display: block; margin-top: 8px; color: var(--text); font-size: 12px; }
+.activity-workspace .aw-tool-context p { margin: 4px 0 0; color: var(--text-dim); font-size: 10.5px; line-height: 1.4; }
+.activity-workspace .aw-console-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.activity-workspace .aw-console-tools > div { display: grid; gap: 4px; min-width: 0; padding: 9px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--bg-soft); }
+.activity-workspace .aw-console-tools b { overflow: hidden; color: var(--accent); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-console-tools span { color: var(--text-dim); font-size: 9.5px; line-height: 1.3; }
+.activity-workspace .aw-console-ready { flex: 1 1 auto; min-height: 0; }
+.activity-workspace .aw-console-ready,
+.activity-workspace .aw-tool-context,
+.activity-workspace .aw-toolguide-rail { font-family: var(--sans); }
+.activity-workspace .aw-console-ready,
+.activity-workspace .aw-toolguide-rail { animation: aw-tool-enter 220ms var(--ease) both; }
+.activity-workspace .aw-result > * { animation: aw-tool-enter 180ms var(--ease) both; }
+
+.activity-workspace .aw-tool-context,
+.activity-workspace .aw-console-ready,
+.activity-workspace .aw-controls,
+.activity-workspace .aw-output-block,
+.activity-workspace .aw-tests,
+.activity-workspace .aw-live-log,
+.activity-workspace .aw-io-field textarea,
+.activity-workspace .aw-file-tab,
+.activity-workspace .btn {
+  transition:
+    border-color 160ms var(--ease),
+    background-color 160ms var(--ease),
+    color 160ms var(--ease),
+    box-shadow 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+
+.activity-workspace .aw-tool-context,
+.activity-workspace .aw-toolguide-rail,
+.activity-workspace .aw-console-ready,
+.activity-workspace .aw-controls,
+.activity-workspace .aw-output-block,
+.activity-workspace .aw-tests,
+.activity-workspace .aw-live-log {
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-workspace .aw-tool-context::before,
+.activity-workspace .aw-console-ready::before,
+.activity-workspace .aw-controls::before,
+.activity-workspace .aw-output-block::before,
+.activity-workspace .aw-tests::before,
+.activity-workspace .aw-live-log::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    130px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(var(--accent-rgb), .09),
+    transparent 78%
+  );
+  transition: opacity 220ms var(--ease);
+}
+
+.activity-workspace .aw-tool-context:hover::before,
+.activity-workspace .aw-console-ready:hover::before,
+.activity-workspace .aw-controls:hover::before,
+.activity-workspace .aw-output-block:hover::before,
+.activity-workspace .aw-tests:hover::before,
+.activity-workspace .aw-live-log:hover::before {
+  opacity: 1;
+}
+
+.activity-workspace .aw-tool-context > *,
+.activity-workspace .aw-console-ready > *,
+.activity-workspace .aw-controls > *,
+.activity-workspace .aw-output-block > *,
+.activity-workspace .aw-tests > *,
+.activity-workspace .aw-live-log > * {
+  position: relative;
+  z-index: 1;
+}
+
+.activity-workspace .btn:hover,
+.activity-workspace .aw-file-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 18px -16px rgba(var(--accent-rgb), .9);
+}
+
+.activity-workspace .btn:active,
+.activity-workspace .aw-file-tab:active {
+  transform: translateY(0);
+}
+
+.activity-workspace .aw-segment button:hover,
+.activity-workspace .cf-gap:hover,
+.activity-workspace .aw-guide-row:hover,
+.activity-workspace .aw-console-tools > div:hover {
+  border-color: rgba(var(--accent-rgb), .35);
+  background: rgba(69, 200, 255, .075);
+}
+
+.activity-workspace .aw-output-block.is-placeholder pre {
+  color: var(--text-dim);
+}
+
+@keyframes aw-tool-enter {
+  from { opacity: .35; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1180px) {
+  .activity-workspace .aw-toolguide-rail { margin-inline: 10px; }
+}
+
+@media (max-width: 760px) {
+  .activity-workspace .aw-editor-stack .aw-editor-host { min-height: 300px; }
+  .activity-workspace .aw-guide-rows,
+  .activity-workspace .aw-console-tools { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-workspace .aw-toolguide-rail,
+  .activity-workspace .aw-tool-context,
+  .activity-workspace .aw-console-ready,
+  .activity-workspace .aw-result > * { animation: none; }
+
+  .activity-workspace .btn:hover,
+  .activity-workspace .aw-file-tab:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-workspace { background: #07101f; }
+}

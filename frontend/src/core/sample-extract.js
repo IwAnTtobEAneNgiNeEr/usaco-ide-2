@@ -55,7 +55,11 @@ const NOISE_LINE = [
   /^bình\s*luận(?:\s*\(\d+\))?$/i, /^binh\s*luan(?:\s*\(\d+\))?$/i, /^comments?$/i,
   /^gửi\s*bài\s*giải$/i, /^gui\s*bai\s*giai$/i, /^nộp\s*bài$/i, /^submit$/i,
   /^báo\s*cáo\s*vấn\s*đề$/i, /^bao\s*cao\s*van\s*de$/i, /^report(?:\s*issue)?$/i,
-  /^chia\s*sẻ$/i, /^share$/i
+  /^chia\s*sẻ$/i, /^share$/i,
+  // A stray fence-language hint left behind as its OWN line by a naive
+  // ```lang → plain-text converter that stripped the backticks but not the
+  // language word (real statement found 2026-07-07: "Input 01:\n\ntext\n6 7\n...").
+  /^(?:plain\s*text|plaintext|text)$/i
 ];
 
 // Known programming languages, used to drop a stray language-selector line
@@ -94,6 +98,12 @@ export function cleanStatementNoise(text) {
 export function normalizeStatementStructure(text) {
   let s = String(text || "").replace(/\r\n?/g, "\n");
   if (!s.trim()) return s;
+  // Codeforces-paste artifact: the "Copy" button's text sits glued directly
+  // onto "Input"/"Output" with no separating whitespace ("InputCopy",
+  // "OutputCopy") because the page's DOM has no space between them. Split it
+  // off BEFORE anything else runs, or the label is unrecognizable to every
+  // matcher below (real bug found 2026-07-07 on an actual CF-pasted problem).
+  s = s.replace(/\b((?:Sample\s+)?(?:Input|Output))Copy\b/gi, "$1");
   s = s.replace(/([^\n(])\s*((?:\d+\s*[.)]\s*)?(?:Dữ\s*liệu\s*vào|Đầu\s*vào|Kết\s*quả\s*ra|Đầu\s*ra|Ràng\s*buộc|Giới\s*hạn|Constraints?|Ví\s*dụ\s*mẫu|Ví\s*dụ|Examples?|Notes?|Ghi\s*chú))/giu, "$1\n$2");
   s = s.replace(/([^\n])\s*((?:Sample\s+Input|Sample\s+Output|VÍ\s*DỤ|Ví\s*dụ|Example)\s*\d+\s*:?\s*)/gu, "$1\n$2");
   s = s.replace(/([^\n])\s*((?:INPUT|Input|OUTPUT|Output)\s*\d*\s*:)/g, "$1\n$2");
@@ -116,15 +126,25 @@ function normHead(s) {
 }
 
 const EXAMPLE_SECTION_KEYS = new Set(["example", "examples", "sample", "samples", "vi du", "vi du mau", "test vi du"]);
-const SECTION_KEYS = new Set([
-  ...EXAMPLE_SECTION_KEYS,
+// Input/Output-shaped keys are AMBIGUOUS: they show up both as a top-level
+// "how the format works" header AND as the per-example label right before
+// the actual sample data ("Ví dụ\n```...``` \n**Kết quả**\n```...```"). A
+// real bug this caused (2026-07-07): once inside an "examples" section, the
+// output-side label alone was misread as leaving that section, silently
+// discarding the entire second half (the expected output) of the sample.
+// Classified separately so exampleSectionBodies can treat them as "stay
+// inside the current example" rather than "end the section".
+const IO_SECTION_KEYS = new Set([
   "input", "dau vao", "du lieu vao", "du lieu", "input format", "standard input", "dinh dang vao",
   "output", "dau ra", "ket qua", "ket qua ra", "output format", "standard output", "dinh dang ra",
+]);
+const OTHER_SECTION_KEYS = new Set([
   "constraint", "constraints", "rang buoc", "gioi han", "limit", "limits",
   "subtask", "subtasks", "scoring", "cham diem", "phan diem",
   "note", "notes", "ghi chu", "giai thich", "luu y", "explanation", "remark", "remarks",
   "de bai", "bai toan", "problem", "mo ta", "description", "statement", "noi dung", "tom tat de"
 ]);
+const SECTION_KEYS = new Set([...EXAMPLE_SECTION_KEYS, ...IO_SECTION_KEYS, ...OTHER_SECTION_KEYS]);
 
 function classifySectionLabel(line) {
   const heading = String(line || "").match(/^\s*#{1,6}\s+(.*)$/);
@@ -136,15 +156,26 @@ function classifySectionLabel(line) {
   const h = normHead(
     stripped
       .replace(/^\d+\s*[.)]\s*/, "")
+      .replace(/^\*{1,2}\s*/, "").replace(/\s*\*{1,2}$/, "") // strip **bold**/*italic* header markers
       .replace(/\s*\([^)]*\)\s*$/, "")
   );
   if (!h) return null;
   if (/^(?:sample\s+)?(?:input|output)\s*#?\s*\d+\b/.test(h)) return null;
   for (const key of SECTION_KEYS) {
     if (h === key || h.startsWith(key + " ") || h.endsWith(" " + key)) {
-      return EXAMPLE_SECTION_KEYS.has(key) ? "examples" : "other";
+      if (EXAMPLE_SECTION_KEYS.has(key)) return "examples";
+      if (IO_SECTION_KEYS.has(key)) return "io";
+      return "other";
     }
   }
+  // A real markdown heading (`## ...`) we don't recognize is still a hard
+  // section boundary — real bug found 2026-07-07: appending ANY new `##`
+  // section after the last worked example (e.g. a Synthesizer "upgraded
+  // variant" note) with no recognized keyword let the trailing example's
+  // output section run straight into that new section's text, corrupting the
+  // sample. Headings are an unambiguous authoring signal; never swallow one
+  // into a running example/IO block just because its label is unfamiliar.
+  if (heading) return "other";
   return null;
 }
 
@@ -165,9 +196,16 @@ function exampleSectionBodies(text) {
     if (/^\s*```+/.test(line)) inFence = !inFence;
     if (!inFence) {
       const kind = classifySectionLabel(line);
+      if (kind === "io" && curType === "examples") {
+        // An Input/Output label encountered WHILE already inside an example
+        // is part of THAT example (the line between its two halves) — never
+        // a section boundary. Keep it in curLines for fromLabelledText to read.
+        curLines.push(line);
+        continue;
+      }
       if (kind) {
         flush();
-        curType = kind;
+        curType = kind === "io" ? "other" : kind;
         continue;
       }
     }
@@ -259,22 +297,41 @@ function fromLabelledText(text) {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const blocks = [];
   let cur = null, started = false;
+  let preData = []; // lines seen before ANY label — see the "implicit input" note below
   for (const line of lines) {
     const t = line.trim();
     const lab = matchLabel(t);
     if (lab) {
+      // "Ví dụ\n4 5\n1 2 1\n...\nĐầu ra\n6" — a real, common shape: the example
+      // section header alone introduces the input (no separate "Input:"
+      // label at all), and only the OUTPUT gets an explicit label. Without
+      // this, the input data (collected into preData below, since `cur` was
+      // still null) would be silently dropped entirely. Guarded by
+      // isProseBlock so a genuine "no example here" statement (prose before
+      // the first Output/Constraints-style label) never gets fabricated
+      // into a fake sample.
+      if (lab.kind === "out" && !started && preData.length && !isProseBlock(trimBlock(preData))) {
+        blocks.push({ kind: "in", data: preData });
+      }
+      preData = [];
       if (cur) blocks.push(cur);
       cur = { kind: lab.kind, data: lab.inline ? [lab.inline] : [] };
       started = true;
       continue;
     }
     // A non-I/O section header closes the current block (its text is not part of
-    // the sample) and pauses collection until the next Input/Output label.
-    if (started && isOtherSectionHeader(t)) {
+    // the sample) and pauses collection until the next Input/Output label. Same
+    // heading-is-a-hard-boundary rule as classifySectionLabel, for the path
+    // where fromLabelledText runs directly on the whole statement (no
+    // recognized "Ví dụ" section wrapping it) — an unrecognized `## heading`
+    // must still cut off an in-progress in/out block instead of being read as
+    // more of its data.
+    if (started && (isOtherSectionHeader(t) || /^\s*#{1,6}\s+/.test(line))) {
       if (cur) { blocks.push(cur); cur = null; }
       continue;
     }
     if (cur) cur.data.push(line);
+    else preData.push(line);
   }
   if (cur) blocks.push(cur);
 

@@ -2,6 +2,8 @@
 // long to study (preset OR a custom minute count); when it finishes it just
 // signals you're done. (The AI Coach is always available — no timer gate.)
 
+import { api } from "./api.js";
+
 export function initTimer(app) {
   const { el } = app;
   const customEl = document.getElementById("timer-custom");
@@ -69,6 +71,7 @@ export function initTimer(app) {
     state.intervalId = setInterval(tick, 250);
     el.timerDisplay.classList.remove("done");
     render();
+    if (app.state.currentId) api.recordEvent(app.state.currentId, "timer", { action: "start", totalSec: state.total });
   }
   function pause() {
     state.running = false;
@@ -90,7 +93,20 @@ export function initTimer(app) {
     // Pure focus timer now — the Coach is always available, so just celebrate
     // without hijacking the panel the user is looking at.
     app.toast("Hết giờ tập trung 🎉", "ok");
+    if (app.state.currentId) api.recordEvent(app.state.currentId, "timer", { action: "finish", totalSec: state.total });
+    // The Khoảnh Khắc slot turns this into a session-end card with ONE next
+    // move ("Tiếp tục +10 phút") — README-AUTOPILOT.md flow v2.
+    if (app.bus) app.bus.emit("timer:done", { totalSec: state.total });
   }
+
+  // Public: extend the session by n minutes and keep going (session-end card CTA).
+  app.timerExtend = (min) => {
+    const m = Math.min(180, Math.max(1, Math.round(Number(min) || 10)));
+    state.total = m * 60;
+    state.remaining = m * 60;
+    start();
+    if (app.state.currentId) api.recordEvent(app.state.currentId, "timer", { action: "extend", totalSec: state.total });
+  };
 
   // Apply a minute count from either the preset select or the custom input.
   function setMinutes(min, { fromCustom } = {}) {

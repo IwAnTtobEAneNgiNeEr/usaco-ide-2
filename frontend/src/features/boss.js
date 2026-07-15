@@ -11,19 +11,30 @@ import { escapeHtml } from "../md.js";
 let cached = null;     // last /api/boss payload — repainted instantly on re-renders
 let loading = false;
 
+function challengeMark(state = "ready") {
+  return "";
+}
+
+function challengeTitle(title, week) {
+  const clean = String(title || "")
+    .replace(/^\s*[⚔️🐲]+\s*/u, "")
+    .replace(/^Boss\s+\d{4}-W\d+\s*[—–-]\s*/i, "");
+  return clean ? `Thử thách ${week} — ${clean}` : `Thử thách tuần ${week}`;
+}
+
 function card(inner, mod = "") {
   return `<div class="jh-boss ${mod}">${inner}</div>`;
 }
 
 function render(s) {
   if (!s) {
-    return card(`<div class="jh-boss-head"><span class="jh-boss-sigil">⚔️</span>
-      <div class="jh-boss-main"><div class="jh-boss-title">Boss tuần</div>
-      <div class="jh-boss-sub">Đang dò la hang ổ…</div></div></div>`);
+    return card(`<div class="jh-boss-head">${challengeMark("loading")}
+      <div class="jh-boss-main"><div class="jh-boss-kicker">Thử thách thích ứng</div><div class="jh-boss-title">Đang chuẩn bị thử thách tuần</div>
+      <div class="jh-boss-sub">Hệ thống đang phân tích lịch sử luyện tập của bạn.</div></div></div>`);
   }
   if (s.error) {
-    return card(`<div class="jh-boss-head"><span class="jh-boss-sigil">⚔️</span>
-      <div class="jh-boss-main"><div class="jh-boss-title">Boss tuần ${escapeHtml(s.week || "")}</div>
+    return card(`<div class="jh-boss-head">${challengeMark("error")}
+      <div class="jh-boss-main"><div class="jh-boss-kicker">Thử thách thích ứng</div><div class="jh-boss-title">Tuần ${escapeHtml(s.week || "")}</div>
       <div class="jh-boss-sub">${escapeHtml(s.error)}</div></div></div>`);
   }
 
@@ -37,22 +48,24 @@ function render(s) {
       : `Chưa đủ dữ liệu điểm yếu — boss sẽ thử tổng lực cơ bản.`;
     return card(`
       <div class="jh-boss-head">
-        <span class="jh-boss-sigil pulse">🐲</span>
+        ${challengeMark("ready")}
         <div class="jh-boss-main">
-          <div class="jh-boss-title">Boss tuần ${week} <span class="jh-boss-xp">+${s.xpReward} XP</span></div>
+          <div class="jh-boss-kicker">Thử thách tuần · ${week}</div>
+          <div class="jh-boss-title">Bài đấu được thiết kế theo điểm yếu <span class="jh-boss-xp">+${s.xpReward} XP</span></div>
           <div class="jh-boss-sub">${pitch}</div>
         </div>
-        <button class="btn jh-boss-btn" data-boss="summon" type="button">🔮 Triệu hồi Boss</button>
+        <button class="btn jh-boss-btn" data-boss="summon" type="button">Tạo thử thách <span aria-hidden="true">→</span></button>
       </div>`, "summonable");
   }
 
   const b = s.boss;
   if (!b.exists) {
     return card(`
-      <div class="jh-boss-head"><span class="jh-boss-sigil">🌫️</span>
+      <div class="jh-boss-head">${challengeMark("error")}
         <div class="jh-boss-main">
-          <div class="jh-boss-title">Boss tuần ${week}</div>
-          <div class="jh-boss-sub">Boss đã bị xóa khỏi kho bài. Tuần sau nó sẽ trở lại — mạnh hơn.</div>
+          <div class="jh-boss-kicker">Thử thách tuần · ${week}</div>
+          <div class="jh-boss-title">Thử thách không còn trong kho bài</div>
+          <div class="jh-boss-sub">Một thử thách thích ứng mới sẽ mở vào tuần sau.</div>
         </div></div>`);
   }
 
@@ -60,10 +73,11 @@ function render(s) {
   if (b.status === "defeated") {
     return card(`
       <div class="jh-boss-head">
-        <span class="jh-boss-sigil">🏆</span>
+        ${challengeMark("won")}
         <div class="jh-boss-main">
-          <div class="jh-boss-title">Đã hạ gục Boss ${week}! <span class="jh-boss-xp won">+${s.xpReward} XP</span></div>
-          <div class="jh-boss-sub">“${escapeHtml(b.taunt || "")}” — nó đã phải nuốt lời. Boss mới xuất hiện vào tuần sau.</div>
+          <div class="jh-boss-kicker">Hoàn thành · ${week}</div>
+          <div class="jh-boss-title">Đã chinh phục thử thách tuần <span class="jh-boss-xp won">+${s.xpReward} XP</span></div>
+          <div class="jh-boss-sub">Kết quả đã được ghi vào tiến trình. Thử thách mới mở vào tuần sau.</div>
         </div>
         <button class="btn btn-ghost btn-sm" data-boss="open" data-id="${escapeHtml(b.problemId)}" type="button">Xem lại trận</button>
       </div>`, "defeated");
@@ -72,9 +86,10 @@ function render(s) {
   // --- alive: the fight is on ---
   return card(`
     <div class="jh-boss-head">
-      <span class="jh-boss-sigil pulse">🐲</span>
+      ${challengeMark("live")}
       <div class="jh-boss-main">
-        <div class="jh-boss-title">${escapeHtml(b.title)} <span class="jh-boss-xp">+${s.xpReward} XP</span></div>
+        <div class="jh-boss-kicker">Đang diễn ra · ${week}</div>
+        <div class="jh-boss-title">${escapeHtml(challengeTitle(b.title, s.week || ""))} <span class="jh-boss-xp">+${s.xpReward} XP</span></div>
         <div class="jh-boss-sub">“${escapeHtml(b.taunt || "Ngươi dám thách thức ta?")}”</div>
         <div class="jh-boss-meta">
           <span class="jh-tag">${escapeHtml(b.topic || "")}</span>
@@ -82,7 +97,7 @@ function render(s) {
           ${b.attempts ? `<span class="jh-tag">${b.attempts} lượt đã đánh</span>` : ""}
         </div>
       </div>
-      <button class="btn jh-boss-btn" data-boss="open" data-id="${escapeHtml(b.problemId)}" type="button">⚔️ Vào trận</button>
+      <button class="btn jh-boss-btn" data-boss="open" data-id="${escapeHtml(b.problemId)}" type="button">Mở thử thách <span aria-hidden="true">→</span></button>
     </div>`, "alive");
 }
 

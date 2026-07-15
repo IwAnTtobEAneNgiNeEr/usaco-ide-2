@@ -24,10 +24,10 @@ function renderReview(review) {
     : "";
   return [
     review.tongQuan ? `<p class="mk-overview">${escapeHtml(review.tongQuan)}</p>` : "",
-    list("❌ Sai tư duy ở đâu", review.saiTuDuy, "mk-bad"),
-    list("➕ Trường hợp còn thiếu", review.truongHopThieu),
-    list("⚠ Edge case chưa xử lý", review.edgeCase, "mk-warn"),
-    list("🛠 Kỹ thuật nên dùng", review.kyThuatNenDung, "mk-tech")
+    list("× Sai tư duy ở đâu", review.saiTuDuy, "mk-bad"),
+    list("＋ Trường hợp còn thiếu", review.truongHopThieu),
+    list("! Edge case chưa xử lý", review.edgeCase, "mk-warn"),
+    list("§ Kỹ thuật nên dùng", review.kyThuatNenDung, "mk-tech")
   ].join("") || `<p class="muted">AI không tìm thấy nhận xét cụ thể nào.</p>`;
 }
 
@@ -73,7 +73,7 @@ export function initWaReview(app) {
   fixBtn.id = "btn-auto-fix";
   fixBtn.className = "btn btn-ai btn-sm";
   fixBtn.type = "button";
-  fixBtn.textContent = "✨ Auto-Fix";
+  fixBtn.textContent = "Tự sửa";
   fixBtn.title = "AI tìm dòng sai và sinh bản vá";
   banner.appendChild(fixBtn);
   const fixBtnLabel = fixBtn.textContent;

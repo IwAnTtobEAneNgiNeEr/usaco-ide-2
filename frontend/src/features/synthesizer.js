@@ -16,7 +16,7 @@ function buildModal() {
   overlay.className = "modal-overlay hidden";
   overlay.innerHTML = `
     <div class="modal modal-wide synth-modal">
-      <h2 class="modal-title">📈 Bản nâng cấp · vì sao cần kỹ thuật mạnh hơn</h2>
+      <h2 class="modal-title">Bản nâng cấp · vì sao cần kỹ thuật mạnh hơn</h2>
       <p class="panel-hint">AI đẩy ràng buộc của bài lên để cách giải cũ "hỏng", rồi chỉ ra kỹ thuật phù hợp hơn và điểm khác biệt cốt lõi. Không đưa lời giải đầy đủ.</p>
       <div id="synth-body" class="synth-body"></div>
       <div class="modal-actions">
@@ -135,26 +135,45 @@ export function initSynthesizer(app) {
     const meta = app.state.meta || {};
     createBtn.disabled = true;
     try {
-      const note = [
-        `# Bản nâng cấp của: ${meta.title || ""}`,
-        "",
+      // Bug fixed 2026-07-07 (user report: "nó không tự sinh test case, cũng
+      // chẳng có đề mà chỉ từ 1 dòng ngắn ngủi"). Two things were wrong:
+      //   1. The new problem's statement was ONLY the delta note — no I/O
+      //      format, no worked example — so extractSamples/test-gen had
+      //      nothing to read at all.
+      //   2. Creating a problem via this API call never ran the paste→
+      //      analyze→gen-test pipeline that a normal statement paste triggers.
+      // Fix: keep the ORIGINAL statement's full I/O format + example intact
+      // (still valid for the harder variant — only the constraints changed)
+      // and append the upgrade delta as a clearly marked new constraints
+      // section, THEN trigger the exact same pipeline a manual paste uses.
+      const originalStatement = app.el.ioStatement ? app.el.ioStatement.value : "";
+      const upgradeSection = [
+        `## Bản nâng cấp của: ${meta.title || ""}`,
         lastResult.baiNangCap,
         "",
         lastResult.rangBuocMoi ? `**Ràng buộc mới:** ${lastResult.rangBuocMoi}` : "",
-        lastResult.kyThuatMoi ? `**Kỹ thuật gợi ý:** ${lastResult.kyThuatMoi} (${lastResult.doPhucTapMoi || ""})` : ""
+        lastResult.kyThuatMoi ? `**Kỹ thuật gợi ý:** ${lastResult.kyThuatMoi} (${lastResult.doPhucTapMoi || ""})` : "",
       ].filter(Boolean).join("\n");
+      const statement = originalStatement.trim()
+        ? `${originalStatement.trim()}\n\n${upgradeSection}`
+        : upgradeSection; // no original loaded (rare) — degrade to the delta alone, same as before
+
       const { problem } = await api.createProblem({
         title: `${meta.title || "Bài"} (nâng cấp)`,
         source: meta.source || "",
         topic: meta.topic || "",
         difficulty: "hard",
         status: "learning",
-        statement: note
+        statement,
       });
       await app.refreshProblems();
-      app.selectProblem(problem.id);
+      await app.selectProblem(problem.id);
       close();
-      app.toast("Đã tạo bài nâng cấp — bắt đầu giải nhé.", "ok");
+      app.toast("Đã tạo bài nâng cấp — đang tự phân tích đề &amp; sinh test…", "ok");
+      // Same auto-pipeline a manual paste triggers (statement.js's
+      // runStatementPipeline) — the student lands on a problem that already
+      // has tests, not an empty shell they have to click into Problem tab for.
+      if (app.runStatementPipeline) app.runStatementPipeline();
     } catch (err) {
       app.toast(err.message, "err");
     } finally {

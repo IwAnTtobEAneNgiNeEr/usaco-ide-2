@@ -102,7 +102,7 @@ export function initWorkspaces(app) {
     host.className = "ws-switch";
     host.innerHTML = `
       <button id="ws-pill" class="ws-pill" type="button" aria-haspopup="true" title="Đổi không gian làm việc">
-        <span class="ws-pill-icon">🎯</span><span class="ws-pill-name">Tự do</span><span class="ws-pill-caret">▾</span>
+        <span class="ws-pill-icon">·</span><span class="ws-pill-name">Tự do</span><span class="ws-pill-caret">▾</span>
       </button>
       <div id="ws-popover" class="ws-popover hidden" role="menu">
         ${wsList.map((w, i) => `

@@ -15,6 +15,7 @@
   overflow-y: auto;
   padding: 0;
   text-align: left;
+  container-type: inline-size;
 }
 
 .journey-home {
@@ -38,7 +39,7 @@
   margin-bottom: 22px;
 }
 .jh-greet { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
-.jh-name { background: var(--accent-grad, linear-gradient(135deg, #5b9bff, #7b86ff)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
+.jh-name { color: var(--accent); cursor: pointer; }
 .jh-quote { margin-top: 6px; font-size: 13px; color: var(--text-dim); font-style: italic; }
 .jh-name-input {
   font: inherit; color: var(--text);
@@ -122,8 +123,7 @@
 /* ===================== Cards grid ===================== */
 
 .jh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-@media (max-width: 1500px) { .journey-home { max-width: 860px; } }
-@media (max-width: 1280px) { .jh-grid { grid-template-columns: 1fr; } }
+@container (max-width: 720px) { .jh-grid { grid-template-columns: 1fr; } }
 
 .jh-card {
   border: 1px solid var(--border);
@@ -157,7 +157,6 @@
 .jh-continue-card {
   display: block; width: 100%; text-align: left; cursor: pointer;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
   border-radius: 10px;
   background: var(--panel-2, rgba(127, 127, 127, .07));
   padding: 12px 14px;
@@ -186,7 +185,7 @@
 
 .jh-week { display: flex; align-items: flex-end; gap: 10px; height: 84px; padding: 4px 4px 0; }
 .jh-day { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
-.jh-day-bar { width: 70%; max-width: 34px; border-radius: 5px 5px 2px 2px; background: rgba(127, 127, 127, .2); transition: height .4s ease; }
+.jh-day-bar { width: 70%; max-width: 34px; border-radius: 5px 5px 2px 2px; background: rgba(127, 127, 127, .2); }
 .jh-day-bar.on { background: var(--accent); opacity: .75; }
 .jh-day-bar.ac { background: #22c55e; }
 .jh-day.today .jh-day-label { color: var(--accent); font-weight: 800; }
@@ -209,7 +208,7 @@
 /* ----- onboarding hero ----- */
 
 .jh-hero { text-align: center; padding: 48px 20px 30px; }
-.jh-hero-glyph { font-family: var(--mono); font-size: 56px; background: var(--accent-grad, linear-gradient(135deg, #5b9bff, #7b86ff)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
+.jh-hero-glyph { font-family: var(--mono); font-size: 56px; color: var(--accent); font-weight: 700; }
 .jh-hero-title { font-size: 22px; color: var(--text); margin: 14px 0 6px; }
 .jh-hero-sub { font-size: 13px; color: var(--text-dim); }
 .jh-steps { max-width: 430px; margin: 20px auto; display: flex; flex-direction: column; gap: 10px; text-align: left; }
@@ -275,14 +274,14 @@
     radial-gradient(300px 140px at 50% 0%, var(--accent-soft), transparent 70%),
     var(--bg-soft);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .6);
-  animation: jh-pop .45s cubic-bezier(.2, 1.4, .4, 1);
+  animation: jh-pop .45s cubic-bezier(.22, 1, .36, 1);
 }
 @keyframes jh-pop {
   from { transform: scale(.6); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 .jh-levelup-burst { font-size: 40px; color: var(--accent); animation: jh-flicker 1s ease-in-out infinite; }
-.jh-levelup-title { font-size: 26px; font-weight: 900; letter-spacing: 1px; margin-top: 8px; background: var(--accent-grad, linear-gradient(135deg, #5b9bff, #7b86ff)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.jh-levelup-title { font-size: 26px; font-weight: 900; letter-spacing: 1px; margin-top: 8px; color: var(--accent); }
 .jh-levelup-name { font-size: 14px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
 
 /* ===================== Quest actionable + go arrow ===================== */
@@ -464,4 +463,419 @@
   display: flex; gap: 16px; padding: 9px 16px;
   border-top: 1px solid var(--border-soft);
   font-size: 11px; color: var(--text-dim);
+}
+
+/* ===================== Journey 2026 refinement =====================
+   Uses the statement workspace's restrained cyan, crisp rules and layered
+   navy surfaces. Kept as a final cascade so legacy themes remain compatible. */
+
+.journey-home {
+  width: min(100%, 1080px);
+  max-width: none;
+  padding: clamp(24px, 3.2cqi, 42px) clamp(22px, 4cqi, 54px) 64px;
+}
+.jh-head { align-items: flex-start; margin-bottom: 26px; }
+.jh-greet { font-size: clamp(23px, 2.2cqi, 30px); font-weight: 650; letter-spacing: -.035em; }
+.jh-quote { max-width: 62ch; margin-top: 8px; font-size: 12.5px; line-height: 1.55; font-style: normal; }
+.jh-streak {
+  position: relative; overflow: hidden; min-width: 154px; padding: 12px 16px;
+  border-radius: 10px; background: color-mix(in srgb, var(--bg-soft) 92%, var(--accent) 8%);
+}
+.jh-streak::before { content: "STREAK"; position: absolute; top: 7px; right: 9px; font: 600 8px/1 var(--mono); letter-spacing: .14em; color: var(--text-dim); }
+.jh-flame { font-size: 22px; }
+.jh-streak-label { text-transform: none; letter-spacing: 0; }
+
+.jh-level {
+  position: relative; padding: 18px 20px; border-radius: 11px; overflow: hidden;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--bg-soft) 94%, var(--accent) 6%), var(--bg-soft));
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 7%, transparent);
+}
+.jh-level::after { content: "LEVEL PROGRESS"; position: absolute; top: 10px; right: 14px; font: 600 8px/1 var(--mono); letter-spacing: .14em; color: var(--text-dim); }
+.jh-level-ring { width: 56px; height: 56px; border-radius: 9px; background: var(--accent); padding: 1px; transform: rotate(3deg); }
+.jh-level-num { border-radius: 8px; transform: rotate(-3deg); }
+.jh-xpbar { height: 6px; border-radius: 1px; }
+.jh-xpbar-fill { border-radius: 1px; }
+
+.jh-grid { grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 12px; margin-bottom: 12px; }
+.jh-card {
+  position: relative; border-color: color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+  border-radius: 11px; padding: 18px 18px 16px; overflow: hidden;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--bg-soft) 97%, var(--accent) 3%), var(--bg-soft));
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 5%, transparent);
+  transition: border-color .2s ease, transform .2s ease, background .2s ease;
+}
+.jh-card::before { content: ""; position: absolute; width: 38px; height: 1px; top: -1px; left: 18px; background: var(--accent); opacity: .8; }
+.jh-card:hover { border-color: color-mix(in srgb, var(--border) 50%, var(--accent) 50%); transform: translateY(-1px); }
+.jh-card-head { margin-bottom: 14px; font-size: 12.5px; letter-spacing: -.01em; }
+.jh-card-sub { margin-left: auto; font-family: var(--mono); font-size: 9.5px; letter-spacing: .03em; }
+
+.jh-quest { padding: 9px 3px; border-radius: 5px; }
+.jh-quest + .jh-quest, .jh-skill + .jh-skill { border-top-style: solid; border-color: color-mix(in srgb, var(--border-soft) 72%, transparent); }
+.jh-quest-icon { width: 22px; font-size: 15px; filter: saturate(.75); }
+.jh-quest-track { height: 3px; border-radius: 0; }
+.jh-quest-track span { border-radius: 0; }
+.jh-quest-xp { border-radius: 3px; background: transparent; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); }
+
+.jh-continue-card { border-radius: 8px; border-left-width: 1px; padding: 14px 15px; background: color-mix(in srgb, var(--bg) 48%, transparent); position: relative; }
+.jh-continue-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--accent); }
+.jh-continue-card:hover { transform: translateY(-1px); }
+.jh-actions .btn { border-radius: 6px; }
+.jh-tag, .jh-verdict { border-radius: 3px; }
+.jh-week { height: 100px; gap: clamp(6px, 1.2cqi, 14px); }
+.jh-day-bar { max-width: 28px; border-radius: 2px 2px 0 0; }
+.jh-skill { padding: 7px 3px; }
+.jh-star.on { text-shadow: none; }
+
+/* Weekly challenge: editorial, symbolic, no game-character clip art. */
+.jh-boss {
+  position: relative; overflow: hidden; margin-bottom: 12px; padding: 18px 20px;
+  border-radius: 11px; border-color: color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--bg-soft) 91%, var(--accent) 9%), var(--bg-soft) 62%);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 6%, transparent);
+}
+.jh-boss::after { content: "WEEKLY / ADAPTIVE"; position: absolute; right: 16px; bottom: 9px; font: 600 8px/1 var(--mono); letter-spacing: .16em; color: var(--text-dim); opacity: .55; }
+.jh-boss.summonable, .jh-boss.alive, .jh-boss.defeated {
+  border-color: color-mix(in srgb, var(--border) 54%, var(--accent) 46%);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--bg-soft) 91%, var(--accent) 9%), var(--bg-soft) 62%);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 6%, transparent);
+}
+.jh-boss-head { gap: 16px; }
+.jh-boss-mark { width: 52px; height: 52px; flex: none; display: grid; place-items: center; color: var(--accent); }
+.jh-boss-mark svg { width: 48px; height: 48px; overflow: visible; filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--accent) 18%, transparent)); }
+.mark-shield { fill: color-mix(in srgb, var(--accent) 11%, var(--bg)); stroke: currentColor; stroke-width: 1.2; }
+.mark-ring, .mark-cross { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.jh-boss-mark.live .mark-ring, .jh-boss-mark.loading .mark-ring { animation: jh-mark-pulse 1.8s ease-in-out infinite; transform-origin: center; }
+.jh-boss-mark.won { color: #38c986; }
+.jh-boss-mark.error { color: var(--text-dim); }
+@keyframes jh-mark-pulse { 50% { transform: scale(1.18); opacity: .45; } }
+.jh-boss-kicker { margin-bottom: 5px; font: 650 9px/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.jh-boss-title { font-size: 14px; font-weight: 650; letter-spacing: -.015em; }
+.jh-boss-sub { margin-top: 6px; max-width: 68ch; font-style: normal; line-height: 1.45; }
+.jh-boss-xp { border-radius: 3px; color: var(--accent); background: color-mix(in srgb, var(--accent) 11%, transparent); }
+.jh-boss-btn { border-radius: 7px; color: var(--bg); background: var(--accent); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 18%, transparent); white-space: nowrap; }
+.jh-boss.alive .jh-boss-btn { background: var(--accent); }
+.jh-boss-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+@container (max-width: 720px) {
+  .jh-grid { grid-template-columns: 1fr; }
+  .jh-head, .jh-boss-head { align-items: stretch; }
+  .jh-boss-head { flex-wrap: wrap; }
+  .jh-boss-main { flex-basis: calc(100% - 72px); }
+  .jh-boss-btn { margin-left: 68px; }
+  .jh-streak::before { display: none; }
+}
+@container (max-width: 480px) {
+  .journey-home { padding-inline: 16px; }
+  .jh-head { flex-direction: column; }
+  .jh-streak { width: 100%; }
+  .jh-level { align-items: flex-start; }
+  .jh-level::after, .jh-boss::after { display: none; }
+  .jh-boss-mark { width: 42px; }
+  .jh-boss-main { flex-basis: calc(100% - 58px); }
+  .jh-boss-btn { width: 100%; margin-left: 0; }
+}
+
+/* =====================================================================
+   HOME v2 (REDESIGN-IA §2) — token-driven, replaces the retired neon skin.
+   Design language: raised warm-graphite panels lit by one accent lamp,
+   floating over the quiet animated starfield. Cards stay solid for legibility
+   (the sparkle drifts on top); depth comes from a hairline top highlight + a
+   soft ambient shadow. All colors flow from tokens so dark/light + accent
+   swaps keep working.
+   ===================================================================== */
+
+.journey-home {
+  --jh-lift: 0 10px 30px -18px rgba(0, 0, 0, .55);
+  --jh-lift-hi: 0 16px 42px -20px rgba(0, 0, 0, .6);
+  --jh-edge: inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.jh-unit { margin-bottom: 14px; }
+.jh-context:empty { margin: 0; }
+
+/* Entrance: a short, staggered rise. Enhances an already-visible layout. */
+@keyframes jh-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.journey-home .jh-stats,
+.journey-home .jh-unit { animation: jh-rise .42s cubic-bezier(.22, 1, .36, 1) backwards; }
+.journey-home .jh-stats { animation-delay: .02s; }
+.journey-home .jh-unit-next { animation-delay: .08s; }
+.journey-home .jh-plan { animation-delay: .14s; }
+.journey-home .jh-context { animation-delay: .2s; }
+@media (prefers-reduced-motion: reduce) {
+  .journey-home .jh-stats, .journey-home .jh-unit, .journey-home .jh-next { animation: none !important; }
+}
+
+/* ----- Stat strip: thin identity row, click opens Hồ sơ (S3) ----- */
+.jh-stats {
+  display: flex; align-items: stretch; gap: 0;
+  width: 100%; margin-bottom: 20px; padding: 12px 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 12px;
+  background: var(--bg-soft); cursor: pointer; text-align: left;
+  box-shadow: var(--jh-edge), var(--jh-lift);
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+  font-family: var(--sans);
+}
+.jh-stats:hover {
+  border-color: color-mix(in srgb, var(--border) 40%, var(--accent) 60%);
+  transform: translateY(-1px); box-shadow: var(--jh-edge), var(--jh-lift-hi);
+}
+.jh-stats:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.jh-stat { display: flex; flex-direction: column; gap: 3px; padding: 0 20px; min-width: 0; }
+.jh-stat:first-child { padding-left: 0; }
+.jh-stat-k { font: 700 9px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
+.jh-stat b { font: 750 21px/1 var(--mono); color: var(--text); letter-spacing: -.01em; }
+.jh-stat-tag { font-size: 10.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-stat.lit b { color: #fb923c; }
+.jh-stat-div { width: 1px; align-self: stretch; margin: 2px 0; background: color-mix(in srgb, var(--border) 70%, transparent); }
+.jh-stat-open { margin-left: auto; align-self: center; font-size: 11.5px; font-weight: 600; color: var(--text-dim); opacity: 0; transform: translateX(-4px); transition: opacity .18s ease, transform .18s ease; }
+.jh-stats:hover .jh-stat-open { opacity: 1; transform: none; color: var(--accent); }
+
+/* ----- Unit 1: Nước đi tiếp theo (the hero — the one loud CTA) ----- */
+.jh-unit-next { display: flex; flex-direction: column; gap: 8px; }
+.jh-next {
+  position: relative; display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 22px 24px; padding-right: 52px;
+  border: 1px solid color-mix(in srgb, var(--border) 55%, var(--accent) 45%);
+  border-radius: 14px;
+  background:
+    radial-gradient(720px 220px at 4% -40%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 66%),
+    var(--bg-soft);
+  color: var(--text); font-family: var(--sans);
+  box-shadow: var(--jh-edge), 0 16px 44px -22px color-mix(in srgb, var(--accent) 42%, #000);
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.jh-next:hover {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  transform: translateY(-2px);
+  box-shadow: var(--jh-edge), 0 22px 54px -22px color-mix(in srgb, var(--accent) 55%, #000);
+}
+.jh-next:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.jh-next-kicker { display: block; font: 700 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
+.jh-next-title { display: block; font-size: 19px; font-weight: 700; line-height: 1.25; letter-spacing: -.015em; color: var(--text); text-wrap: balance; }
+.jh-next-why { display: block; margin-top: 7px; font-size: 13px; line-height: 1.5; color: var(--text-dim); max-width: 62ch; }
+.jh-next-go {
+  position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  font-size: 15px; color: var(--accent); transition: transform .18s ease, background .18s ease;
+}
+.jh-next:hover .jh-next-go { transform: translateY(-50%) translateX(3px); background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+/* ----- Unit 1 alternates: quiet chips, never louder than the primary ----- */
+.jh-next-alts { display: flex; flex-direction: column; gap: 6px; }
+.jh-alt {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent); border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-soft) 55%, transparent);
+  color: var(--text-muted); font-family: var(--sans); font-size: 12.5px;
+  transition: border-color .14s ease, background .14s ease, color .14s ease, transform .14s ease;
+}
+.jh-alt:hover { border-color: color-mix(in srgb, var(--border) 45%, var(--accent) 55%); color: var(--text); background: var(--bg-soft); transform: translateX(2px); }
+.jh-alt.is-sealed { border-style: dashed; }
+.jh-alt-g { flex: none; width: 18px; text-align: center; color: var(--accent); font-family: var(--mono); opacity: .85; }
+.jh-alt-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-alt-x { flex: none; font-size: 11px; font-weight: 700; color: var(--text-dim); padding: 2px 9px; border-radius: 6px; border: 1px solid var(--border-soft); }
+.jh-alt-x:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ----- Unit 2: Kế hoạch hôm nay (list, no second loud CTA) ----- */
+.jh-plan {
+  padding: 18px 20px 15px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 14px; background: var(--bg-soft);
+  box-shadow: var(--jh-edge), var(--jh-lift);
+}
+.jh-plan-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.jh-plan-kicker { font: 700 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--text-dim); }
+.jh-plan-total { font-size: 11px; color: var(--text-dim); }
+.jh-plan-rows { display: flex; flex-direction: column; }
+.jh-plan-row {
+  display: flex; align-items: center; gap: 13px; width: 100%; padding: 11px 8px;
+  margin: 0 -8px; border: 0; border-radius: 9px;
+  background: transparent; text-align: left; cursor: pointer; color: var(--text);
+  font-family: var(--sans); transition: background .14s ease;
+}
+.jh-plan-rows > .jh-plan-row + .jh-plan-row { border-top: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent); }
+.jh-plan-row:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.jh-plan-glyph {
+  display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border)); border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent); font: 800 12px/1 var(--mono);
+}
+.jh-plan-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.jh-plan-title { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-plan-why { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-plan-min { margin-left: auto; flex: none; font: 600 11px var(--mono); color: var(--text-dim); }
+.jh-plan-more { margin: 8px 4px 0; font-size: 10.5px; color: var(--text-dim); }
+
+/* ----- Profile (S3) cards inherit the same depth for cohesion ----- */
+.jh-profile .jh-card, .jh-profile .jh-card-wide {
+  box-shadow: var(--jh-edge), var(--jh-lift);
+}
+
+/* ----- Card icon boxes (migrated from neon; used on the Hồ sơ cards) ----- */
+.jh-card-icon {
+  display: inline-grid; place-items: center; flex: none; width: 22px; height: 22px;
+  border: 1px solid color-mix(in srgb, var(--border) 55%, var(--accent) 45%); border-radius: 5px;
+  background: var(--accent-soft); color: var(--accent); font: 800 10px/1 var(--mono);
+}
+.jh-card-icon:empty { display: none; }
+.jh-card-icon[data-icon="quests"]::before { content: "✓"; }
+.jh-card-icon[data-icon="activity"]::before { content: "↗"; }
+.jh-card-icon[data-icon="skills"]::before { content: "◇"; }
+
+/* ----- S3 «Hồ sơ» surface ----- */
+.jh-profile-head { margin-bottom: 16px; }
+.jh-back {
+  display: inline-block; margin-bottom: 10px; padding: 4px 10px;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--bg-soft);
+  color: var(--text-muted); font-family: var(--sans); font-size: 12px; cursor: pointer;
+  transition: border-color .12s ease, color .12s ease;
+}
+.jh-back:hover { border-color: var(--accent); color: var(--text); }
+.jh-card-wide { margin-bottom: 12px; }
+.jh-actions-col { flex-direction: column; align-items: stretch; }
+.jh-actions-col .btn { justify-content: flex-start; }
+
+/* ----- Flash quiz extras (migrated from neon) ----- */
+.quiz-why { display: inline-block; margin: 6px 0; color: var(--text); font-weight: 500; font-style: normal; }
+.quiz-nav { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+/* "situation" archetype: choices are full mistake sentences, so let them wrap. */
+.quiz-choices-long .quiz-choice { align-items: flex-start; }
+.quiz-choices-long .quiz-choice > span:last-child { line-height: 1.45; }
+
+/* Practice hub: Main's navy ink plus Statement's restrained neon roles. */
+.jh-view-nav { display:flex; gap:5px; margin:0 0 16px; }
+.jh-view-nav button { min-height:30px; padding:0 11px; border:1px solid rgba(103,132,166,.22); border-radius:6px; background:rgba(5,11,20,.28); color:#8196ad; font:650 11px/1 var(--sans); cursor:pointer; }
+.jh-view-nav button:hover { border-color:rgba(67,200,255,.4); color:#cbeeff; }
+.jh-view-nav button.active { border-color:rgba(67,200,255,.5); background:rgba(67,200,255,.1); color:#43c8ff; }
+.jh-practice-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+.jh-practice-card { --role:var(--neon-cyan-rgb); position:relative; min-height:214px; padding:23px 23px 20px; display:grid; grid-template-columns:auto 1fr auto; grid-template-rows:auto auto 1fr auto; gap:9px 12px; overflow:hidden; border:1px solid rgba(var(--role),.31); border-radius:12px; background:radial-gradient(390px 160px at 0 -20%,rgba(var(--role),.105),transparent 72%),#0f1827; color:#dfeaff; text-align:left; cursor:pointer; box-shadow:inset 0 1px rgba(255,255,255,.025),0 18px 38px -34px rgba(var(--role),.8); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.jh-practice-card:first-child { grid-column:1/-1; min-height:190px; }
+.jh-practice-card[data-role="violet"] { --role:var(--neon-violet-rgb); }
+.jh-practice-card[data-role="mint"] { --role:var(--neon-mint-rgb); }
+.jh-practice-card[data-role="amber"] { --role:var(--neon-amber-rgb); }
+.jh-practice-card::before { content:""; position:absolute; top:-1px; right:22px; left:22px; height:1px; background:linear-gradient(90deg,transparent,rgba(var(--role),.8),transparent); }
+.jh-practice-card:hover { transform:translateY(-2px); border-color:rgba(var(--role),.58); box-shadow:inset 0 1px rgba(255,255,255,.035),0 22px 46px -30px rgba(var(--role),.42); }
+.jh-practice-card:focus-visible { outline:2px solid rgb(var(--role)); outline-offset:2px; }
+.jh-practice-card:disabled { cursor:progress; opacity:.72; transform:none; }
+.jh-practice-index { color:rgb(var(--role)); font:750 11px/1 var(--mono); letter-spacing:.08em; }
+.jh-practice-label { color:#8196ad; font:700 9px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; }
+.jh-practice-card strong { grid-column:1/-1; color:#f4f8ff; font-size:19px; line-height:1.2; letter-spacing:-.02em; }
+.jh-practice-copy { grid-column:1/-1; max-width:65ch; color:#9eafc3; font-size:12.5px; line-height:1.55; }
+.jh-practice-meta { align-self:end; color:rgba(var(--role),.9); font:600 10.5px/1.3 var(--mono); }
+.jh-practice-go { align-self:end; justify-self:end; color:#d9ecfa; font-size:11.5px; font-weight:700; }
+.jh-practice-card.is-loading .jh-practice-index { animation:jh-practice-pulse 1s ease-in-out infinite alternate; }
+@keyframes jh-practice-pulse { to { opacity:.3; } }
+@container (max-width:720px) { .jh-practice-grid { grid-template-columns:1fr; } .jh-practice-card:first-child { grid-column:auto; } }
+
+/* =====================================================================
+   Home v2.1 — one visual language (2026-07-10).
+   The Hôm nay units and Hồ sơ cards adopt the practice-card grammar:
+   role-tinted navy ink, a top hairline in the role color, a mono index +
+   small-caps kicker, and the same quiet hover lift. --role is an RGB
+   triplet from tokens.css (--neon-*-rgb), same as .jh-practice-card.
+   ===================================================================== */
+
+/* ---- Hồ sơ cards ---- */
+.jh-profile .jh-pcard {
+  --role: var(--neon-cyan-rgb);
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px 17px;
+  border: 1px solid rgba(var(--role), .26);
+  border-radius: 12px;
+  background:
+    radial-gradient(340px 130px at 0 -20%, rgba(var(--role), .09), transparent 72%),
+    #0f1827;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025), 0 18px 38px -34px rgba(var(--role), .7);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.jh-profile .jh-pcard::before {
+  content: "";
+  position: absolute;
+  top: -1px; right: 20px; left: 20px;
+  width: auto; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--role), .8), transparent);
+  opacity: 1;
+}
+.jh-profile .jh-pcard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--role), .5);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 22px 46px -30px rgba(var(--role), .4);
+}
+.jh-pcard[data-role="violet"] { --role: var(--neon-violet-rgb); }
+.jh-pcard[data-role="mint"]   { --role: var(--neon-mint-rgb); }
+.jh-pcard[data-role="amber"]  { --role: var(--neon-amber-rgb); }
+
+.jh-pcard-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.jh-pcard-index { color: rgb(var(--role)); font: 750 11px/1 var(--mono); letter-spacing: .08em; }
+.jh-pcard-label { color: #8196ad; font: 700 9px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+
+.jh-profile .jh-pcard .jh-card-head { color: #f4f8ff; font-size: 14.5px; letter-spacing: -.015em; }
+.jh-profile .jh-pcard .jh-card-sub { color: #8196ad; }
+.jh-profile .jh-pcard .jh-muted { color: #9eafc3; }
+
+/* ---- Hôm nay units ---- */
+.jh-unit[data-role] { --role: var(--neon-cyan-rgb); }
+.jh-unit[data-role="violet"] { --role: var(--neon-violet-rgb); }
+
+.jh-unit-next .jh-next {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(var(--role), .34);
+  border-radius: 12px;
+  background:
+    radial-gradient(420px 170px at 0 -25%, rgba(var(--role), .12), transparent 72%),
+    #0f1827;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .03), 0 18px 38px -32px rgba(var(--role), .8);
+}
+.jh-unit-next .jh-next::before {
+  content: "";
+  position: absolute;
+  top: -1px; right: 22px; left: 22px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--role), .85), transparent);
+}
+.jh-unit-next .jh-next:hover {
+  border-color: rgba(var(--role), .6);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04), 0 22px 46px -28px rgba(var(--role), .45);
+}
+.jh-unit-next .jh-next-kicker { color: rgb(var(--role)); }
+.jh-unit-next .jh-next-title { color: #f4f8ff; }
+.jh-unit-next .jh-next-why { color: #9eafc3; }
+
+.jh-plan {
+  position: relative;
+  overflow: hidden;
+  padding: 15px 18px 12px;
+  border: 1px solid rgba(var(--role), .22);
+  border-radius: 12px;
+  background:
+    radial-gradient(340px 130px at 0 -20%, rgba(var(--role), .08), transparent 72%),
+    #0f1827;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .02);
+}
+.jh-plan::before {
+  content: "";
+  position: absolute;
+  top: -1px; right: 20px; left: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--role), .7), transparent);
+}
+.jh-plan .jh-plan-kicker { color: rgb(var(--role)); font: 700 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+.jh-plan .jh-plan-title { color: #e8f0fb; }
+.jh-plan .jh-plan-why { color: #8fa2b8; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jh-profile .jh-pcard,
+  .jh-unit-next .jh-next { transition: none; }
+  .jh-profile .jh-pcard:hover { transform: none; }
 }

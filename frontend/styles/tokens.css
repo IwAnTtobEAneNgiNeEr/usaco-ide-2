@@ -97,6 +97,12 @@
   --purple:      #b39ddb;
   --purple-soft: rgba(179, 157, 219, 0.12);
 
+  /* Statement-derived role accents for practice card families. */
+  --neon-cyan-rgb:   67, 200, 255;
+  --neon-violet-rgb: 155, 124, 255;
+  --neon-mint-rgb:   83, 220, 180;
+  --neon-amber-rgb:  255, 190, 92;
+
   /* ===================================================================== *
      5 · ACTION BUTTONS  — Run = gold (iterate), Judge = green (commit).
    * ===================================================================== */

@@ -278,44 +278,9 @@ export function initEditorAppearance(app) {
       else root.setProperty(varName, v);
     }
 
-    if (isLight) {
-      root.removeProperty("--bg");
-      root.removeProperty("--panel");
-      root.removeProperty("--panel-2");
-      root.removeProperty("--panel-3");
-      root.removeProperty("--border");
-      root.removeProperty("--accent");
-      root.removeProperty("--accent-rgb");
-      root.removeProperty("--on-accent");
-      root.removeProperty("--btn-run");
-      root.removeProperty("--btn-run-h");
-    } else {
-      const editorBg = toHex(a.colors.editorBg);
-      const appBg = a.colors.appBg || adjustColorBrightness(editorBg, -25);
-      const panel = a.colors.panel || adjustColorBrightness(editorBg, 8);
-      const panel2 = a.colors.panel2 || adjustColorBrightness(editorBg, 18);
-      const panel3 = a.colors.panel3 || adjustColorBrightness(editorBg, 28);
-      const border = a.colors.border || adjustColorBrightness(editorBg, 38);
-
-      root.setProperty("--bg", appBg);
-      root.setProperty("--panel", panel);
-      root.setProperty("--panel-2", panel2);
-      root.setProperty("--panel-3", panel3);
-      root.setProperty("--border", border);
-
-      // Determine accent color
-      const cursorColor = toHex(a.colors.cursor || "#3b82f6");
-      const themeDef = THEMES[a.theme];
-      const accentColor = a.colors.accent || (themeDef ? themeDef.colors.accent : null) || cursorColor;
-
-      root.setProperty("--accent", accentColor);
-      root.setProperty("--accent-rgb", hexToRgbString(accentColor));
-      root.setProperty("--on-accent", getContrastColor(accentColor));
-
-      // Hero action buttons (Run/Save) theme colors
-      root.setProperty("--btn-run", accentColor);
-      root.setProperty("--btn-run-h", adjustColorBrightness(accentColor, 15));
-    }
+    // Editor themes are intentionally scoped to --code/--ed/--syn variables.
+    // They must never recolor Main, Statement, cards, or primary actions: those
+    // surfaces are governed by the app design system and remain visually stable.
 
     const html = document.documentElement;
     html.dataset.cursorStyle = a.cursorStyle;
@@ -348,41 +313,41 @@ export function initEditorAppearance(app) {
         <span>${COLOR_LABELS[key]}</span></label>`).join("");
 
     host.innerHTML = `
-      <div class="settings-section-title" style="margin-top:16px;">Editor appearance</div>
+      <div class="settings-section-title" style="margin-top:16px;">Giao diện trình soạn thảo</div>
       <div class="settings-card">
         <div class="ea-grid" style="display:grid; grid-template-columns:1.8fr 1fr; gap:10px;">
           <div class="settings-group">
-            <label>Font family</label>
+            <label>Phông chữ</label>
             <select id="ea-font" class="select">
               ${Object.keys(FONTS).map((k) => `<option value="${k}" ${a.fontFamily === k ? "selected" : ""}>${FONT_LABELS[k]}</option>`).join("")}
             </select>
           </div>
           <div class="settings-group">
-            <label>Font weight</label>
+            <label>Độ đậm</label>
             <select id="ea-weight" class="select">
-              <option value="300" ${a.fontWeight == 300 ? "selected" : ""}>Light (300)</option>
-              <option value="400" ${a.fontWeight == 400 ? "selected" : ""}>Normal (400)</option>
-              <option value="500" ${a.fontWeight == 500 ? "selected" : ""}>Medium (500)</option>
-              <option value="600" ${a.fontWeight == 600 ? "selected" : ""}>Semibold (600)</option>
-              <option value="700" ${a.fontWeight == 700 ? "selected" : ""}>Bold (700)</option>
+              <option value="300" ${a.fontWeight == 300 ? "selected" : ""}>Mảnh (300)</option>
+              <option value="400" ${a.fontWeight == 400 ? "selected" : ""}>Thường (400)</option>
+              <option value="500" ${a.fontWeight == 500 ? "selected" : ""}>Vừa (500)</option>
+              <option value="600" ${a.fontWeight == 600 ? "selected" : ""}>Hơi đậm (600)</option>
+              <option value="700" ${a.fontWeight == 700 ? "selected" : ""}>Đậm (700)</option>
             </select>
           </div>
         </div>
 
-        <div class="ea-slider"><label>Font size <b id="ea-size-v">${a.fontSize}px</b></label>
+        <div class="ea-slider"><label>Cỡ chữ <b id="ea-size-v">${a.fontSize}px</b></label>
           <input id="ea-size" type="range" min="10" max="28" step="0.5" value="${a.fontSize}" /></div>
-        <div class="ea-slider"><label>Line height <b id="ea-lh-v">${a.lineHeight}</b></label>
+        <div class="ea-slider"><label>Chiều cao dòng <b id="ea-lh-v">${a.lineHeight}</b></label>
           <input id="ea-lh" type="range" min="1" max="2.5" step="0.05" value="${a.lineHeight}" /></div>
-        <div class="ea-slider"><label>Letter spacing <b id="ea-ls-v">${a.letterSpacing}px</b></label>
+        <div class="ea-slider"><label>Khoảng cách chữ <b id="ea-ls-v">${a.letterSpacing}px</b></label>
           <input id="ea-ls" type="range" min="0" max="3" step="0.1" value="${a.letterSpacing}" /></div>
       </div>
 
-      <div class="settings-section-title" style="margin-top:16px;">Syntax theme</div>
+      <div class="settings-section-title" style="margin-top:16px;">Giao diện cú pháp</div>
       <div class="settings-card">
         <div class="ea-themes">${themeCards}</div>
       </div>
 
-      <div class="settings-section-title" style="margin-top:16px;">Custom colors</div>
+      <div class="settings-section-title" style="margin-top:16px;">Màu tùy chỉnh</div>
       <div class="settings-card">
         <details class="ea-advanced" open style="border:none !important; background:transparent !important; margin:0; padding:0;">
           <summary style="display:none !important;"></summary>
@@ -390,13 +355,13 @@ export function initEditorAppearance(app) {
         </details>
 
         <div class="settings-group" style="margin-top:0;">
-          <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em;">Power-user options</label>
+          <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em;">Tùy chọn nâng cao</label>
           <div class="ea-toggles" style="display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; margin:4px 0 6px;">
-            <label class="check-row"><input id="ea-wrap" type="checkbox" ${a.wordWrap ? "checked" : ""} /> Word wrap</label>
-            <label class="check-row"><input id="ea-blink" type="checkbox" ${a.cursorBlink ? "checked" : ""} /> Cursor blink</label>
-            <label class="check-row"><input id="ea-smooth" type="checkbox" ${a.smoothScroll ? "checked" : ""} /> Smooth scrolling</label>
+            <label class="check-row"><input id="ea-wrap" type="checkbox" ${a.wordWrap ? "checked" : ""} /> Tự xuống dòng</label>
+            <label class="check-row"><input id="ea-blink" type="checkbox" ${a.cursorBlink ? "checked" : ""} /> Con trỏ nhấp nháy</label>
+            <label class="check-row"><input id="ea-smooth" type="checkbox" ${a.smoothScroll ? "checked" : ""} /> Cuộn mượt</label>
             <div class="settings-group" style="gap:3px">
-              <label style="font-size:11px">Cursor style</label>
+              <label style="font-size:11px">Kiểu con trỏ</label>
               <select id="ea-cursor" class="select" style="max-width:140px">
                 ${["line", "block", "underline"].map((v) => `<option value="${v}" ${a.cursorStyle === v ? "selected" : ""}>${v}</option>`).join("")}
               </select>
@@ -405,14 +370,14 @@ export function initEditorAppearance(app) {
         </div>
 
         <div class="ea-actions" style="margin-top:16px; display:flex; gap:10px;">
-          <button id="ea-reset" class="btn btn-ghost btn-sm" type="button" style="text-transform:uppercase; font-weight:600; padding:8px 14px;">Reset to default</button>
-          <button id="ea-save-appearance" class="btn btn-primary btn-sm" type="button" style="text-transform:uppercase; font-weight:600; padding:8px 20px; flex:1; justify-content:center;">Save appearance</button>
+          <button id="ea-reset" class="btn btn-ghost btn-sm" type="button" style="text-transform:uppercase; font-weight:600; padding:8px 14px;">Khôi phục mặc định</button>
+          <button id="ea-save-appearance" class="btn btn-primary btn-sm" type="button" style="text-transform:uppercase; font-weight:600; padding:8px 20px; flex:1; justify-content:center;">Lưu giao diện</button>
         </div>
       </div>
       
       <div class="ea-import-export" style="display:flex; gap:8px; margin-top:8px; justify-content:center;">
-        <button id="ea-export" class="btn btn-ghost btn-xs" type="button" style="font-size:10.5px; opacity:0.75; padding:2px 6px;">⤓ Export theme</button>
-        <button id="ea-import" class="btn btn-ghost btn-xs" type="button" style="font-size:10.5px; opacity:0.75; padding:2px 6px;">⤒ Import theme</button>
+        <button id="ea-export" class="btn btn-ghost btn-xs" type="button" style="font-size:10.5px; opacity:0.75; padding:2px 6px;">⤓ Xuất giao diện</button>
+        <button id="ea-import" class="btn btn-ghost btn-xs" type="button" style="font-size:10.5px; opacity:0.75; padding:2px 6px;">⤒ Nhập giao diện</button>
         <input id="ea-import-file" type="file" accept="application/json,.json" hidden />
       </div>`;
 
@@ -466,7 +431,7 @@ export function initEditorAppearance(app) {
       link.href = url; link.download = `usaco-theme-${a.theme}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      app.toast("Theme exported", "ok");
+      app.toast("Đã xuất giao diện", "ok");
     });
     $("ea-import").addEventListener("click", () => $("ea-import-file").click());
     $("ea-import-file").addEventListener("change", async (e) => {
@@ -476,13 +441,13 @@ export function initEditorAppearance(app) {
         const obj = JSON.parse(await file.text());
         a = { ...DEFAULTS, ...obj, colors: { ...DEFAULTS.colors, ...(obj.colors || {}) } };
         commit(); render();
-        app.toast("Theme imported", "ok");
-      } catch (err) { app.toast("Invalid theme file: " + err.message, "err"); }
+        app.toast("Đã nhập giao diện", "ok");
+      } catch (err) { app.toast("Tệp giao diện không hợp lệ: " + err.message, "err"); }
     });
     $("ea-reset").addEventListener("click", () => {
       a = { ...DEFAULTS, colors: { ...DEFAULTS.colors } };
       commit(); render();
-      app.toast("Editor appearance reset", "ok");
+      app.toast("Đã khôi phục giao diện trình soạn thảo", "ok");
     });
     $("ea-save-appearance").addEventListener("click", () => {
       commit();

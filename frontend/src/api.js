@@ -82,6 +82,66 @@ const post = (url, body, opt) => request("POST", url, body, opt);
 const put = (url, body, opt) => request("PUT", url, body, opt);
 const del = (url) => request("DELETE", url);
 
+async function postSse(url, body, opts = {}) {
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body || {}),
+      signal: opts.signal
+    });
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      const aborted = new Error("Đã hủy yêu cầu.");
+      aborted.aborted = true;
+      aborted.code = "ABORTED";
+      throw aborted;
+    }
+    throw new Error("Không kết nối được backend. Backend USACO IDE 2.0 có đang chạy không?");
+  }
+  if (!res.ok) {
+    const raw = await res.text();
+    let data; try { data = JSON.parse(raw); } catch { data = { raw }; }
+    const error = new Error(data.error || data.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    error.data = data;
+    throw error;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let terminal = null;
+  for (;;) {
+    let chunk;
+    try { chunk = await reader.read(); }
+    catch (error) {
+      if (error && error.name === "AbortError") {
+        const aborted = new Error("Đã hủy yêu cầu.");
+        aborted.aborted = true;
+        aborted.code = "ABORTED";
+        throw aborted;
+      }
+      throw error;
+    }
+    if (chunk.done) break;
+    buffer += decoder.decode(chunk.value, { stream: true });
+    const events = buffer.split("\n\n");
+    buffer = events.pop();
+    for (const event of events) {
+      const line = event.split("\n").find((entry) => entry.startsWith("data: "));
+      if (!line) continue;
+      let frame; try { frame = JSON.parse(line.slice(6)); } catch { continue; }
+      if (frame.done) terminal = frame;
+      if (typeof opts.onEvent === "function") {
+        try { opts.onEvent(frame); } catch { /* UI progress callbacks are isolated */ }
+      }
+    }
+  }
+  if (terminal) return terminal;
+  throw new Error("Kết nối Stress Test bị ngắt giữa chừng.");
+}
+
 export const api = {
   health: () => get("/api/health"),
 
@@ -94,6 +154,10 @@ export const api = {
   updateProblem: (id, data) => put(`/api/problems/${id}`, data),
   deleteProblem: (id) => del(`/api/problems/${id}`),
   duplicateProblem: (id) => post(`/api/problems/${id}/duplicate`),
+  personalizedProblem: (recentWindow = 8, opts = {}) => aiCall(
+    (signal) => post("/api/problems/personalized", { recentWindow }, { signal }),
+    opts
+  ),
   openInEditor: (id) => post(`/api/problems/${id}/open-in-editor`),
 
   // Files
@@ -109,6 +173,7 @@ export const api = {
   saveStatement: (id, statement) => put(`/api/problems/${id}/statement`, { statement }),
   getMistakes: (id) => get(`/api/problems/${id}/mistakes`),
   getHistory: (id) => get(`/api/problems/${id}/history`),
+  gameReview: (id) => get(`/api/problems/${id}/game-review`),
 
   // Tests
   listTests: (id) => get(`/api/problems/${id}/tests`),
@@ -120,7 +185,27 @@ export const api = {
   // Judge — opts ({ signal }) lets the Stop button abort; the backend stops
   // launching further tests as soon as the connection drops.
   run: (id, code, opts) => post(`/api/problems/${id}/run`, { code }, opts),
-  judge: (id, code, onlyTestId, opts) => post(`/api/problems/${id}/judge`, { code, onlyTestId }, opts),
+  // intent="derive-module" only when the user has actually chosen that
+  // direction — default stays "competitive" (docs/VERIFIED-ARTIFACT-API.md
+  // §Agent B integration notes). Backend reads it to shape `nextAction` on AC.
+  judge: (id, code, onlyTestId, opts, intent) => post(`/api/problems/${id}/judge`, { code, onlyTestId, intent }, opts),
+
+  // ---- Verified Artifact Loop (docs/VERIFIED-ARTIFACT-API.md) --------------
+  verifiedArtifact: (id, intent) => get(`/api/problems/${id}/verified-artifact${intent === "derive-module" ? "?intent=derive-module" : ""}`),
+  // `href` on a run/judge response's `.evidence` is the canonical path — call
+  // this only as a fallback when a caller already has just the id.
+  evidence: (id, evidenceId) => get(`/api/problems/${id}/evidence/${encodeURIComponent(evidenceId)}`),
+  evidenceByHref: (href) => get(href),
+  bfsTrace: (id, evidenceId) => post(`/api/problems/${id}/analysis/bfs-trace`, { evidenceId }),
+  derivedArtifacts: (id) => get(`/api/problems/${id}/derived`),
+  createGridPathfinder: (id, evidenceId) => post(`/api/problems/${id}/derived/grid-pathfinder`, { evidenceId }),
+  getDerivedArtifact: (id, artifactId) => get(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}`),
+  verifyDerivedArtifact: (id, artifactId, suite) => post(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/verify`, { suite }),
+  activateRequirementChange: (id, artifactId, changeId) => post(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/requirement-changes/${encodeURIComponent(changeId)}/activate`, {}),
+
+  // Recorder events only the frontend can observe (README-AUTOPILOT.md M6).
+  // Fire-and-forget by convention — callers should not await/block on this.
+  recordEvent: (id, type, data) => post(`/api/problems/${id}/event`, { type, data }).catch(() => {}),
 
   // SPJ checker source (checker.cpp) — used when the problem has usesChecker on.
   getChecker: (id) => get(`/api/problems/${id}/checker`),
@@ -128,12 +213,125 @@ export const api = {
 
   // Lab (stress tester + complexity profiler) + analytics
   stress: (id, data) => post(`/api/problems/${id}/stress`, data),
+  stressStream: (id, data, opts = {}) => postSse(
+    `/api/problems/${encodeURIComponent(id)}/stress/stream`,
+    data,
+    opts
+  ),
   profile: (id, data) => post(`/api/problems/${id}/profile`, data),
+  // Khung test thi đấu — ONE AI call: subtask plan (tổng ≥100 test) + generator
+  // theo subtask. Không coach, không hint — phần còn lại user tự làm.
+  examPlan: (id, statement, opts) => aiCall((s) => post(`/api/problems/${encodeURIComponent(id)}/exam-plan`, { statement }, { signal: s }), opts),
   stats: () => get("/api/stats"),
   skillMap: () => get("/api/stats/skills"),
   reviewQueue: () => get("/api/stats/review-queue"),
+  plannerSession: (budgetMinutes) => get(`/api/planner/session?budgetMinutes=${encodeURIComponent(budgetMinutes || 45)}`),
+  plannerQuiz: () => get("/api/planner/quiz"),
   progress: () => get("/api/progress"),
   mistakeBook: () => get("/api/stats/mistakes"),
+
+  // ⚔ Đấu Trường (Arena) — S1-S12 backend, all local except the gauntlet's
+  // FIRST run per problem (which may generate a reference/generator via AI,
+  // hence aiCall so the global cancel pill applies).
+  arenaRating: () => get("/api/arena/rating"),
+  arenaStakes: (problemId) => get(`/api/arena/rating/stakes?problemId=${encodeURIComponent(problemId)}`),
+  arenaMatch: (id) => get(`/api/problems/${id}/match`),
+  arenaAdjourn: (id) => post(`/api/problems/${id}/match/adjourn`),
+  arenaSurrender: (id) => post(`/api/problems/${id}/match/surrender`),
+  arenaConfirmRating: (id) => post(`/api/problems/${id}/rating-confirm`),
+  arenaGauntlet: (id, data, opts) => aiCall((s) => post(`/api/problems/${id}/gauntlet`, data, { signal: s }), opts),
+  arenaVaultStatus: (id) => get(`/api/problems/${id}/reference`),
+  arenaCards: () => get("/api/arena/cards"),
+  arenaCard: (tag) => get(`/api/arena/cards/${encodeURIComponent(tag)}`),
+  // Fire-and-forget by convention (quiz write-back must never block the UI).
+  arenaCardTrain: (tag, correct) => post(`/api/arena/cards/${encodeURIComponent(tag)}/train`, { correct }).catch(() => null),
+  arenaRoadmap: () => get("/api/arena/roadmap"),
+  arenaGhost: (id) => get(`/api/problems/${id}/ghost`),
+  arenaMemoir: (id) => get(`/api/problems/${id}/memoir`),
+  arenaReel: () => get("/api/arena/reel"),
+  arenaSeason: () => get("/api/arena/season"),
+  // Nâng cấp tham chiếu 1-click — zero AI, reuses the student's own AC'd code.
+  arenaUpgradeCandidates: () => get("/api/arena/upgrade-candidates"),
+  arenaPromoteFromAc: (id) => post(`/api/problems/${id}/reference/promote-from-ac`),
+  arenaPromoteAll: (budgetMs) => post("/api/arena/upgrade-candidates/promote-all", { budgetMs }),
+  arenaArbitrate: (id, testId, data, opts) => post(`/api/problems/${id}/tests/${testId}/arbitrate`, data || {}, opts),
+  arenaValidateTest: (id, testId) => post(`/api/problems/${id}/tests/${testId}/validate`),
+
+  // ⚔ Đối Thủ & Sổ Cái (backend 2026-07-07): nước đi tiếp theo, dấu AC, lỗi lặp, thử thách.
+  arenaNextBet: () => get("/api/arena/next-bet"),
+  arenaMysteryOpen: () => post("/api/arena/next-bet/mystery/open"),
+  arenaMysteryReroll: () => post("/api/arena/next-bet/mystery/reroll"),
+  arenaGauntletReject: (id, data) => post(`/api/problems/${encodeURIComponent(id)}/gauntlet/reject`, data || {}),
+  arenaSeal: (id) => get(`/api/problems/${id}/seal`),
+  arenaSeals: () => get("/api/arena/seals"),
+  arenaSpecimenQueue: () => get("/api/arena/specimen-queue"),
+  arenaScoutingReport: (id) => get(`/api/problems/${id}/scouting-report`),
+  arenaBossCases: () => get("/api/arena/boss-cases"),
+  arenaProblemBossCases: (id) => get(`/api/problems/${id}/boss-cases`),
+  // Sealed Gauntlet (SSE). opts.onEvent(frame) fires per frame ({stage:"start"},
+  // {stage:"phase-start",phase}, {stage:"progress",...}); resolves with the
+  // final done frame (same shape as the buffered arenaGauntlet response).
+  // Falls back to the buffered endpoint when the server doesn't stream (older
+  // backend). Routed through aiCall — the first run per problem may generate a
+  // reference/generator via AI, so the global cancel pill must apply.
+  arenaGauntletStream: (id, data, opts = {}) => aiCall(async (signal) => {
+    let res;
+    try {
+      res = await fetch(`/api/problems/${encodeURIComponent(id)}/gauntlet/stream`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(data || {}),
+        signal
+      });
+    } catch (networkErr) {
+      if (networkErr && networkErr.name === "AbortError") {
+        const e = new Error("Đã hủy yêu cầu."); e.aborted = true; e.code = "ABORTED"; throw e;
+      }
+      throw new Error("Không kết nối được backend. Backend USACO IDE 2.0 có đang chạy không?");
+    }
+
+    const ctype = res.headers.get("content-type") || "";
+    if (res.status === 404 || (res.ok && !ctype.includes("text/event-stream"))) {
+      // Backend without /gauntlet/stream — quietly use the buffered endpoint.
+      return post(`/api/problems/${encodeURIComponent(id)}/gauntlet`, data || {}, { signal });
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      let d = null; try { d = JSON.parse(text); } catch { d = { raw: text }; }
+      const err = new Error((d && (d.error || d.message)) || `Request failed (${res.status})`);
+      err.status = res.status; err.data = d;
+      throw err;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "", finalPayload = null;
+    for (;;) {
+      let chunk;
+      try {
+        chunk = await reader.read();
+      } catch (err) {
+        if (err && err.name === "AbortError") {
+          const e = new Error("Đã hủy yêu cầu."); e.aborted = true; e.code = "ABORTED"; throw e;
+        }
+        throw err;
+      }
+      if (chunk.done) break;
+      buf += decoder.decode(chunk.value, { stream: true });
+      const events = buf.split("\n\n");
+      buf = events.pop();
+      for (const ev of events) {
+        const line = ev.split("\n").find((l) => l.startsWith("data: "));
+        if (!line) continue;
+        let obj = null;
+        try { obj = JSON.parse(line.slice(6)); } catch { continue; }
+        if (obj.done) finalPayload = obj;
+        else if (opts.onEvent) { try { opts.onEvent(obj); } catch { /* UI callback */ } }
+      }
+    }
+    if (finalPayload) return finalPayload;
+    throw new Error("Kết nối Đấu Trường bị ngắt giữa chừng.");
+  }, opts),
 
   // ⚔️ Weekend Boss + 🎓 Explain Your Solution (defense)
   bossStatus: () => get("/api/boss"),
@@ -164,6 +362,9 @@ export const api = {
   aiProcess: (data, opts) => aiCall((s) => post("/api/ai/process", data, { signal: s }), opts),
   aiHint: (data, opts) => aiCall((s) => post("/api/ai/hint", data, { signal: s }), opts),
   aiReviewMistakes: (data, opts) => aiCall((s) => post("/api/ai/review-mistakes", data, { signal: s }), opts),
+  // WA Autopsy: reference + shrink can take up to ~30s — routed through aiCall
+  // so the global "AI đang chạy… ✕ Hủy" pill and scoped cancel both apply.
+  autopsy: (id, data, opts) => aiCall((s) => post(`/api/problems/${id}/autopsy`, data, { signal: s }), opts),
   aiReviewCode: (data, opts) => aiCall((s) => post("/api/ai/review-code", data, { signal: s }), opts),
   aiExplainError: (data, opts) => aiCall((s) => post("/api/ai/explain-error", data, { signal: s }), opts),
   aiGenHelper: (data, opts) => aiCall((s) => post("/api/ai/gen-helper", data, { signal: s }), opts),
@@ -270,5 +471,29 @@ export const api = {
   saveContestExpected: (cid, pid, expected) => put(`/api/contests/${cid}/problems/${pid}/expected`, { expected }),
   listContestTests: (cid, pid) => get(`/api/contests/${cid}/problems/${pid}/tests`),
   runContestProblem: (cid, pid, code, opts) => post(`/api/contests/${cid}/problems/${pid}/run`, { code }, opts),
-  judgeContestProblem: (cid, pid, code, onlyTestId, opts) => post(`/api/contests/${cid}/problems/${pid}/judge`, { code, onlyTestId }, opts)
+  judgeContestProblem: (cid, pid, code, onlyTestId, opts) => post(`/api/contests/${cid}/problems/${pid}/judge`, { code, onlyTestId }, opts),
+
+  // 🧩 Điền Lõi (Core Fill) — "fix tư duy code": AI writes a full solution
+  // with its ONE core reasoning step carved out; the student fills only that.
+  // next/attempt go through aiCall since an empty deck falls back to
+  // synchronous AI generation (same reasoning as arenaGauntlet's first run).
+  corefillNext: (topic, opts) => aiCall((s) => get(`/api/arena/corefill/next${topic ? `?topic=${encodeURIComponent(topic)}` : ""}`, { signal: s }), opts),
+  // Non-scoring custom-input run. It compiles the edited scaffold but never
+  // consumes/reveals the drill's hidden judge tests.
+  corefillRun: (drillId, code, input, expected, opts) => post(`/api/arena/corefill/${encodeURIComponent(drillId)}/run`, { code, input, expected }, opts),
+  corefillAttempt: (drillId, code, opts) => aiCall((s) => post(`/api/arena/corefill/${encodeURIComponent(drillId)}/attempt`, { code }, { signal: s }), opts),
+
+  // ⚡ Luyện debug tốc độ (Bug Rush) — a fully separate arcade zone (features/rush.js).
+  // start/submit go through aiCall since the deck can run dry mid-run and
+  // fall back to synchronous generation — the global cancel pill must apply
+  // exactly like arenaGauntlet's first-run-may-call-AI case.
+  rushStart: (opts) => aiCall((s) => post("/api/arena/rush/start", {}, { signal: s }), opts),
+  rushState: () => get("/api/arena/rush/state"),
+  // Compile/run against user-provided stdin without spending a life or moving
+  // the Rush clock/state forward.
+  rushRun: (code, input, expected, opts) => post("/api/arena/rush/run", { code, input, expected }, opts),
+  rushSubmit: (code, opts) => aiCall((s) => post("/api/arena/rush/submit", { code }, { signal: s }), opts),
+  // Hint lũy tiến (server-authoritative): cấp 1 khoanh vùng miễn phí, cấp 2 kỹ
+  // thuật trừ 1 điểm — không bao giờ trả bugSummary.
+  rushHint: (opts) => post("/api/arena/rush/hint", {}, opts)
 };

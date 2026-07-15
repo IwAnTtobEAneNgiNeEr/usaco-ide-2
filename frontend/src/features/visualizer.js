@@ -394,8 +394,8 @@ function renderText(d) {
 }
 
 const TYPE_LABEL = {
-  graph: "🕸️ Đồ thị", tree: "🌳 Cây", "grid-char": "🧱 Lưới ký tự",
-  "grid-num": "🔢 Ma trận", array: "📊 Dãy số", text: "📄 Văn bản",
+  graph: "◇ Đồ thị", tree: "⌁ Cây", "grid-char": "▦ Lưới ký tự",
+  "grid-num": "▦ Ma trận", array: "≡ Dãy số", text: "¶ Văn bản",
   empty: "∅ Trống", invalid: "⚠ Không khớp"
 };
 
@@ -414,7 +414,7 @@ export function initVisualizer(app) {
     modal.innerHTML = `
       <div class="modal modal-wide viz-modal">
         <div class="viz-head">
-          <h2 class="modal-title">🔬 Trực quan hóa test</h2>
+          <h2 class="modal-title">Trực quan hóa test</h2>
           <span id="viz-chip" class="viz-chip"></span>
           <span class="toolbar-spacer"></span>
           <button id="viz-close" class="btn btn-ghost btn-sm" type="button">✕ Đóng</button>

@@ -114,28 +114,51 @@ textarea.input {
 .examples-card,
 .gentests-card,
 .tcard {
-  border-color: rgba(121, 156, 192, .24) !important;
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(121, 156, 192, .18) !important;
   border-radius: var(--block-radius) !important;
   background:
-    radial-gradient(520px 180px at 0% 0%, rgba(var(--neon-cyan), .055), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 44%),
-    color-mix(in srgb, var(--panel) 86%, #0b1930 14%) !important;
-  box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 8px 12px rgba(0, 0, 0, .18) !important;
+    radial-gradient(520px 180px at 0% 0%, rgba(var(--neon-cyan), .055), transparent 58%),
+    radial-gradient(360px 160px at 100% 0%, rgba(var(--neon-violet), .035), transparent 54%),
+    linear-gradient(180deg, rgba(255, 255, 255, .03), transparent 38%),
+    color-mix(in srgb, var(--panel) 88%, #0b1930 12%) !important;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .04),
+    0 12px 28px rgba(0, 0, 0, .18) !important;
+  transition:
+    transform 180ms var(--ease),
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease !important;
+}
+
+.settings-card:hover,
+.analysis-card:hover,
+.examples-card:hover,
+.gentests-card:hover,
+.tcard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(120, 196, 255, .36) !important;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .05),
+    0 16px 34px rgba(0, 0, 0, .24) !important;
 }
 
 /* Premium Neon Collapsible Coach Cards */
 .coach-card-sec {
   --section-accent: var(--neon-cyan);
-  border: 1px solid rgba(var(--section-accent), .28) !important;
+  border: 1px solid rgba(var(--section-accent), .22) !important;
   border-radius: var(--block-radius) !important;
   background:
-    radial-gradient(380px 140px at 0 0, rgba(var(--section-accent), .075), transparent 72%),
-    linear-gradient(180deg, rgba(255, 255, 255, .02), transparent 44%),
-    #0d182a !important;
+    radial-gradient(380px 140px at 0 0, rgba(var(--section-accent), .06), transparent 72%),
+    radial-gradient(260px 120px at 100% 0, rgba(var(--section-accent), .025), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, .03), transparent 42%),
+    color-mix(in srgb, var(--panel) 82%, #0d182a 18%) !important;
   box-shadow:
-    inset 0 1px rgba(255, 255, 255, .03),
+    inset 0 1px rgba(255, 255, 255, .04),
     inset 0 0 20px rgba(var(--section-accent), .02),
-    0 4px 14px rgba(0, 0, 0, 0.22) !important;
+    0 10px 22px rgba(0, 0, 0, .22) !important;
   transition:
     transform 180ms var(--ease),
     border-color 180ms ease,
@@ -145,13 +168,13 @@ textarea.input {
 }
 
 .coach-card-sec:hover {
-  transform: translateY(-1px);
-  border-color: rgba(var(--section-accent), .55) !important;
+  transform: translateY(-2px);
+  border-color: rgba(var(--section-accent), .42) !important;
   box-shadow:
-    inset 0 1px rgba(255, 255, 255, .04),
-    radial-gradient(380px 140px at 0 0, rgba(var(--section-accent), .12), transparent 72%),
-    0 0 24px rgba(var(--section-accent), .14),
-    0 6px 18px rgba(0, 0, 0, 0.28) !important;
+    inset 0 1px rgba(255, 255, 255, .05),
+    radial-gradient(380px 140px at 0 0, rgba(var(--section-accent), .1), transparent 72%),
+    0 0 20px rgba(var(--section-accent), .1),
+    0 14px 28px rgba(0, 0, 0, 0.28) !important;
 }
 
 .coach-card-header {
@@ -236,6 +259,7 @@ textarea.input {
   z-index: 1;
   gap: 10px;
   padding: 6px 12px 14px;
+  scroll-padding-top: 92px;
 }
 .statement-page { background: transparent; }
 .stmt-neon-shell {
@@ -725,7 +749,10 @@ textarea.input {
 }
 
 /* Examples: terminal neon treatment. */
-.stmt-neon-shell .stmt-examples .stmt-section-body { padding: 0; }
+.stmt-neon-shell .stmt-examples {
+  scroll-margin-top: 92px;
+}
+.stmt-neon-shell .stmt-examples .stmt-section-body { padding: 8px 0 0; }
 .stmt-neon-shell .stmt-sample {
   display: flex !important;
   flex-direction: column !important;
@@ -735,7 +762,10 @@ textarea.input {
   box-shadow: none !important;
   padding: 0 !important;
 }
-.stmt-neon-shell .stmt-sample-col { margin: 0 0 17px !important; }
+.stmt-neon-shell .stmt-sample-col {
+  min-width: 0;
+  margin: 0 0 17px !important;
+}
 .stmt-neon-shell .stmt-sample-label {
   display: inline-flex;
   align-items: center;
@@ -769,7 +799,12 @@ textarea.input {
     inset 0 0 28px rgba(var(--section-accent), .035),
     0 0 18px rgba(var(--section-accent), .09) !important;
 }
-.stmt-neon-shell .stmt-sample-box { padding: 17px 18px !important; }
+.stmt-neon-shell .stmt-sample-box {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 17px 18px !important;
+}
 .stmt-neon-shell .stmt-sample-box .stmt-copy,
 .stmt-neon-shell .stmt-copy,
 .stmt-neon-shell .copy-btn {
@@ -802,6 +837,11 @@ textarea.input {
   font-size: 13px !important;
   line-height: 1.66 !important;
   font-weight: 560 !important;
+  flex: 1;
+  min-width: 0;
+  min-height: 128px;
+  max-height: min(42vh, 420px);
+  overflow: auto;
 }
 
 /* Split mode: preserve title and cards, avoid huge awkward glyphs. */
@@ -1346,6 +1386,15 @@ body.col-resizing .panel-resizer {
   left: 100% !important;
 }
 
+/* Documents are calm surfaces: no glass shine inside a doc sheet.
+   (README-LOOPS-UX-CRITIQUE.md §1.3 — the shine's !important leaked into the
+   "restrained" document language; this neutralizer keeps the crime scene in
+   the file that committed it.) */
+.doc-sheet .btn-ai::after, .doc-sheet .btn-primary::after,
+.doc-sheet .btn-run::after, .doc-sheet .btn-judge::after {
+  display: none !important;
+}
+
 /* ========================================================================
    JOURNEY HOME GLASSMORPHIC COCKPIT OVERRIDES
    ======================================================================== */
@@ -1374,14 +1423,17 @@ body.col-resizing .panel-resizer {
 .jh-card,
 .jh-boss,
 .jh-continue-card {
+  position: relative;
+  overflow: hidden;
   border: 1px solid rgba(120, 196, 255, 0.14) !important;
   border-radius: 14px !important;
   background: 
-    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.05), transparent 70%),
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.055), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 42%),
     rgba(10, 20, 38, 0.5) !important;
   box-shadow: 
-    inset 0 1px rgba(255, 255, 255, 0.02),
-    0 8px 16px rgba(0, 0, 0, 0.3) !important;
+    inset 0 1px rgba(255, 255, 255, 0.03),
+    0 12px 24px rgba(0, 0, 0, 0.26) !important;
   transition: transform 180ms var(--ease), border-color 180ms ease, box-shadow 180ms ease !important;
 }
 
@@ -1390,11 +1442,11 @@ body.col-resizing .panel-resizer {
 .jh-card:hover,
 .jh-boss:hover {
   transform: translateY(-2px) !important;
-  border-color: rgba(var(--neon-cyan), 0.38) !important;
+  border-color: rgba(var(--neon-cyan), 0.3) !important;
   box-shadow: 
-    inset 0 1px rgba(255, 255, 255, 0.04),
-    0 0 15px rgba(var(--neon-cyan), 0.1),
-    0 12px 24px rgba(0, 0, 0, 0.35) !important;
+    inset 0 1px rgba(255, 255, 255, 0.05),
+    0 0 14px rgba(var(--neon-cyan), 0.08),
+    0 16px 30px rgba(0, 0, 0, 0.3) !important;
 }
 
 .jh-level {
@@ -1404,34 +1456,35 @@ body.col-resizing .panel-resizer {
 }
 
 .jh-boss.alive {
-  border-color: rgba(var(--neon-pink), 0.28) !important;
+  border-color: rgba(var(--neon-pink), 0.24) !important;
   background: 
     radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-pink), 0.07), transparent 70%),
     rgba(22, 10, 22, 0.5) !important;
 }
 
 .jh-boss.alive:hover {
-  border-color: rgba(var(--neon-pink), 0.45) !important;
+  border-color: rgba(var(--neon-pink), 0.34) !important;
   box-shadow: 
-    inset 0 1px rgba(255, 255, 255, 0.03),
-    0 0 15px rgba(var(--neon-pink), 0.12),
-    0 12px 24px rgba(0, 0, 0, 0.35) !important;
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 0 14px rgba(var(--neon-pink), 0.1),
+    0 16px 30px rgba(0, 0, 0, 0.32) !important;
 }
 
 .jh-continue-card {
   border-left: 3px solid rgb(var(--neon-cyan)) !important;
   background: 
     radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.05), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 42%),
     rgba(10, 20, 38, 0.6) !important;
 }
 
 .jh-continue-card:hover {
   transform: translateX(3px) !important;
-  border-color: rgba(var(--neon-cyan), 0.5) !important;
+  border-color: rgba(var(--neon-cyan), 0.34) !important;
   box-shadow: 
-    inset 0 1px rgba(255, 255, 255, 0.03),
-    0 0 15px rgba(var(--neon-cyan), 0.12),
-    0 8px 16px rgba(0, 0, 0, 0.3) !important;
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 0 14px rgba(var(--neon-cyan), 0.1),
+    0 14px 26px rgba(0, 0, 0, 0.28) !important;
 }
 
 /* ========================================================================
@@ -1736,6 +1789,7 @@ body,
   border-radius: 14px !important;
   background: 
     radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.08), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
     rgba(15, 27, 49, 0.85) !important; /* higher opacity and lighter background */
   box-shadow: 
     inset 0 1px rgba(255, 255, 255, 0.03),
@@ -1747,21 +1801,43 @@ body,
 .jh-level {
   background: 
     radial-gradient(420px 100px at 12% 0%, rgba(var(--neon-cyan), 0.09), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
     rgba(15, 27, 49, 0.88) !important;
 }
 
 .jh-boss.alive {
-  border-color: rgba(var(--neon-pink), 0.38) !important;
+  border-color: rgba(var(--neon-cyan), 0.34) !important;
   background: 
-    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-pink), 0.1), transparent 70%),
-    rgba(26, 12, 28, 0.85) !important;
+    radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.09), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
+    rgba(15, 27, 49, 0.9) !important;
   backdrop-filter: blur(12px) !important;
+}
+
+/* Journey refinement: the home dashboard follows Statement's cyan/ink visual
+   language, including challenge states that used to switch to pink/red. */
+.journey-home .jh-streak,
+.journey-home .jh-level,
+.journey-home .jh-card,
+.journey-home .jh-boss,
+.journey-home .jh-continue-card { border-radius: 12px !important; }
+.journey-home .jh-boss.alive:hover {
+  border-color: rgba(var(--neon-cyan), 0.52) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.04), 0 0 16px rgba(var(--neon-cyan),.1), 0 12px 24px rgba(0,0,0,.35) !important;
+}
+.journey-home .jh-boss-btn,
+.journey-home .jh-boss.alive .jh-boss-btn {
+  color: #04111c !important;
+  background: rgb(var(--neon-cyan)) !important;
+  border-radius: 7px !important;
+  box-shadow: 0 8px 22px rgba(var(--neon-cyan), .16) !important;
 }
 
 .jh-continue-card {
   border-left: 3px solid rgb(var(--neon-cyan)) !important;
   background: 
     radial-gradient(420px 100px at 0% 0%, rgba(var(--neon-cyan), 0.08), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
     rgba(15, 27, 49, 0.9) !important;
   backdrop-filter: blur(12px) !important;
 }
@@ -1982,4 +2058,15 @@ body,
 /* Glow highlight for warn content */
 .neon-ai-panel.warn-panel .highlight-warn {
   color: #fef08a !important; /* soft yellow */
+}
+
+@container panel (max-width: 320px) {
+  .panel-tabs { padding-inline: 3px !important; gap: 1px !important; }
+  .panel-tabs .tab {
+    min-width: 0 !important;
+    margin-right: 0 !important;
+    padding: 6px 2px !important;
+    font-size: 9.5px !important;
+    letter-spacing: 0 !important;
+  }
 }

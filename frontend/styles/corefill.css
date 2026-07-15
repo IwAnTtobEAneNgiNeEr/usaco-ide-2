@@ -1,0 +1,134 @@
+/* corefill.css — 🧩 Điền Lõi ("fix tư duy code"). A dedicated full-viewport
+   screen laid out to read like the main code workbench: statement LEFT,
+   editable code RIGHT. Token-driven, own cf-* namespace, loaded BEFORE
+   tokens.css so tokens stay authoritative (same convention as arena.css/
+   rush.css — see index.html's stylesheet-order comment). */
+
+.cf-zone {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  font-family: var(--sans);
+}
+.cf-zone.hidden { display: none; }
+
+.cf-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+/* ---- header --------------------------------------------------------------- */
+
+.cf-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.cf-head-main { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.cf-kicker {
+  font-size: var(--text-badge); text-transform: uppercase; letter-spacing: .08em;
+  color: var(--accent); font-weight: 600; flex: none;
+}
+.cf-title {
+  font-size: var(--text-h-l); margin: 0; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cf-rating {
+  flex: none; font-family: var(--mono); font-size: var(--text-caption);
+  color: var(--text-muted); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 1px 7px;
+}
+.cf-head-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.cf-submit kbd { margin-left: 6px; }
+.cf-close {
+  background: transparent; border: none; color: var(--text-dim);
+  font-size: 17px; line-height: 1; cursor: pointer; padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+.cf-close:hover { color: var(--text); background: var(--bg-surface); }
+
+/* ---- centered loading / error state -------------------------------------- */
+
+.cf-center {
+  align-items: center; justify-content: center; text-align: center;
+  gap: 12px; padding: 40px; position: relative;
+}
+.cf-center .cf-close { position: absolute; top: 12px; right: 16px; }
+.cf-center-glyph { font-size: 40px; }
+.cf-center-title { font-size: var(--text-h-l); color: var(--text); }
+.cf-center-sub { max-width: 46ch; line-height: 1.55; font-size: var(--text-body); }
+
+/* ---- two-pane body -------------------------------------------------------- */
+
+.cf-body { flex: 1; display: flex; min-height: 0; }
+
+.cf-left {
+  flex: 1 1 46%; min-width: 0; overflow-y: auto;
+  padding: 18px 22px; box-sizing: border-box;
+}
+.cf-statement { max-width: 780px; margin: 0 auto; }
+
+.cf-split { flex: none; width: 1px; background: var(--border); }
+
+.cf-right {
+  flex: 1 1 54%; min-width: 0; display: flex; flex-direction: column;
+  background: var(--bg-soft); min-height: 0;
+}
+
+.cf-editor-toolbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px; border-bottom: 1px solid var(--border-soft);
+  flex: none;
+}
+.cf-file-tab { font-family: var(--mono); font-size: var(--text-caption); color: var(--text-muted); flex: none; }
+.cf-gap-hint {
+  font-size: var(--text-caption); color: var(--accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cf-editor-host { flex: 1; min-height: 0; overflow: hidden; }
+.cf-editor-host .cm-editor { height: 100%; }
+
+.cf-editor-fallback {
+  display: block; width: 100%; height: 100%;
+  background: transparent; border: none; outline: none; resize: none;
+  color: var(--code-fg, var(--text)); font-family: var(--mono);
+  font-size: var(--code-fs, var(--text-code)); line-height: 1.55;
+  padding: 12px 14px; white-space: pre; overflow: auto; box-sizing: border-box;
+}
+
+/* ---- result strip --------------------------------------------------------- */
+
+.cf-result { flex: none; max-height: 42%; overflow-y: auto; }
+.cf-result:empty { display: none; }
+
+.cf-verdict {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border-top: 1px solid var(--border);
+  font-size: var(--text-body);
+}
+.cf-verdict.cf-ok  { background: rgba(52, 210, 126, .1); }
+.cf-verdict.cf-bad { background: rgba(240, 88, 79, .1); }
+.cf-verdict-tag { font-family: var(--mono); font-weight: 700; }
+.cf-ok .cf-verdict-tag  { color: var(--success); }
+.cf-bad .cf-verdict-tag { color: var(--danger); }
+.cf-verdict-meta { color: var(--text-muted); flex: 1; min-width: 0; }
+
+.cf-fail-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  padding: 10px 14px 14px;
+}
+.cf-fail-h { font-size: var(--text-badge); text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); margin-bottom: 4px; }
+.cf-fail-pre {
+  margin: 0; font-family: var(--mono); font-size: var(--text-caption);
+  background: var(--bg); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); padding: 8px; max-height: 160px; overflow: auto;
+  white-space: pre-wrap; word-break: break-word; color: var(--text-muted);
+}
+.cf-fail-pre.ok  { border-color: rgba(52, 210, 126, .3); }
+.cf-fail-pre.bad { border-color: rgba(240, 88, 79, .3); }
+
+/* Narrow viewports: stack the panes instead of squeezing both. */
+@media (max-width: 900px) {
+  .cf-body { flex-direction: column; }
+  .cf-split { width: auto; height: 1px; }
+  .cf-fail-grid { grid-template-columns: 1fr; }
+}

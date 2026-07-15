@@ -7,10 +7,11 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const settings = fs.readFileSync(path.join(root, "src", "settings.js"), "utf8");
 
-test("illustration settings expose dedicated Cloudflare credentials", () => {
-  assert.match(settings, /btn-save-cloudflare/);
-  assert.match(settings, /Cloudflare Account ID/);
-  assert.match(settings, /saveKeyOnly: true/);
-  assert.match(settings, /patch\.illustrationProvider = "cloudflare"/);
-  assert.match(settings, /Save illustration settings/);
+test("AI settings expose the supported OpenAI-compatible configuration", () => {
+  assert.match(settings, /btn-save-ai/);
+  assert.match(settings, /API key/);
+  assert.match(settings, /Base URL/);
+  assert.match(settings, /Model/);
+  assert.match(settings, /if \(key\.trim\(\) !== ""\) patch\.apiKey = key/);
+  assert.doesNotMatch(settings, /btn-save-cloudflare/);
 });

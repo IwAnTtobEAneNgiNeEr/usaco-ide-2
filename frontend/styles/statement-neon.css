@@ -1,4 +1,11 @@
-/* --- Statement Neon Theme --- */
+/* --- Statement Neon Theme ---
+   CINEMA RULE (README-LOOPS-UX-CRITIQUE.md §4.1.8): this surface is
+   deliberately ALWAYS-DARK. Its ink-blue backgrounds (#0f1929 family) are
+   hardcoded by design and do not flip with .light-theme — the statement is a
+   reading stage, like a code editor's dark canvas. document.css v2 (Game
+   Review / Pháp Y sheets) joins the same cinema world, so the reading
+   surfaces stay coherent in both app themes. Do NOT "fix" these hex values
+   into theme tokens without a deliberate design decision. */
 .statement-page {
   display: block;
   gap: 0;
@@ -345,67 +352,11 @@
   color: #d9ecff;
 }
 
-/* Premium Elo Rating Badge */
-.stmt-neon-badge-elo {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  background: rgba(20, 20, 25, 0.6);
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--rank-color) 30%, transparent);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 0 15px color-mix(in srgb, var(--rank-color) 15%, transparent);
-  backdrop-filter: blur(8px);
-}
-.stmt-neon-badge-elo .elo-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.stmt-neon-badge-elo .elo-icon {
-  font-size: 14px;
-  filter: drop-shadow(0 0 5px var(--rank-color));
-}
-.stmt-neon-badge-elo .elo-label {
-  color: #8892b0;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.stmt-neon-badge-elo .elo-val {
-  color: var(--rank-color);
-  font-weight: 800;
-  font-size: 16px;
-  text-shadow: 0 0 10px var(--rank-color);
-  letter-spacing: 0.5px;
-}
-.stmt-neon-badge-elo .elo-rank {
-  color: var(--rank-color);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  opacity: 0.9;
-  margin-bottom: 2px;
-}
-.stmt-neon-badge-elo .elo-progress {
-  width: 100%;
-  height: 3px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  margin-top: 2px;
-  overflow: hidden;
-}
-.stmt-neon-badge-elo .elo-progress-fill {
-  height: 100%;
-  background: var(--rank-color);
-  box-shadow: 0 0 8px var(--rank-color);
-  border-radius: 2px;
-  transition: none;
-}
-
-/* Compact ELO chip — replaces the old neon badge */
+/* Compact ELO chip. --rank-c is the app's one deliberate 3rd color system —
+   see the comment above rankColor in statement.js for why it must stay
+   independent of --accent/--section-accent. (The older, unused
+   ".stmt-neon-badge-elo" — same idea, no live markup — was removed here;
+   this chip is the only ELO badge rendered.) */
 .stmt-elo-chip {
   display: inline-flex;
   align-items: center;
@@ -418,6 +369,40 @@
   align-self: flex-start;
   line-height: 1;
 }
+/* Không có rating thật → chip trung tính "Chưa xếp" (không số bịa). */
+.stmt-elo-unrated {
+  background: var(--panel-2, #1b1b21);
+  border-color: var(--border, #2c2c35);
+}
+.stmt-elo-unrated .stmt-elo-rank { color: var(--text-dim, #8b93a7); }
+
+/* Dòng danh tính Brief dưới title: nguồn · origin · loại · gốc dẫn xuất. */
+.stmt-brief-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -10px 0 14px;
+  font-size: 11.5px;
+  color: var(--text-dim, #8b93a7);
+  font-family: var(--font-mono, monospace);
+}
+.stmt-brief-src { color: var(--text-muted, #aab2c5); }
+.stmt-brief-origin { font-style: italic; }
+.stmt-brief-kind {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  color: var(--accent, #e6a93e);
+  border: 1px solid color-mix(in srgb, var(--accent, #e6a93e) 35%, transparent);
+  border-radius: 4px; padding: 1px 6px;
+}
+.stmt-brief-derived {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: var(--accent, #e6a93e); text-decoration: underline dotted;
+}
+.stmt-brief-derived:hover { text-decoration-style: solid; }
+.stmt-brief-dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .5; }
+.stmt-brief-solved { color: var(--ac, #35c26e); font-weight: 600; }
+
 .stmt-elo-dot {
   width: 6px;
   height: 6px;

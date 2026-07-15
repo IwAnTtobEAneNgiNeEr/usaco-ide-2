@@ -16,7 +16,7 @@ function buildModal() {
   overlay.className = "modal-overlay hidden";
   overlay.innerHTML = `
     <div class="modal modal-wide editorial-modal">
-      <h2 class="modal-title">📘 Lời giải chuẩn</h2>
+      <h2 class="modal-title">Lời giải chuẩn</h2>
       <p class="panel-hint">Đối chiếu với cách bạn vừa AC. Đây là tham khảo, không phải tiêu chuẩn duy nhất.</p>
       <div id="editorial-body" class="editorial-body"></div>
       <div class="modal-actions">
@@ -63,7 +63,7 @@ export function initEditorial(app) {
   btn.style.background = "rgba(34,197,94,0.15)";
   btn.style.color = "#4ade80";
   btn.style.marginLeft = "6px";
-  btn.textContent = "📘 Lời giải chuẩn";
+  btn.textContent = "Lời giải chuẩn";
   btn.title = "Xem lời giải chuẩn của bài này (cache nên không tốn token mỗi lần mở)";
   banner.appendChild(btn);
   const btnLabel = btn.textContent;

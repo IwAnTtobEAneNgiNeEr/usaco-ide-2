@@ -33,22 +33,22 @@ export const DEFAULT_POLICY = Object.freeze({
 });
 
 export const PRESETS = [
-  { id: "free", name: "Tự do", icon: "🎯", patch: {} },
-  { id: "learning", name: "Học", icon: "📚", patch: {
+  { id: "free", name: "Tự do", icon: "·", patch: {} },
+  { id: "learning", name: "Học", icon: "§", patch: {
     layout: "split", rightTab: "coach", coachAutoVisible: true,
     autoCoachOnWA: true, reflectionAfterAc: true } },
-  { id: "contest", name: "Thi đấu", icon: "🏁", patch: {
+  { id: "contest", name: "Thi đấu", icon: "!", patch: {
     explorer: "collapsed", collapseExplorerOnEnter: true,
     panels: { notes: "hide" }, widgets: { dashboardBtn: false },
     coachReveal: "locked-hints", notifications: "minimal", sounds: false,
     reducedMotion: true, trackWeakTopics: false } },
-  { id: "debug", name: "Gỡ lỗi", icon: "🔍", patch: {
+  { id: "debug", name: "Gỡ lỗi", icon: "?", patch: {
     explorer: "collapsed", rightTab: "run", autoCoachOnWA: true,
     coachReveal: "explain" } },
-  { id: "teaching", name: "Dạy", icon: "🎓", patch: {
+  { id: "teaching", name: "Dạy", icon: "¶", patch: {
     layout: "reading", rightTab: "coach", coachAutoVisible: true,
     coachReveal: "explain" } },
-  { id: "minimal", name: "Tối giản", icon: "🧘", patch: {
+  { id: "minimal", name: "Tối giản", icon: "—", patch: {
     rightTab: null, explorer: "collapsed", zen: true,
     panels: { notes: "hide", coach: "hide", history: "hide", settings: "hide" },
     widgets: { sessionStats: false, dashboardBtn: false },

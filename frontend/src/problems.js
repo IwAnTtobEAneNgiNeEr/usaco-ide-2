@@ -21,7 +21,33 @@ export function normTopic(s) {
   return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
+// ---- Artifact-contract compatibility reads (additive fields, old data OK) ----
+// provider/collection/origin/activityKind/derivedFrom come from the Verified
+// Artifact contract. Old folders only have free-text `source`; we display what
+// exists and never invent values for missing fields.
+const ORIGIN_LABELS = {
+  imported: "nhập ngoài", ocr: "OCR", "user-authored": "tự viết",
+  "ai-generated": "AI tạo", derived: "dẫn xuất",
+};
+const DIFF_LABELS = { easy: "Dễ", medium: "Vừa", hard: "Khó" };
+
+// Hai hướng công việc: mọi bài cũ là competitive-problem (đúng bản chất data),
+// chỉ algorithm-module thuộc hướng "Thuật toán & ứng dụng".
+export function trackOf(p) {
+  return p && p.activityKind === "algorithm-module" ? "build" : "compete";
+}
+
+// Rating thật (analysis/cfRating) → số; không có → nhãn độ khó; không cả hai
+// → "Chưa xếp". Không bịa số từ chữ.
+export function ratingLabel(p) {
+  const r = Number(p.rating || p.cfRating || (p.analysis && p.analysis.cfRating));
+  if (Number.isFinite(r) && r > 0) return { text: String(r), kind: "elo" };
+  const d = DIFF_LABELS[p.difficulty];
+  return d ? { text: d, kind: "diff" } : { text: "Chưa xếp", kind: "unrated" };
+}
+
 function matchesFilters(p, f) {
+  if (f.track && trackOf(p) !== f.track) return false;
   if (f.source && p.source !== f.source) return false;
   if (f.status && p.status !== f.status) return false;
   if (f.difficulty && p.difficulty !== f.difficulty) return false;
@@ -59,24 +85,44 @@ export function renderProblems(app) {
     : "0 problems";
 
   if (visible.length === 0) {
-    list.innerHTML = `<div style="padding:20px 12px;color:var(--text-dim);font-size:12px;text-align:center">${
-      problems.length === 0 ? "Chưa có bài nào. Bấm <b>+ Bài mới</b>." : "Không có kết quả."
-    }</div>`;
+    const emptyMsg = problems.length === 0
+      ? "Chưa có bài nào. Bấm <b>+ Bài mới</b>."
+      : (filters.track === "build"
+        ? "Chưa có module nào. Module thuật toán được phát triển từ một bài đã AC (nút <b>Phát triển thành module</b> sau khi AC)."
+        : "Không có kết quả.");
+    list.innerHTML = `<div style="padding:20px 12px;color:var(--text-dim);font-size:12px;text-align:center">${emptyMsg}</div>`;
     return;
   }
 
   list.innerHTML = visible.map((p) => {
     const v = p.lastVerdict ? `<span class="vbadge v-${escapeHtml(p.lastVerdict)}">${escapeHtml(p.lastVerdict)}</span>` : "";
-    const sub = [p.source, p.topic].filter(Boolean).map(escapeHtml).join(' <span class="p-dot"></span> ');
+    // Nguồn: field mới provider·collection nếu có, fallback source cũ.
+    const srcLabel = [p.provider, p.collection].filter(Boolean).join(" · ") || p.source || "";
+    const originLabel = ORIGIN_LABELS[p.origin] || "";
+    const isModule = trackOf(p) === "build";
+    // p.derivedFrom is the only real "this artifact was derived" signal
+    // (docs/VERIFIED-ARTIFACT-API.md §Derived GridPathfinder). Whether a
+    // *derived module exists for* this problem is a per-problem GET
+    // (/:id/derived) — too expensive to fan out across a 163-row list, so
+    // it's surfaced inside the problem itself (AC card), not here.
+    const derived = p.derivedFrom || p.origin === "derived";
+    const rating = ratingLabel(p);
+    const parts = [
+      srcLabel && `<span class="p-src">${escapeHtml(srcLabel)}</span>`,
+      p.topic && `<span>${escapeHtml(p.topic)}</span>`,
+      originLabel && `<span class="p-origin">${escapeHtml(originLabel)}</span>`,
+      derived && `<span class="p-derived" title="Phát triển từ một artifact gốc">⑂ dẫn xuất</span>`,
+      `<span class="p-rating p-rating-${rating.kind}">${escapeHtml(rating.text)}</span>`,
+      `<span>${relTime(p.updatedAt)}</span>`,
+    ].filter(Boolean);
     return `
       <div class="p-item ${p.id === currentId ? "active" : ""}" data-id="${escapeHtml(p.id)}">
         <div class="p-row">
           <span class="p-title">${escapeHtml(p.title)}</span>
+          ${isModule ? '<span class="p-kind" title="Module thuật toán & ứng dụng">Module</span>' : ""}
           ${v}
         </div>
-        <div class="p-sub">${sub || "<span style='color:var(--text-dim)'>no source</span>"}
-          <span class="p-dot"></span><span>${relTime(p.updatedAt)}</span>
-        </div>
+        <div class="p-sub">${parts.join(' <span class="p-dot"></span> ') || "<span style='color:var(--text-dim)'>no source</span>"}</div>
         <div class="p-actions">
           <button class="icon-btn dup" data-act="dup" title="Duplicate">⧉</button>
           <button class="icon-btn" data-act="del" title="Delete">✕</button>
@@ -97,23 +143,55 @@ export function initProblems(app) {
   el.filterStatus.addEventListener("change", () => { app.state.filters.status = el.filterStatus.value; renderProblems(app); });
   el.filterDifficulty.addEventListener("change", () => { app.state.filters.difficulty = el.filterDifficulty.value; renderProblems(app); });
 
+  // Hai hướng công việc (Luyện thi / Thuật toán & ứng dụng) — một list, một
+  // filter; không phải library thứ hai. Search/filter khác vẫn chạy độc lập.
+  const trackRow = document.getElementById("track-row");
+  if (trackRow) {
+    trackRow.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-track]");
+      if (!btn) return;
+      app.state.filters.track = btn.dataset.track || "";
+      trackRow.querySelectorAll(".track-btn").forEach((b) => b.classList.toggle("active", b === btn));
+      renderProblems(app);
+    });
+  }
+
   // New problem (two entry points)
   el.btnNew.addEventListener("click", () => app.openMetaModal(null));
   el.btnNew2.addEventListener("click", () => app.openMetaModal(null));
 
-  // Random-problem picker for grind sessions: prefer something not yet solved
-  // (and not the current problem); fall back to any other problem for re-practice.
-  app.openRandomProblem = () => {
-    const all = app.state.problems || [];
-    if (!all.length) { app.toast("Chưa có bài nào — bấm + New.", "err"); return; }
-    const notCurrent = (p) => p.id !== app.state.currentId;
-    const unsolved = all.filter((p) => notCurrent(p) && p.status !== "solved" && p.lastVerdict !== "AC");
-    const pool = unsolved.length ? unsolved : all.filter(notCurrent);
-    const final = pool.length ? pool : all;
-    const pick = final[Math.floor(Math.random() * final.length)];
-    if (pick) {
-      app.selectProblem(pick.id);
-      app.toast(unsolved.length ? "🎲 Bài chưa giải" : "🎲 Luyện lại", "ok");
+  // "Bài phù hợp" creates a fresh problem from the 5–10 most recent topics
+  // and the current Arena Elo. It never falls back to an unreasoned random pick.
+  let personalizedAbort = null;
+  app.openRandomProblem = async () => {
+    if (personalizedAbort) { personalizedAbort.abort(); return; }
+    if (!(app.state.problems || []).length) {
+      app.toast("Cần làm ít nhất một bài trước khi tạo bài phù hợp.", "err");
+      return;
+    }
+    const button = document.getElementById("btn-random");
+    const previous = button ? button.textContent : "";
+    personalizedAbort = new AbortController();
+    if (button) { button.textContent = "Dừng tạo bài"; button.classList.add("btn-stop"); }
+    document.dispatchEvent(new CustomEvent("personalized:state", { detail: { state: "loading" } }));
+    try {
+      const result = await api.personalizedProblem(8, { signal: personalizedAbort.signal });
+      await app.refreshProblems();
+      await app.selectProblem(result.problem.id);
+      const why = result.rationale || {};
+      app.toast(`Bài mới · ${why.topic || "chủ đề gần đây"} · ~${why.generatedRating || why.targetRating || "?"} Elo`, "ok");
+      document.dispatchEvent(new CustomEvent("personalized:state", { detail: { state: "done", rationale: why } }));
+    } catch (error) {
+      if (error && error.aborted) {
+        app.toast("Đã dừng tạo bài phù hợp.", "ok");
+      } else {
+        app.toast(error.message || "Không tạo được bài phù hợp.", "err");
+        document.dispatchEvent(new CustomEvent("personalized:state", { detail: { state: "error", message: error.message } }));
+        if (error.data && error.data.code === "NO_KEY") app.setTab("settings");
+      }
+    } finally {
+      personalizedAbort = null;
+      if (button) { button.textContent = previous || "Bài phù hợp"; button.classList.remove("btn-stop"); }
     }
   };
   const btnRandom = document.getElementById("btn-random");

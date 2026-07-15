@@ -14,7 +14,7 @@ function buildModal() {
   overlay.className = "modal-overlay hidden";
   overlay.innerHTML = `
     <div class="modal modal-wide">
-      <h2 class="modal-title">⚖️ Special judge · checker.cpp</h2>
+      <h2 class="modal-title">Special judge · checker.cpp</h2>
       <p class="panel-hint">
         Checker được biên dịch một lần mỗi lượt chấm và gọi với
         <code>argv = input, expected, actual</code> — <b>exit 0 = AC</b>, khác 0 = WA.
@@ -43,7 +43,7 @@ export function initSpj(app) {
   btn.className = "btn btn-ghost btn-sm";
   btn.type = "button";
   btn.title = "Special judge — chấm bằng checker.cpp (bài nhiều đáp án đúng)";
-  btn.textContent = "⚖️ Checker";
+  btn.textContent = "Checker";
   toolbar.appendChild(btn);
 
   let overlay = null;

@@ -15,7 +15,7 @@ function buildModal() {
   overlay.className = "modal-overlay hidden";
   overlay.innerHTML = `
     <div class="modal modal-wide defense-modal">
-      <h2 class="modal-title">🎓 Giải thích lời giải <span id="defense-prob" class="defense-prob"></span></h2>
+      <h2 class="modal-title">Giải thích lời giải <span id="defense-prob" class="defense-prob"></span></h2>
       <div id="defense-body" class="defense-body"></div>
       <div class="modal-actions">
         <button type="button" id="defense-close" class="btn btn-ghost">Đóng</button>
@@ -28,7 +28,7 @@ function buildModal() {
 function introView(meta) {
   const prev = meta && meta.defense;
   const prevLine = prev && prev.passed
-    ? `<p class="defense-prev">✅ Bạn đã giải thích tốt bài này (<b>${prev.score}/10</b>). Làm lại bất cứ lúc nào để tự kiểm tra.</p>`
+    ? `<p class="defense-prev">✓ Bạn đã giải thích tốt bài này (<b>${prev.score}/10</b>). Làm lại bất cứ lúc nào để tự kiểm tra.</p>`
     : "";
   return `
     ${prevLine}
@@ -70,7 +70,7 @@ function resultView(r, questions) {
     <div class="defense-result ${cls}">
       <div class="defense-score">${r.score}<span>/10</span></div>
       <div class="defense-verdict">
-        <div class="defense-verdict-line">${r.passed ? "🎉 Bạn nắm vững bài này!" : "Chưa chắc — đọc nhận xét rồi thử lại nhé."}</div>
+        <div class="defense-verdict-line">${r.passed ? "Bạn nắm vững bài này!" : "Chưa chắc — đọc nhận xét rồi thử lại nhé."}</div>
         ${r.summary ? `<div class="jh-muted">${escapeHtml(r.summary)}</div>` : ""}
       </div>
     </div>
