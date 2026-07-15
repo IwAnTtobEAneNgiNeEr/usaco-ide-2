@@ -436,8 +436,16 @@ async function runBinary({ binaryPath, input, timeMs, fileMode, args }) {
 // juggle several binaries (generator + brute + main) at once.
 async function compileStandalone({ code, settings }) {
   const workdir = await createWorkdir();
-  const compile = await compileSource({ code, settings, workdir });
-  return { ...compile, workdir };
+  try {
+    const compile = await compileSource({ code, settings, workdir });
+    return { ...compile, workdir };
+  } catch (error) {
+    // Callers cannot clean a directory they never received. Ensure an
+    // exceptional compile (filesystem failure, cache copy failure, etc.) does
+    // not leak its freshly-created workdir before propagating the error.
+    await cleanupWorkdir(workdir);
+    throw error;
+  }
 }
 
 // Overall verdict for a list of per-test statuses (worst wins).

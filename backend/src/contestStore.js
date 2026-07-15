@@ -499,7 +499,7 @@ function buildStatementMd(p) {
 //   statement, inputFormat, outputFormat, constraints, solutionSketchPrivate,
 //   samples:[{input,expected,explanation}], verifiedTests:[{name,input,expected,reason}] }],
 //   warnings:[] }
-async function createContest({ topic, minRating, maxRating, basedOnProblemIds, aiModel, generated }) {
+async function createContest({ topic, minRating, maxRating, basedOnProblemIds, aiModel, generated, aiSettings, judgeSettings }) {
   const problems = Array.isArray(generated.problems) ? generated.problems : [];
   const baseSlug = store.slugify((generated.title || `${topic}-contest`) + "");
   const id = await uniqueContestId(baseSlug || "contest");
@@ -530,10 +530,59 @@ async function createContest({ topic, minRating, maxRating, basedOnProblemIds, a
     await store.ensureDir(path.join(dir, "tests"));
 
     await store.writeText(path.join(dir, PROBLEM_FILES.code), await settingsStore.getCodeTemplate());
-    await store.writeText(path.join(dir, PROBLEM_FILES.statement), buildStatementMd(p));
+    const statementMd = buildStatementMd(p);
+    await store.writeText(path.join(dir, PROBLEM_FILES.statement), statementMd);
+
+    // Initial tests (samples + verifiedTests)
+    let tests = [
+      ...p.samples.map((s, idx) => ({ name: `sample-${idx + 1}`, input: s.input, expected: s.expected || "", reason: s.explanation || "sample" })),
+      ...(Array.isArray(p.verifiedTests) ? p.verifiedTests.map((t) => ({ name: t.name, input: t.input, expected: t.expected || "", reason: t.reason || "" })) : [])
+    ];
+
+    // Expand the tests to 30-50 tests by calling the specialized AI test generator (best-effort)
+    if (aiSettings && judgeSettings) {
+      try {
+        const ai = require("./ai");
+        ai.log(`Contest problem ${pid}: expanding tests to 30-50 cases...`);
+        const expanded = await ai.generateTests({
+          settings: aiSettings,
+          statement: statementMd,
+          code: p.solutionSketchPrivate || "",
+          meta: { title: p.title, topic: topic || generated.topic || "", difficulty: "medium" }
+        });
+        if (expanded && Array.isArray(expanded.tests) && expanded.tests.length >= 20) {
+          tests = expanded.tests.map((t) => ({
+            name: t.name,
+            input: t.input,
+            expected: t.expected || "",
+            reason: t.reason || ""
+          }));
+          ai.log(`Contest problem ${pid}: successfully expanded tests to ${tests.length}`);
+        }
+      } catch (error) {
+        const ai = require("./ai");
+        ai.log(`Contest problem ${pid}: test case expansion failed (falling back)`, error.message);
+      }
+    }
+
+    // Verify AI test answers by EXECUTING a reference solution (best-effort)
+    let verifyNote = "";
+    if (aiSettings && judgeSettings) {
+      try {
+        const verifyTests = require("./verifyTests");
+        const v = await verifyTests.verifyWithReference({
+          aiSettings, judgeSettings,
+          statement: statementMd, code: p.solutionSketchPrivate || "",
+          tests, samples: p.samples.map((s) => ({ input: s.input, output: s.expected }))
+        });
+        verifyNote = v.note || "";
+      } catch (error) {
+        verifyNote = "Chưa kiểm chứng bằng lời giải tham chiếu: " + error.message;
+      }
+    }
 
     // Scratch input/expected: seed from the first verified test (or first sample).
-    const seed = (p.verifiedTests && p.verifiedTests[0]) || (p.samples && p.samples[0]) || { input: "", expected: "" };
+    const seed = tests[0] || { input: "", expected: "" };
     await store.writeText(path.join(dir, PROBLEM_FILES.input), seed.input != null ? seed.input : "");
     await store.writeText(path.join(dir, PROBLEM_FILES.expected), seed.expected != null ? seed.expected : "");
 
@@ -549,10 +598,7 @@ async function createContest({ topic, minRating, maxRating, basedOnProblemIds, a
     });
     await writeProblemMeta(id, pid, pm);
 
-    // Persist only verified (expectedKnown) tests — the judge needs an expected
-    // output, so input-only tests are dropped and surfaced as a contest warning.
-    const verified = Array.isArray(p.verifiedTests) ? p.verifiedTests : [];
-    for (const t of verified) {
+    for (const t of tests) {
       await addTest(id, pid, {
         input: t.input, expected: t.expected, name: t.name, reason: t.reason, generatedBy: "ai"
       });

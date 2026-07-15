@@ -117,9 +117,9 @@ Baseline suite cover adjacent, same-cell, unreachable, rectangular grid, blocked
 
 `PUT /derived/:artifactId/source` accepts `{ "source": "..." }` (or `content`) and returns `{ "artifact": <derived artifact> }`. Only `GridPathfinder.cpp` changes; the original problem `main.cpp` is preserved. Re-run the existing verify route after editing.
 
-`POST /derived/:artifactId/verify` accepts `{ "suite": "baseline|requirement-change" }` and returns `{ "ok": true, "suite", "status": "passed|failed", "run": { "id", "verdict", "stdout", "stderr", "tests" }, "nextAction" }`. A failed suite is a real check run and never mutates `main.cpp`.
+`POST /derived/:artifactId/verify` accepts `{ "suite": "baseline|requirement-change" }` and returns `{ "check": { "id", "suite", "requirementId", "verdict", "codeHash", "stdout", "stderr", "timeMs", "at" }, "artifact": <derived artifact> }`. A failed suite is a real check run and never mutates `main.cpp`.
 
-`POST /derived/:artifactId/requirement-changes/:changeId/activate` accepts `{}` and returns `{ "ok": true, "activeRequirement": "...", "nextAction": { "state": "work", "reason": "..." } }`. Activation is explicit and does not rewrite source.
+`POST /derived/:artifactId/requirement-changes/:changeId/activate` accepts `{}` and returns `{ "artifact": <derived artifact> }`; the returned artifact has the activated `currentRequirementId` and `nextAction.state="work"` until its suite passes. Activation is explicit and does not rewrite source.
 
 All verified-artifact errors use `{ "error": "stable human-readable message", "code": "OPTIONAL_MACHINE_CODE" }`. `400` is malformed/unsupported input or non-AC derivation, `404` is missing problem/evidence/artifact, and `409` is a conflicting artifact or invalid activation state. Clients must not infer verdict from HTTP status.
 

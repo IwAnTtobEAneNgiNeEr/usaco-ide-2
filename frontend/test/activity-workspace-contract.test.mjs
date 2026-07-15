@@ -5,6 +5,13 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../src/features/", import.meta.url);
 const read = (name) => readFile(new URL(name, root), "utf8");
 
+test("AC clears the contextual WA Coach action from the result bar", async () => {
+  const source = await readFile(new URL("../src/runner.js", import.meta.url), "utf8");
+  assert.match(source, /btn\.hidden = !show/);
+  assert.match(source, /btn\.textContent = ""/);
+  assert.match(source, /delete btn\.dataset\.kind/);
+});
+
 test("all code-bearing mini topics delegate to the canonical activity workspace", async () => {
   const [corefill, rush, contests] = await Promise.all([
     read("corefill.js"),

@@ -9,6 +9,7 @@ const express = require("express");
 const problemStore = require("../problemStore");
 const fileStore = require("../fileStore");
 const { computeSkillMap } = require("../skills");
+const { computeReviewQueue } = require("../reviewQueue");
 const { asyncHandler } = require("./_util");
 
 const router = express.Router();
@@ -113,43 +114,7 @@ router.get("/skills", asyncHandler(async (req, res) => {
 router.get("/review-queue", asyncHandler(async (req, res) => {
   const summaries = await problemStore.listProblems();
   const metas = await Promise.all(summaries.map((s) => problemStore.readMeta(s.id)));
-  const now = Date.now();
-  const INTERVALS = [3, 7, 21, 60]; // days
-  const MS_PER_DAY = 86400000;
-
-  const due = [];
-  for (const m of metas) {
-    const history = Array.isArray(m.history) ? m.history : [];
-    if (!history.length) continue;
-    const chrono = history.slice().reverse(); // oldest → newest
-    const firstAcIdx = chrono.findIndex((h) => h.verdict === "AC");
-    if (firstAcIdx < 0) continue;
-    const firstAc = chrono[firstAcIdx];
-    const waBeforeAc = chrono.slice(0, firstAcIdx).filter((h) => h.verdict === "WA").length;
-    const firstAcAt = firstAc.at ? Date.parse(firstAc.at) : null;
-    if (!firstAcAt) continue;
-
-    const reviewCount = Number(m.reviewCount) > 0 ? Math.floor(Number(m.reviewCount)) : 0;
-    const lastReviewedAt = m.lastReviewedAt ? Date.parse(m.lastReviewedAt) : firstAcAt;
-    const daysSinceReview = (now - lastReviewedAt) / MS_PER_DAY;
-    const intervalDays = INTERVALS[Math.min(reviewCount, INTERVALS.length - 1)];
-    if (daysSinceReview < intervalDays) continue;
-
-    due.push({
-      id: m.id,
-      title: m.title || m.id,
-      topic: m.topic || "",
-      tags: m.tags || [],
-      waBeforeAc,
-      daysSinceAc: Math.floor((now - firstAcAt) / MS_PER_DAY),
-      daysSinceReview: Math.floor(daysSinceReview),
-      reviewCount,
-      nextIntervalDays: intervalDays
-    });
-  }
-
-  // Hardest first; ties broken by oldest review (most stale).
-  due.sort((a, b) => (b.waBeforeAc - a.waBeforeAc) || (b.daysSinceReview - a.daysSinceReview));
+  const due = computeReviewQueue(metas);
   res.json({ ok: true, items: due.slice(0, 8) });
 }));
 

@@ -226,3 +226,23 @@ test("POST /tests/bulk with an empty payload is a 400", async () => {
     assert.equal(status, 400);
   });
 });
+
+// ---------------------------------------------------------------------------
+// hintsUsed — arena/seal.js's Tinh Luyện tier needs an honest per-problem hint
+// counter (a clean AC only counts if the student never asked the Coach for one).
+// ---------------------------------------------------------------------------
+
+test("hintsUsed defaults to 0 on a fresh problem and heals to 0 on legacy metas", async () => {
+  await withProblem({}, async (id) => {
+    const meta = await problemStore.readMeta(id);
+    assert.equal(meta.hintsUsed, 0);
+  });
+});
+
+test("incrementHintsUsed bumps the counter atomically under concurrent calls", async () => {
+  await withProblem({}, async (id) => {
+    await Promise.all(Array.from({ length: 5 }, () => problemStore.incrementHintsUsed(id)));
+    const meta = await problemStore.readMeta(id);
+    assert.equal(meta.hintsUsed, 5);
+  });
+});

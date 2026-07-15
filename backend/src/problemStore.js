@@ -348,6 +348,7 @@ async function testInfo(id, testId, testsMeta, problemMeta) {
     name: (entry && entry.name) || legacyName || `Test ${testId}`,
     reason: (entry && entry.reason) || "",
     generatedBy: (entry && entry.generatedBy) || "manual",
+    category: (entry && entry.category) || "",
     provenance: (entry && entry.provenance) || "",
     statementHash: (entry && entry.statementHash) || ""
   };
@@ -363,7 +364,7 @@ async function listTests(id) {
     ]);
     return {
       id: testId, name: info.name, reason: info.reason, generatedBy: info.generatedBy,
-      provenance: info.provenance, statementHash: info.statementHash, input, expected
+      category: info.category, provenance: info.provenance, statementHash: info.statementHash, input, expected
     };
   }));
 }
@@ -415,6 +416,7 @@ async function addTests(id, items = []) {
         name: name || `Test ${testId}`,
         reason: t.reason ? String(t.reason) : "",
         generatedBy: t.generatedBy === "ai" ? "ai" : "manual",
+        ...(t.category ? { category: String(t.category) } : {}),
         createdAt: nowIso(),
         // Optional trustLayer.js evidence labels — omitted (not just falsy) when
         // the caller doesn't pass them, so old records stay byte-identical.

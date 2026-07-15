@@ -28,6 +28,7 @@ async function saveSettings(patch = {}) {
   next.accentColor = ["amber", "blue", "green", "orange", "purple", "red"].includes(next.accentColor) ? next.accentColor : "amber";
   next.enableParticles = Boolean(next.enableParticles);
   next.enableVisualizer = Boolean(next.enableVisualizer);
+  next.momentAuto = Boolean(next.momentAuto);
   await store.writeJson(SETTINGS_FILE, next);
   return next;
 }

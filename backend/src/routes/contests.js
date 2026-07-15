@@ -121,20 +121,34 @@ router.post("/generate", asyncHandler(async (req, res) => {
     solvedProblems.push({ title: p.title, tags: p.tags, rating: p.rating, summary: p.summary, statementExcerpt: excerpt });
   }
 
+  // Cross-contest dedupe: every problem title from every EXISTING contest is
+  // banned. Without this, two "Greedy" contests generated back-to-back see the
+  // identical solved-problems context and happily re-serve the same problems.
+  const avoidTitles = [];
+  try {
+    for (const c of await contestStore.listContests()) {
+      const full = await contestStore.getContest(c.id);
+      for (const p of full.problems || []) if (p.title) avoidTitles.push(p.title);
+    }
+  } catch { /* dedupe context is best-effort — never blocks generation */ }
+
   let generated;
   try {
-    generated = await ai.generateContest({ settings, topic, solvedProblems, problemCount, minRating, maxRating });
+    generated = await ai.generateContest({ settings, topic, solvedProblems, problemCount, minRating, maxRating, avoidTitles });
   } catch (error) {
     const status = error.code === "NO_KEY" ? 400 : 502;
     return res.status(status).json({ ok: false, error: error.message, code: error.code });
   }
 
   // Only persist a fully-validated payload — never a half-built contest.
+  const judgeSettings = await settingsStore.getSettings();
   const { contest, problems } = await contestStore.createContest({
     topic, minRating, maxRating,
     basedOnProblemIds: context.map((p) => p.id),
     aiModel: settings.model,
-    generated
+    generated,
+    aiSettings: settings,
+    judgeSettings
   });
   res.status(201).json({ ok: true, contest, problems, warnings: generated.warnings || [] });
 }));

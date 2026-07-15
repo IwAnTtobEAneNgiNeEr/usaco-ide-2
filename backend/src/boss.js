@@ -140,12 +140,34 @@ async function summon({ aiSettings, judgeSettings, now = new Date() }) {
 
     const boss = await ai.generateBoss({ settings: aiSettings, weakness, recentTitles });
 
-    // Verify AI test answers by EXECUTING a reference solution (best-effort —
-    // unverifiable tests keep the AI answer but are flagged in their reason).
-    const tests = [
+    // Expand the test cases to 30-50 tests by calling the specialized AI test generator (best-effort)
+    let tests = [
       ...boss.samples.map((s, i) => ({ name: `sample-${i + 1}`, input: s.input, expected: s.expected, reason: s.explanation || "sample" })),
       ...boss.tests
     ];
+    try {
+      ai.log("Boss summon: expanding tests to 30-50 cases...");
+      const expanded = await ai.generateTests({
+        settings: aiSettings,
+        statement: boss.statement,
+        code: "",
+        meta: { title: boss.title, topic: weakness.topic, difficulty: "hard" }
+      });
+      if (expanded && Array.isArray(expanded.tests) && expanded.tests.length >= 20) {
+        tests = expanded.tests.map((t) => ({
+          name: t.name,
+          input: t.input,
+          expected: t.expected || "",
+          reason: t.reason || ""
+        }));
+        ai.log("Boss summon: successfully expanded tests to", tests.length);
+      }
+    } catch (error) {
+      ai.log("Boss summon: test case expansion failed (falling back to initial tests)", error.message);
+    }
+
+    // Verify AI test answers by EXECUTING a reference solution (best-effort —
+    // unverifiable tests keep the AI answer but are flagged in their reason).
     let verifyNote = "";
     try {
       const v = await verifyTests.verifyWithReference({

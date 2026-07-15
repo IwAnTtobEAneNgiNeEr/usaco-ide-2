@@ -3,7 +3,13 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const http = require("node:http");
+const path = require("node:path");
+const os = require("node:os");
+const fs = require("node:fs");
 const fsp = require("node:fs/promises");
+
+const TEST_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), "usaco-backend-patch-"));
+process.env.USACO_IDE_USER_DATA_DIR = TEST_ROOT;
 const { sanitizeStatement } = require("../src/statementSanitizer");
 const illustration = require("../src/illustration");
 const problemStore = require("../src/problemStore");
@@ -12,6 +18,8 @@ const ai = require("../src/ai");
 const verifyTests = require("../src/verifyTests");
 const { buildApp } = require("../server");
 const { ILLUSTRATION_CACHE_FILE } = require("../src/config");
+
+test.after(async () => { await fsp.rm(TEST_ROOT, { recursive: true, force: true }); });
 
 function withServer(run) {
   const server = http.createServer(buildApp());

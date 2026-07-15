@@ -9,6 +9,7 @@
 
 const runCpp = require("./runCpp");
 const ai = require("./ai");
+const { PROVENANCE } = require("./trustLayer");
 
 const PER_TEST_MS = 3000;   // hard per-run cap for the (possibly slow) reference
 const BUDGET_MS = 20000;    // overall wall-clock cap so a slow brute can't hang the request
@@ -47,7 +48,7 @@ async function verifyWithReference({ aiSettings, judgeSettings, statement, code,
 
     // 1) Cross-check the reference against the official samples before trusting it.
     const sampleList = (Array.isArray(samples) ? samples : []).filter((s) => s && s.output && String(s.output).trim());
-    let trusted = true;
+    let trusted = sampleList.length > 0;
     let checked = 0;
     for (const s of sampleList) {
       const r = await run(s.input);
@@ -74,6 +75,7 @@ async function verifyWithReference({ aiSettings, judgeSettings, statement, code,
         t.expected = String(r.stdout).replace(/\s+$/, "");
         t.expectedKnown = true;
         t.verifiedBy = "reference";
+        t.provenance = trusted ? PROVENANCE.VERIFIED_REFERENCE : PROVENANCE.GENERATED_SELF_CHECK;
         result.verifiedCount += 1;
       } else {
         // Reference TLE/RE on this input (e.g. a max case a brute can't handle) → keep AI value, flag it.

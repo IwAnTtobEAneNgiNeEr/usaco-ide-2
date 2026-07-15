@@ -25,7 +25,15 @@ function showCoachAsk(app, verdict) {
   const v = String(verdict || "").toUpperCase();
   const show = ["WA", "TLE", "RE", "CE"].includes(v);
   btn.classList.toggle("hidden", !show);
-  if (!show) { btn.dataset.kind = ""; return; }
+  btn.hidden = !show;
+  if (!show) {
+    delete btn.dataset.kind;
+    btn.textContent = "";
+    btn.removeAttribute("title");
+    return;
+  }
+  btn.hidden = false;
+  btn.title = "Hỏi AI Coach về kết quả này";
   btn.dataset.kind = v === "WA" ? "why-wa" : v === "TLE" ? "why-tle" : "open";
   btn.textContent = v === "WA" ? "🧠 Vì sao WA?" : v === "TLE" ? "🧠 Vì sao TLE?" : "🧠 Hỏi Coach";
 }

@@ -85,7 +85,11 @@ async function readJson(filePath, fallback = null) {
     return JSON.parse(raw);
   } catch (error) {
     if (error && error.code === "ENOENT") return fallback;
-    if (error instanceof SyntaxError) return fallback;
+    if (error instanceof SyntaxError) {
+      const err = new Error(`Corrupt JSON file: ${filePath}. Error: ${error.message}`);
+      err.code = "CORRUPT_JSON";
+      throw err;
+    }
     throw error;
   }
 }

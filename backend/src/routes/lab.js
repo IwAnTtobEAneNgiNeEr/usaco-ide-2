@@ -16,6 +16,8 @@ const express = require("express");
 const problemStore = require("../problemStore");
 const settingsStore = require("../settingsStore");
 const runCpp = require("../runCpp");
+const ai = require("../ai");
+const { prepareStressRequest, runStress } = require("../stressEngine");
 const { asyncHandler, requireProblem } = require("./_util");
 
 const router = express.Router();
@@ -55,7 +57,19 @@ router.post("/:id/stress", requireProblem, asyncHandler(async (req, res) => {
   const BUDGET_MS = 30000; // overall wall-clock cap so a slow brute can't hang the server
   const startedAt = Date.now();
 
+  // A fresh random base every run — NOT always seeds 1..iterations — so
+  // hitting "Chạy stress" a second time explores NEW input space instead of
+  // deterministically re-running the exact same generator outputs as the
+  // first click (a generator seeded by an integer argv is deterministic by
+  // construction, so seed 1..100 today is bit-identical to seed 1..100
+  // yesterday). `body.baseSeed`, if given, overrides this — tests need a
+  // reproducible range to assert against.
+  const baseSeed = Number.isFinite(Number(body.baseSeed))
+    ? clampInt(body.baseSeed, 0, 1_000_000_000, 0)
+    : Math.floor(Math.random() * 1_000_000_000);
+
   const builds = [];
+  let ran = 0;
   try {
     const gen = await build("generator", genCode, settings);
     const brute = await build("brute", bruteCode, settings);
@@ -67,12 +81,13 @@ router.post("/:id/stress", requireProblem, asyncHandler(async (req, res) => {
       if (!b.ok) return res.json({ ok: false, stage: "compile", which: b.label, error: `Lỗi biên dịch ${b.label}`, stderr: b.stderr });
     }
 
-    let ran = 0;
-    for (let seed = 1; seed <= iterations; seed++) {
+    for (let i = 1; i <= iterations; i++) {
+      const seed = baseSeed + i;
       if (Date.now() - startedAt > BUDGET_MS) {
-        return res.json({ ok: true, found: false, ran, budgetHit: true });
+        const total = await problemStore.incrementStressSeedsRan(id, ran);
+        return res.json({ ok: true, found: false, ran, budgetHit: true, seedRangeStart: baseSeed + 1, seedRangeEnd: seed - 1, totalSeedsRan: total });
       }
-      ran = seed;
+      ran = i;
       const g = await runCpp.runBinary({ binaryPath: gen.binaryPath, input: "", timeMs, args: [String(seed)] });
       if (g.status !== "OK") {
         return res.json({ ok: false, stage: "generator", error: `Generator lỗi ở seed ${seed} (${g.status}).`, stderr: g.stderr });
@@ -84,21 +99,129 @@ router.post("/:id/stress", requireProblem, asyncHandler(async (req, res) => {
 
       // Main crashed/timed out → that itself is a failing case worth surfacing.
       if (m.status !== "OK") {
-        return res.json({ ok: true, found: true, seed, iteration: seed, kind: m.status,
-          input, expected: b.status === "OK" ? b.stdout : "", got: m.stdout, mainStderr: m.stderr });
+        const total = await problemStore.incrementStressSeedsRan(id, ran);
+        return res.json({ ok: true, found: true, seed, iteration: i, kind: m.status,
+          input, expected: b.status === "OK" ? b.stdout : "", got: m.stdout, mainStderr: m.stderr, totalSeedsRan: total });
       }
       if (b.status !== "OK") {
         return res.json({ ok: false, stage: "brute", error: `Brute lỗi ở seed ${seed} (${b.status}). Brute quá chậm? Giảm kích thước generator.`, stderr: b.stderr });
       }
       const cmp = runCpp.compareOutput(b.stdout, m.stdout, settings.compareMode, { epsilon: settings.epsilon });
       if (!cmp.ok) {
-        return res.json({ ok: true, found: true, seed, iteration: seed, kind: "WA",
-          input, expected: b.stdout, got: m.stdout, diff: cmp.diff });
+        const total = await problemStore.incrementStressSeedsRan(id, ran);
+        return res.json({ ok: true, found: true, seed, iteration: i, kind: "WA",
+          input, expected: b.stdout, got: m.stdout, diff: cmp.diff, totalSeedsRan: total });
       }
     }
-    return res.json({ ok: true, found: false, ran });
+    const total = await problemStore.incrementStressSeedsRan(id, ran);
+    return res.json({ ok: true, found: false, ran, seedRangeStart: baseSeed + 1, seedRangeEnd: baseSeed + iterations, totalSeedsRan: total });
   } finally {
     await Promise.all(builds.map((b) => runCpp.cleanupWorkdir(b.workdir)));
+  }
+}));
+
+// POST /api/problems/:id/stress/stream — Stress Test v2 over SSE.
+//
+// Progress frame contract (in order):
+//   {type:"start", ...resolved options, runnerIsolation:"local-process"}
+//   {type:"compile", program, status:"OK"|"CE", timeMs, stderr} (2 or 3)
+//   {type:"test", index, seed, verdict:"AC"|"OK", timings}       (0..N)
+// Exactly one terminal frame follows, with `done:true`:
+//   {type:"done"|"failure"|"cancelled", ...full result}
+//
+// Generator argv[1] is the exact seed; argv[2] is correctness/performance.
+// Replay uses seedStart=<failed seed>, testCount=1. Continue uses
+// seedStart=<failed seed + 1>. Client disconnect is polled between child
+// processes; the current local runner cannot interrupt a child already running.
+router.post("/:id/stress/stream", requireProblem, asyncHandler(async (req, res) => {
+  const id = req.problemId;
+  const settings = await settingsStore.getSettings();
+  const body = { ...(req.body || {}) };
+  if (typeof body.solutionCode !== "string" && typeof body.mainCode !== "string") {
+    body.solutionCode = await problemStore.getFile(id, "code");
+  }
+
+  const parsed = prepareStressRequest(body, settings);
+  if (!parsed.ok) {
+    return res.status(parsed.status || 400).json({
+      ok: false,
+      error: parsed.error,
+      field: parsed.field,
+      details: parsed.details
+    });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  let disconnected = false;
+  req.on("aborted", () => { disconnected = true; });
+  res.on("close", () => { if (!res.writableEnded) disconnected = true; });
+  const sse = (frame) => {
+    if (disconnected || res.destroyed || res.writableEnded) return false;
+    try { res.write(`data: ${JSON.stringify(frame)}\n\n`); return true; }
+    catch { disconnected = true; return false; }
+  };
+
+  const heartbeat = setInterval(() => {
+    if (!disconnected && !res.destroyed && !res.writableEnded) {
+      try { res.write(": keep-alive\n\n"); } catch { disconnected = true; }
+    }
+  }, 10_000);
+
+  try {
+    const result = await runStress(parsed.value, {
+      settings,
+      compileStandalone: runCpp.compileStandalone,
+      runBinary: runCpp.runBinary,
+      cleanupWorkdir: runCpp.cleanupWorkdir,
+      compareOutput: runCpp.compareOutput,
+      shouldStop: () => disconnected,
+      onEvent: (frame) => { sse(frame); }
+    });
+
+    let totalSeedsRan;
+    if (result.attempted > 0 && typeof problemStore.incrementStressSeedsRan === "function") {
+      try { totalSeedsRan = await problemStore.incrementStressSeedsRan(id, result.attempted); }
+      catch { /* bookkeeping must never hide the real Stress result */ }
+    }
+    sse({ ...result, totalSeedsRan, done: true });
+  } finally {
+    clearInterval(heartbeat);
+    if (!res.destroyed && !res.writableEnded) res.end();
+  }
+}));
+
+// ---------------------------------------------------------------------------
+// Khung test thi đấu (Exam plan)
+// ---------------------------------------------------------------------------
+// ONE AI call that slices the statement's constraints into contest-style
+// subtasks (total ≥ 100 tests) and writes a subtask-aware generator. This is
+// the ONLY AI allowed in exam mode — no coach, no hints, no analysis: deriving
+// and validating outputs stays entirely on the student (their own brute in
+// the Stress pipeline).
+router.post("/:id/exam-plan", requireProblem, asyncHandler(async (req, res) => {
+  const id = req.problemId;
+  const aiSettings = await settingsStore.getAiSettings();
+  if (!aiSettings.apiKey) {
+    return res.status(400).json({ ok: false, error: ai.NO_KEY_MESSAGE, code: "NO_KEY" });
+  }
+  let statement = typeof (req.body || {}).statement === "string" ? req.body.statement : "";
+  if (!statement.trim()) statement = await problemStore.getFile(id, "statement");
+  if (!statement.trim()) {
+    return res.status(400).json({ ok: false, error: "Bài này chưa có đề — dán đề trước khi dựng khung test." });
+  }
+  let meta = null;
+  try { meta = await problemStore.readMeta(id); } catch { /* title/topic are optional context */ }
+  try {
+    const plan = await ai.generateExamPlan({ settings: aiSettings, statement, meta });
+    res.json({ ok: true, ...plan });
+  } catch (error) {
+    const status = error.code === "NO_KEY" ? 400 : 502;
+    res.status(status).json({ ok: false, error: error.message, code: error.code || "" });
   }
 }));
 

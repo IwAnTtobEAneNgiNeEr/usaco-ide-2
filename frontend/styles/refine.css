@@ -972,7 +972,7 @@ body.col-resizing .workbench { transition: none !important; }
 }
 
 @media (max-width: 700px) {
-  .workbench.mode-coding:not(.zen-mode) {
+  .workbench:not(.zen-mode) {
     --probs-w: 120px;
     --panel-w: 280px;
     grid-template-columns: 120px minmax(0, 1fr) 280px;

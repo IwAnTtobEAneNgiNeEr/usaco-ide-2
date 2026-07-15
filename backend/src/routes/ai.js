@@ -1,13 +1,18 @@
 "use strict";
 
 const crypto = require("crypto");
+const path = require("path");
 const express = require("express");
 const settingsStore = require("../settingsStore");
 const problemStore = require("../problemStore");
+const fileStore = require("../fileStore");
 const ai = require("../ai");
 const markitdown = require("../markitdown");
 const ocr = require("../ocr");
 const verifyTests = require("../verifyTests");
+const illustration = require("../illustration");
+const { ILLUSTRATION_CACHE_FILE } = require("../config");
+const { PROVENANCE, exactInput, applyProvenance } = require("../trustLayer");
 const { asyncHandler } = require("./_util");
 
 // Drop a now-stale "some tests have no verified output" warning, then re-add it
@@ -75,11 +80,70 @@ router.post("/generate-tests", asyncHandler(async (req, res) => {
       result.notes = refreshUnverifiedNote(result.notes, result.tests);
       if (v.note) result.notes.unshift(v.note);
     } catch { /* verification is best-effort — never blocks generation */ }
-    res.json({ ok: true, ...result });
+    applyProvenance({ tests: result.tests, samples: ai.extractSamples(statement), statement });
+    let added = 0;
+    let skipped = 0;
+    if (problemId && await problemStore.problemExists(problemId)) {
+      const existing = await problemStore.listTests(problemId);
+      const seen = new Set(existing.map((item) => exactInput(item.input)));
+      const unique = [];
+      for (const item of result.tests || []) {
+        const key = exactInput(item && item.input);
+        if (!key || seen.has(key)) { skipped += 1; continue; }
+        seen.add(key);
+        unique.push({ ...item, generatedBy: "ai", provenance: item.provenance || PROVENANCE.GENERATED_UNVERIFIED });
+      }
+      const persisted = await problemStore.addTests(problemId, unique);
+      added = persisted.added.length;
+      skipped += persisted.skipped.length;
+    }
+    res.json({ ok: true, ...result, added, skipped });
   } catch (error) {
     const status = error.code === "NO_KEY" ? 400 : 502;
     res.status(status).json({ ok: false, error: error.message });
   }
+}));
+
+router.post("/illustration/suggest", asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const savedSettings = await settingsStore.getAiSettings();
+  const manual = Boolean(body.manual);
+  const provider = ["pollinations", "cloudflare"].includes(savedSettings.illustrationProvider)
+    ? savedSettings.illustrationProvider : "pollinations";
+  const effective = manual
+    ? { ...savedSettings, illustrationEnabled: true, illustrationProvider: provider, illustrationForce: true }
+    : savedSettings;
+  const decision = illustration.assess(body, effective);
+  if (!decision.shouldGenerate) return res.json(decision);
+
+  const identity = illustration.cacheKey(body, decision.provider);
+  const cache = await fileStore.readJson(ILLUSTRATION_CACHE_FILE, { version: 1, entries: {} });
+  cache.entries = cache.entries && typeof cache.entries === "object" ? cache.entries : {};
+  const existing = cache.entries[identity.key];
+  const hasProxyKey = decision.provider === "pollinations" && Boolean(savedSettings.pollinationsApiKey);
+  if (existing) {
+    return res.json({ ...decision, cached: true, imageUrl: hasProxyKey ? `/api/ai/illustration/image/${identity.key}` : existing.providerUrl });
+  }
+
+  const providerUrl = illustration.pollinationsUrl(decision.prompt, identity.key);
+  cache.entries[identity.key] = { provider: decision.provider, providerUrl, prompt: decision.prompt, statementHash: identity.statementHash, createdAt: new Date().toISOString() };
+  await fileStore.writeJson(ILLUSTRATION_CACHE_FILE, cache);
+  res.json({ ...decision, cached: false, imageUrl: hasProxyKey ? `/api/ai/illustration/image/${identity.key}` : providerUrl });
+}));
+
+router.get("/illustration/image/:key", asyncHandler(async (req, res) => {
+  const cache = await fileStore.readJson(ILLUSTRATION_CACHE_FILE, { entries: {} });
+  const entry = cache.entries && cache.entries[req.params.key];
+  if (!entry || !entry.providerUrl) return res.status(404).json({ error: "Illustration cache entry not found." });
+  const settings = await settingsStore.getAiSettings();
+  const providerUrl = illustration.pollinationsUrl(entry.prompt, req.params.key);
+  const upstream = await fetch(providerUrl, { headers: settings.pollinationsApiKey ? { Authorization: `Bearer ${settings.pollinationsApiKey}` } : {} });
+  if (!upstream.ok) {
+    if (upstream.status === 402) return res.status(402).json({ code: "POLLINATIONS_INSUFFICIENT_BALANCE", error: "Số dư Pollinations không đủ để tạo ảnh." });
+    return res.status(502).json({ code: "ILLUSTRATION_PROVIDER_ERROR", error: `Illustration provider returned ${upstream.status}.` });
+  }
+  res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+  res.send(Buffer.from(await upstream.arrayBuffer()));
 }));
 
 // POST /api/ai/ocr  { dataUrl, mimeType, fileName }
@@ -213,6 +277,7 @@ router.post("/process", asyncHandler(async (req, res) => {
   }
 
   ai.log("Process pipeline start", problemId || "(no id)");
+
   const samples = ai.extractSamples(statement);
 
   // Analyze + generate tests concurrently; neither blocks the other.
@@ -290,6 +355,11 @@ router.post("/hint", asyncHandler(async (req, res) => {
   }
   try {
     const hint = await ai.getHint({ settings, statement, code, level: body.level });
+    // arena/seal.js's Tinh Luyện tier needs an honest "never asked for a
+    // hint" signal — best-effort, never lets bookkeeping cost the hint itself.
+    if (body.problemId) {
+      try { await problemStore.incrementHintsUsed(body.problemId); } catch { /* best-effort */ }
+    }
     res.json({ ok: true, hint });
   } catch (error) {
     res.status(502).json({ ok: false, error: error.message });
@@ -564,7 +634,26 @@ async function buildChatContext(problemId, body) {
     if (raw) { const p = JSON.parse(raw); if (Array.isArray(p.turns)) turns = p.turns; }
   } catch { /* none yet */ }
 
-  return { statement, code, testResult, runHistory, turns };
+  // Latest Khoảnh Khắc diagnosis (README-AUTOPILOT.md M3 — this is task A4 done
+  // via the new path instead of the old, never-filled Evidence Pack.diagnosis).
+  // Best-effort and capped: enriching context must never block the chat.
+  let momentDiagnosis = "";
+  try {
+    const dir = path.join(fileStore.problemDir(problemId), "moment");
+    const names = (await fileStore.listFiles(dir))
+      .filter((n) => /^\d+\.json$/.test(n))
+      .sort((a, b) => Number(b.slice(0, -5)) - Number(a.slice(0, -5)));
+    if (names.length) {
+      const latest = await fileStore.readJson(path.join(dir, names[0]), null);
+      const d = latest && latest.diagnosis;
+      if (d && d.ok) {
+        const where = Array.isArray(d.lines) && d.lines.length ? ` (nghi dòng ${d.lines.join(", ")})` : "";
+        momentDiagnosis = `Verdict ${latest.verdict} · giả thuyết "${d.tagLabel}"${where}: ${d.why}`.slice(0, 600);
+      }
+    }
+  } catch { /* moment/ may not exist yet — fine */ }
+
+  return { statement, code, testResult, runHistory, turns, momentDiagnosis };
 }
 
 // Append a completed user/assistant turn to the problem's chat.json (re-read so
@@ -606,6 +695,7 @@ router.post("/chat", asyncHandler(async (req, res) => {
       settings,
       statement: ctx.statement, code: ctx.code, testResult: ctx.testResult,
       runHistory: ctx.runHistory, perTestResults, history: ctx.turns, message,
+      momentDiagnosis: ctx.momentDiagnosis,
       revealAllowed: Boolean(body.revealAllowed)
     });
     const capped = await appendChatTurn(problemId, message, reply);
@@ -653,6 +743,7 @@ router.post("/chat-stream", asyncHandler(async (req, res) => {
     settings,
     statement: ctx.statement, code: ctx.code, testResult: ctx.testResult,
     runHistory: ctx.runHistory, perTestResults, history: ctx.turns, message,
+    momentDiagnosis: ctx.momentDiagnosis,
     revealAllowed: Boolean(body.revealAllowed)
   };
 

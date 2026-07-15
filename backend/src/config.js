@@ -5,13 +5,18 @@ const path = require("path");
 // backend/src/config.js  ->  project root is two levels up.
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
 
+const USER_DATA_ROOT = process.env.USACO_IDE_USER_DATA_DIR
+  ? path.resolve(process.env.USACO_IDE_USER_DATA_DIR)
+  : PROJECT_ROOT;
+
 const FRONTEND_DIR = path.join(PROJECT_ROOT, "frontend");
-const WORKSPACE_DIR = path.join(PROJECT_ROOT, "workspace");
+const WORKSPACE_DIR = path.join(USER_DATA_ROOT, "workspace");
 const PROBLEMS_DIR = path.join(WORKSPACE_DIR, "problems");
 const CONTESTS_DIR = path.join(WORKSPACE_DIR, "contests");
-const DATA_DIR = path.join(PROJECT_ROOT, "data");
+const DATA_DIR = path.join(USER_DATA_ROOT, "data");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const AI_SETTINGS_FILE = path.join(DATA_DIR, "ai-settings.json");
+const ILLUSTRATION_CACHE_FILE = path.join(DATA_DIR, "illustration-cache.json");
 // The user's personal C++ starter for new problems (Settings → Code template).
 // A plain file (not JSON) so it can also be edited in any editor; when absent
 // or blank, DEFAULT_TEMPLATE below applies.
@@ -55,7 +60,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   theme: "dark",            // "dark" | "light"
   accentColor: "amber",      // "amber" | "blue" | "green" | "orange" | "purple" | "red"
   enableParticles: true,     // background particle animation toggle
-  enableVisualizer: true     // problem interactive visualizer toggle
+  enableVisualizer: true,    // problem interactive visualizer toggle
+  momentAuto: true           // Khoảnh Khắc: auto-run AI diagnosis on WA/RE/TLE (README-AUTOPILOT.md M1)
 });
 
 // Starter for a per-problem special judge (SPJ). The checker is compiled once
@@ -154,8 +160,38 @@ const CONTEST = Object.freeze({
   maxSolvedContext: 24      // how many solved problems we feed the model for anti-clone context
 });
 
+// Điền Lõi (Core Fill) — one AI-authored problem whose reference solution has
+// its core reasoning step (DP transition, binary-search predicate, merge
+// step...) carved out between two markers. The student fills in ONLY that
+// span; everything else (I/O, boilerplate) is already written. Bounds here
+// gate generation the same way CONTEST's do.
+const COREFILL = Object.freeze({
+  minRatingFloor: 800,
+  maxRatingCeil: 2200,
+  minTests: 4,          // a drill needs at least this many self-verified tests to be servable
+  maxStatementChars: 8000,
+  maxGenerateAttempts: 3 // JSON-repair retries + structural-verify retries share this budget
+});
+
+// Sới Đập Lỗi (Bug Rush) — timed arcade mode: an AI-injected semantic bug
+// (never a syntax bug — the generated code must compile 100% of the time),
+// fixed under a shrinking clock, 3 lives, score is the only thing to chase.
+// No Elo, no new currency — same doctrine as everywhere else in the Arena.
+const RUSH = Object.freeze({
+  startingLives: 3,
+  maxLevel: 12,
+  minTimeMs: 15000,        // the clock's floor — never shrinks past this
+  maxTimeMs: 60000,        // level 1's starting clock
+  timeStepMs: 5000,        // clock shrinks by this much per level, down to minTimeMs
+  minVerifiedTests: 2,     // a drill needs at least this many inputs that ACTUALLY expose the bug
+  maxGenerateAttempts: 3,
+  deckLowWaterMark: 2,     // background top-up fires once the unused deck drops below this
+  deckRefillBatch: 2
+});
+
 module.exports = {
   PROJECT_ROOT,
+  USER_DATA_ROOT,
   FRONTEND_DIR,
   WORKSPACE_DIR,
   PROBLEMS_DIR,
@@ -163,6 +199,7 @@ module.exports = {
   DATA_DIR,
   SETTINGS_FILE,
   AI_SETTINGS_FILE,
+  ILLUSTRATION_CACHE_FILE,
   TEMPLATE_FILE,
   HOST,
   PORT,
@@ -173,5 +210,7 @@ module.exports = {
   DEFAULT_AI_SETTINGS,
   FILE_KINDS,
   LIMITS,
-  CONTEST
+  CONTEST,
+  COREFILL,
+  RUSH
 };

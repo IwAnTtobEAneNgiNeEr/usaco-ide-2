@@ -12,6 +12,8 @@ data/settings.json
 
 # Weekend Boss state (per-user progress, written by the app)
 data/boss.json
+data/arena-*.json
+data/student-model.json
 
 # Personal C++ starter template (Settings → Code template)
 data/template.cpp
@@ -36,6 +38,7 @@ __pycache__/
 Thumbs.db
 *.log
 .claude/
+.impeccable/
 
 # ---- Internal dev-process docs (kept local, not shipped in the public repo) ----
 .planning/
