@@ -4,6 +4,10 @@ const express = require("express");
 const problemStore = require("../problemStore");
 const settingsStore = require("../settingsStore");
 const judgeService = require("../judgeService");
+const evidenceStore = require("../evidenceStore");
+const verifiedArtifact = require("../verifiedArtifact");
+const { recordProblemEvent } = require("../recorder");
+const arenaTurn = require("../arena/turn");
 const { asyncHandler, requireProblem } = require("./_util");
 
 const router = express.Router();
@@ -55,17 +59,43 @@ router.post("/:id/run", requireProblem, asyncHandler(async (req, res) => {
   const expected = await problemStore.getFile(id, "expected");
 
   const result = await judgeService.compileAndRun({ code, settings: effectiveSettings(settings, meta), input, expected, fileMode, checker });
+  const runId = evidenceStore.createRunId();
+  let record;
 
   if (result.compilerMissing) {
-    await problemStore.recordRun(id, { type: "run", verdict: "CE", error: "compiler missing" });
+    record = await problemStore.recordRun(id, { id: runId, type: "run", verdict: "CE", error: "compiler missing" });
   } else if (!result.compileOk) {
-    await problemStore.recordRun(id, { type: "run", verdict: "CE", timeMs: result.timeMs });
+    record = await problemStore.recordRun(id, { id: runId, type: "run", verdict: "CE", timeMs: result.timeMs });
   } else {
-    await problemStore.recordRun(id, {
-      type: "run", verdict: result.verdict, timeMs: result.timeMs,
+    record = await problemStore.recordRun(id, {
+      id: runId, type: "run", verdict: result.verdict, timeMs: result.timeMs,
       snapshot: { code, stdout: result.stdout, stderr: result.stderr }
     });
   }
+  result.evidence = await evidenceStore.saveRunEvidence(id, {
+    record,
+    code,
+    result,
+    fallbackTest: {
+      id: "main", name: "Scratch (Input/Expected)", input, expected,
+      actual: result.stdout, stderr: result.stderr, diff: result.diff, timeMs: result.timeMs,
+    },
+  });
+  result.completion = {
+    created: false,
+    verified: false,
+    freshWin: false,
+    ratedProgress: false,
+    reason: "Run là bước khám phá và không tạo completion.",
+  };
+  result.nextAction = verifiedArtifact.nextAction({
+    operation: "run",
+    verdict: result.verdict || (result.compileOk === false ? "CE" : "OK"),
+    evidence: result.evidence,
+  });
+  // Fire-and-forget: Game Review's "tested by hand before submitting" signal
+  // (README-LOOPS.md §3.2/Flagship-2) is built from this "run" event stream.
+  recordProblemEvent(id, "run", { verdict: result.verdict || (result.compileOk === false ? "CE" : "") });
   res.json(result);
 }));
 
@@ -74,6 +104,7 @@ router.post("/:id/judge", requireProblem, asyncHandler(async (req, res) => {
   const id = req.problemId;
   const settings = await settingsStore.getSettings();
   const meta = await problemStore.readMeta(id);
+  const hadPriorAcceptance = verifiedArtifact.hasHistoricalAcceptance(meta);
   const fileMode = fileModeFor(meta);
   const code = await resolveCode(id, req.body);
   const checker = await resolveChecker(id, meta);
@@ -105,7 +136,10 @@ router.post("/:id/judge", requireProblem, asyncHandler(async (req, res) => {
       compile: { stderr: "", timeMs: 0 },
       results: [],
       summary: { total: 0, passed: 0, failed: 0, timeMs: 0 },
-      message: "Chưa có test case nào. Thêm test ở tab Test Cases."
+      message: "Chưa có test case nào. Thêm test ở tab Test Cases.",
+      evidence: null,
+      completion: { created: false, verified: false, freshWin: false, ratedProgress: false, reason: "Không có checks để Judge." },
+      nextAction: { id: "add-test", state: "work", label: "Thêm test", reason: "Artifact cần ít nhất một check trước khi Verify." }
     });
   }
 
@@ -114,15 +148,17 @@ router.post("/:id/judge", requireProblem, asyncHandler(async (req, res) => {
   // Single-test runs are exploratory, and a cancelled judge is a partial one —
   // neither should pollute history / lastVerdict.
   if (!single && !result.cancelled) {
+    const runId = evidenceStore.createRunId();
+    let record;
     if (result.compilerMissing) {
-      await problemStore.recordRun(id, { type: "judge", verdict: "CE", total: result.summary.total, passed: 0, error: "compiler missing" });
+      record = await problemStore.recordRun(id, { id: runId, type: "judge", verdict: "CE", total: result.summary.total, passed: 0, error: "compiler missing" });
     } else if (!result.compileOk) {
-      await problemStore.recordRun(id, { type: "judge", verdict: "CE", total: result.summary.total, passed: 0, timeMs: result.compile.timeMs });
+      record = await problemStore.recordRun(id, { id: runId, type: "judge", verdict: "CE", total: result.summary.total, passed: 0, timeMs: result.compile.timeMs });
     } else {
       // Snapshot: store the first failing test's output (or the last) for the timeline.
       const focus = result.results.find((r) => r.status !== "AC") || result.results[result.results.length - 1];
-      await problemStore.recordRun(id, {
-        type: "judge",
+      record = await problemStore.recordRun(id, {
+        id: runId, type: "judge",
         verdict: result.verdict,
         timeMs: result.summary.timeMs,
         passed: result.summary.passed,
@@ -130,6 +166,54 @@ router.post("/:id/judge", requireProblem, asyncHandler(async (req, res) => {
         snapshot: { code, stdout: focus ? focus.actual : "", stderr: focus ? focus.stderr : "" }
       });
     }
+    const judgeVerdict = result.compilerMissing || !result.compileOk ? "CE" : result.verdict;
+    const focus = result.results.find((r) => r.status !== "AC") || result.results[result.results.length - 1] || tests[0];
+    result.evidence = await evidenceStore.saveRunEvidence(id, { record, code, result, fallbackTest: focus });
+    const freshWin = judgeVerdict === "AC" && !hadPriorAcceptance;
+    result.completion = {
+      created: freshWin,
+      verified: judgeVerdict === "AC",
+      freshWin,
+      ratedProgress: false,
+      reason: judgeVerdict === "AC"
+        ? freshWin ? "Full Judge AC mới cho artifact chưa từng AC." : "Full Judge AC hiện tại; AC cũ không được tính lại là fresh win."
+        : `Full Judge ${judgeVerdict} chưa tạo completion.`,
+    };
+    result.nextAction = verifiedArtifact.nextAction({
+      operation: "judge",
+      verdict: judgeVerdict,
+      intent: req.body && req.body.intent === "derive-module" ? "derive-module" : "competitive",
+      evidence: result.evidence,
+    });
+    // Fire-and-forget: Game Review's timeline (README-LOOPS.md §3.2) is built
+    // from this stream of verdicts. Never awaited — must not add latency here.
+    recordProblemEvent(id, "verdict", {
+      verdict: judgeVerdict,
+      timeMs: result.summary.timeMs || 0,
+      passed: result.summary.passed || 0,
+      total: result.summary.total || 0
+    });
+    // Đấu Trường (Arena) S2/S3: transition the match + apply rating if this
+    // verdict just closed a RATED attempt. Awaited (unlike the recorder line
+    // above) because the response below carries the result for a caller that
+    // wants it — but any failure here must never cost the student their real
+    // judge verdict, so it's fully isolated in try/catch.
+    // `meta` here was read at the top of this route, BEFORE recordRun above
+    // persisted this verdict's lastVerdict/history — arenaTurn needs that
+    // pre-verdict snapshot to correctly judge "was this problem already
+    // solved before THIS attempt" (see arena/turn.js computeEligibility).
+    try {
+      result.arena = await arenaTurn.onJudgeVerdict({ id, verdict: judgeVerdict, meta });
+    } catch { /* Arena bookkeeping is best-effort — the judge result itself is already final */ }
+    result.completion.ratedProgress = Boolean(result.arena && result.arena.rating);
+  } else {
+    const exploratoryVerdict = result.compilerMissing || !result.compileOk ? "CE" : result.verdict;
+    result.evidence = null;
+    result.completion = {
+      created: false, verified: false, freshWin: false, ratedProgress: false,
+      reason: result.cancelled ? "Judge bị hủy nên không tạo completion." : "Single-test Judge là exploratory và không tạo completion.",
+    };
+    result.nextAction = verifiedArtifact.nextAction({ operation: "run", verdict: exploratoryVerdict });
   }
 
   res.json(result);

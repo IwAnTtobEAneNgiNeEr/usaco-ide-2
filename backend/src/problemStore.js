@@ -4,6 +4,7 @@ const path = require("path");
 const { PROBLEMS_DIR, DEFAULT_CHECKER_TEMPLATE, FILE_KINDS, LIMITS } = require("./config");
 const store = require("./fileStore");
 const settingsStore = require("./settingsStore");
+const verifiedArtifact = require("./verifiedArtifact");
 
 // Per-problem write lock — every mutation below is a read-modify-write over
 // meta.json / tests/meta.json / history.json; two concurrent ones (autosave
@@ -27,8 +28,15 @@ function defaultMeta(id, overrides = {}) {
     id,
     title: overrides.title || id,
     source: overrides.source || "",
+    provider: typeof overrides.provider === "string" ? overrides.provider : "local",
+    collection: typeof overrides.collection === "string" ? overrides.collection : (overrides.source || ""),
+    origin: typeof overrides.origin === "string" ? overrides.origin : "user-authored",
+    activityKind: typeof overrides.activityKind === "string" ? overrides.activityKind : "competitive-problem",
+    derivedFrom: overrides.derivedFrom && typeof overrides.derivedFrom === "object" ? overrides.derivedFrom : null,
     topic: overrides.topic || "",
     difficulty: overrides.difficulty || "unrated",
+    rating: overrides.rating == null ? null : overrides.rating,
+    cfRating: overrides.cfRating == null ? null : overrides.cfRating,
     status: overrides.status || "learning",
     tags: Array.isArray(overrides.tags) ? overrides.tags : [],
     fileName: typeof overrides.fileName === "string" ? overrides.fileName : "",
@@ -40,7 +48,17 @@ function defaultMeta(id, overrides = {}) {
     // AC Defense (viva): { passed, score, passedAt } — set when the student
     // successfully defends their accepted solution to the AI examiner.
     defense: overrides.defense && typeof overrides.defense === "object" ? overrides.defense : null,
+    // Đấu Trường (Arena) match state — see arena/match.js. Null until the
+    // first judge verdict on this problem opens an attempt cycle.
+    match: overrides.match && typeof overrides.match === "object" ? overrides.match : null,
     lastVerdict: overrides.lastVerdict || null,
+    // Ấn (arena/seal.js) Tinh Luyện tier requires a clean AC — zero hints asked.
+    hintsUsed: Number(overrides.hintsUsed) > 0 ? Math.floor(Number(overrides.hintsUsed)) : 0,
+    // Stress Lab: cumulative seeds this problem's solution has ever been
+    // fuzzed against (routes/lab.js's /stress endpoint), across every run —
+    // lets the UI show "đã chịu tổng N seeds" instead of a second run looking
+    // like a no-op replay of the first.
+    stressSeedsRan: Number(overrides.stressSeedsRan) > 0 ? Math.floor(Number(overrides.stressSeedsRan)) : 0,
     reviewCount: Number(overrides.reviewCount) > 0 ? Math.floor(Number(overrides.reviewCount)) : 0,
     lastReviewedAt: typeof overrides.lastReviewedAt === "string" ? overrides.lastReviewedAt : "",
     testNames: overrides.testNames && typeof overrides.testNames === "object" ? overrides.testNames : {},
@@ -67,11 +85,22 @@ async function writeMeta(id, meta) {
 }
 
 // A lightweight summary used by the problem list (no heavy file reads).
-function toSummary(meta) {
+async function toSummary(meta) {
+  const [history, currentCode] = await Promise.all([listHistory(meta.id), getFile(meta.id, "code")]);
+  const artifact = verifiedArtifact.buildContract({ meta, history, currentCode });
   return {
     id: meta.id,
     title: meta.title,
     source: meta.source,
+    provider: meta.provider,
+    collection: meta.collection,
+    origin: meta.origin,
+    activityKind: meta.activityKind,
+    derivedFrom: meta.derivedFrom,
+    provenance: { provider: meta.provider, collection: meta.collection, origin: meta.origin, activityKind: meta.activityKind, derivedFrom: meta.derivedFrom },
+    derivedStatus: artifact.derivedStatus,
+    rating: meta.rating == null ? null : meta.rating,
+    cfRating: meta.cfRating == null ? (meta.analysis && meta.analysis.cfRating != null ? meta.analysis.cfRating : null) : meta.cfRating,
     topic: meta.topic,
     difficulty: meta.difficulty,
     status: meta.status,
@@ -89,8 +118,7 @@ function toSummary(meta) {
 async function listProblems() {
   const ids = await store.listSubdirs(PROBLEMS_DIR);
   const metas = await Promise.all(ids.map((id) => readMeta(id)));
-  return metas
-    .map(toSummary)
+  return (await Promise.all(metas.map(toSummary)))
     .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
 }
 
@@ -127,7 +155,7 @@ async function createProblem(input = {}) {
   return readMeta(id);
 }
 
-const META_PATCHABLE = ["title", "source", "topic", "difficulty", "status", "tags", "lastVerdict", "fileName", "usacoMode", "usesChecker", "timeLimitMs", "analysis", "defense", "reviewCount", "lastReviewedAt"];
+const META_PATCHABLE = ["title", "source", "provider", "collection", "origin", "activityKind", "derivedFrom", "topic", "difficulty", "status", "tags", "lastVerdict", "fileName", "usacoMode", "usesChecker", "timeLimitMs", "analysis", "defense", "match", "reviewCount", "lastReviewedAt", "hintsUsed", "stressSeedsRan", "rating", "cfRating"];
 
 async function updateProblem(id, patch = {}) {
   return withLock(id, async () => {
@@ -146,6 +174,31 @@ async function updateProblem(id, patch = {}) {
       }
     }
     return meta;
+  });
+}
+
+/** Atomic +1 under the SAME per-problem lock as every other mutation — a hint
+ *  request never races another one into losing a count. */
+async function incrementHintsUsed(id) {
+  return withLock(id, async () => {
+    const meta = await readMeta(id);
+    meta.hintsUsed = (Number(meta.hintsUsed) || 0) + 1;
+    meta.updatedAt = nowIso();
+    await writeMeta(id, meta);
+    return meta.hintsUsed;
+  });
+}
+
+/** Atomic +count, same locking discipline as incrementHintsUsed — a Stress
+ *  Lab run adds however many seeds it actually attempted. */
+async function incrementStressSeedsRan(id, count) {
+  const n = Math.max(0, Math.floor(Number(count) || 0));
+  return withLock(id, async () => {
+    const meta = await readMeta(id);
+    meta.stressSeedsRan = (Number(meta.stressSeedsRan) || 0) + n;
+    meta.updatedAt = nowIso();
+    await writeMeta(id, meta);
+    return meta.stressSeedsRan;
   });
 }
 
@@ -285,13 +338,18 @@ async function writeTestsMeta(id, map) {
 }
 
 // Resolve a display name, preferring tests/meta.json, then legacy meta.testNames.
+// `provenance`/`statementHash` (trustLayer.js's evidence labels) are optional —
+// absent on tests added before this field existed, and on anything that never
+// passed one in (manual "+ Add test" clicks stay "user-provided" by convention).
 async function testInfo(id, testId, testsMeta, problemMeta) {
   const entry = testsMeta[testId];
   const legacyName = problemMeta && problemMeta.testNames && problemMeta.testNames[testId];
   return {
     name: (entry && entry.name) || legacyName || `Test ${testId}`,
     reason: (entry && entry.reason) || "",
-    generatedBy: (entry && entry.generatedBy) || "manual"
+    generatedBy: (entry && entry.generatedBy) || "manual",
+    provenance: (entry && entry.provenance) || "",
+    statementHash: (entry && entry.statementHash) || ""
   };
 }
 
@@ -303,7 +361,10 @@ async function listTests(id) {
       store.readText(inPath(id, testId), ""),
       store.readText(outPath(id, testId), "")
     ]);
-    return { id: testId, name: info.name, reason: info.reason, generatedBy: info.generatedBy, input, expected };
+    return {
+      id: testId, name: info.name, reason: info.reason, generatedBy: info.generatedBy,
+      provenance: info.provenance, statementHash: info.statementHash, input, expected
+    };
   }));
 }
 
@@ -354,7 +415,11 @@ async function addTests(id, items = []) {
         name: name || `Test ${testId}`,
         reason: t.reason ? String(t.reason) : "",
         generatedBy: t.generatedBy === "ai" ? "ai" : "manual",
-        createdAt: nowIso()
+        createdAt: nowIso(),
+        // Optional trustLayer.js evidence labels — omitted (not just falsy) when
+        // the caller doesn't pass them, so old records stay byte-identical.
+        ...(t.provenance ? { provenance: String(t.provenance) } : {}),
+        ...(t.statementHash ? { statementHash: String(t.statementHash) } : {})
       };
       added.push({ ...testsMeta[testId], input, expected });
     }
@@ -438,6 +503,7 @@ async function recordRun(id, entry) {
 
     // Lightweight index kept in meta.json (used for list/lastVerdict/quick timeline).
     const record = {
+      ...(entry.id ? { id: String(entry.id) } : {}),
       at,
       type: entry.type || "run",
       verdict: entry.verdict || null,
@@ -481,6 +547,8 @@ module.exports = {
   problemExists,
   createProblem,
   updateProblem,
+  incrementHintsUsed,
+  incrementStressSeedsRan,
   deleteProblem,
   duplicateProblem,
   getFile,

@@ -4,7 +4,7 @@
 // The API key is read from ai-settings.json and is NEVER logged.
 
 const crypto = require("crypto");
-const { CONTEST } = require("./config");
+const { CONTEST, COREFILL } = require("./config");
 
 const NO_KEY_MESSAGE = "Bạn cần nhập API key trong Settings trước.";
 
@@ -339,19 +339,29 @@ function escapeControlChars(str) {
 }
 
 function safeParseJson(raw) {
-  // Tolerate accidental ```json fences.
+  // Tolerate accidental ```json fences — but ONLY when the payload itself is
+  // fence-wrapped. Matching ``` anywhere would seize an inner Markdown code
+  // block (statements carry fenced samples) and throw the real JSON away.
   let text = String(raw).trim();
-  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) text = fence[1].trim();
+  if (/^```/.test(text)) {
+    const fence = text.match(/^```(?:json)?\s*([\s\S]*?)```\s*$/i);
+    if (fence) text = fence[1].trim();
+    else text = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  }
   // Fall back to slicing the outermost JSON object.
   if (text[0] !== "{") {
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}");
     if (start >= 0 && end > start) text = text.slice(start, end + 1);
   }
-  // Escape unescaped control characters inside JSON string literals.
-  const cleaned = escapeControlChars(text);
-  return JSON.parse(cleaned);
+  // VALID JSON parses as-is — never run it through the control-char repair,
+  // whose string-state tracking can desync on some escape sequences and
+  // corrupt a perfectly good payload (found live: a valid Điền Lõi drill was
+  // rejected as "không trả về JSON hợp lệ").
+  try { return JSON.parse(text); } catch { /* fall through to repair */ }
+  // Repair pass: escape RAW control characters the model left inside string
+  // literals (the one malformation JSON.parse can't tolerate but we can fix).
+  return JSON.parse(escapeControlChars(text));
 }
 
 // ---------------------------------------------------------------------------
@@ -623,6 +633,61 @@ async function analyzeStatement({ settings, statement }) {
   log("AI analyze success", result.kyThuat.join(", ") || "no techniques");
   cacheSet(key, result);
   return result;
+}
+
+const NORMALIZE_STATEMENT_SYSTEM = [
+  "Bạn là trợ lý chuẩn hóa đề bài lập trình thi đấu tiếng Việt.",
+  "Nhiệm vụ của bạn là nhận vào một đề bài (có thể bị lỗi định dạng, thiếu phần, hoặc lấy từ OCR) và viết lại đề bài đó theo đúng cấu trúc chuẩn sau đây.",
+  "",
+  "CẤU TRÚC CHUẨN BẮT BUỘC:",
+  "[Mô tả chi tiết bài toán bằng tiếng Việt. Viết rõ ràng, dễ hiểu, sửa các lỗi chính tả, xuống dòng hợp lý]",
+  "",
+  "Đầu vào",
+  "[Mô tả chi tiết định dạng dữ liệu đầu vào]",
+  "",
+  "Giới hạn",
+  "[Mô tả các ràng buộc về kích thước dữ liệu (ví dụ: 1 <= N <= 10^5)]",
+  "",
+  "Đầu ra",
+  "[Mô tả chi tiết định dạng dữ liệu đầu ra]",
+  "",
+  "Ví dụ :",
+  "Input 01",
+  "Copy",
+  "[Dữ liệu đầu vào ví dụ 01]",
+  "Output 01",
+  "Copy",
+  "[Dữ liệu kết quả ví dụ 01]",
+  "",
+  "QUY TẮC:",
+  "1. Luôn sử dụng đúng các tiêu đề phần không có ký tự đặc biệt hay markdown: 'Đầu vào', 'Giới hạn', 'Đầu ra', 'Ví dụ :'. Không thêm dấu '#' hay '**' vào tiêu đề này.",
+  "2. Giữ nguyên hoặc dịch toàn bộ đề bài sang tiếng Việt tự nhiên và chuẩn xác.",
+  "3. Phần Ví dụ bắt buộc phải hiển thị đúng thứ tự: tiêu đề 'Ví dụ :', tiếp theo là 'Input 01', tiếp theo là dòng chứa duy nhất chữ 'Copy' (không viết hoa, không markdown), sau đó là khối dữ liệu đầu vào. Tiếp theo là 'Output 01', dòng chứa duy nhất chữ 'Copy', sau đó là khối dữ liệu đầu ra.",
+  "4. NẾU ĐỀ BÀI KHÔNG CÓ VÍ DỤ HOẶC THIẾU INPUT 01/OUTPUT 01: Bạn bắt buộc phải tự suy nghĩ và TẠO RA một ví dụ đơn giản, đúng đắn, hợp lệ dựa trên mô tả đề bài và các ràng buộc, rồi ghi vào phần 'Ví dụ :' theo đúng cấu trúc trên. Ví dụ tự tạo phải đảm bảo tính logic (dữ liệu đầu ra phải là kết quả chính xác của dữ liệu đầu vào tương ứng).",
+  "5. Chỉ trả về nội dung đề bài đã chuẩn hóa dưới dạng văn bản thuần túy (plain text), không được bọc trong block code markdown (```markdown hoặc ```text)."
+].join("\n");
+
+async function normalizeStatementText({ settings, statement }) {
+  if (!statement || !statement.trim()) return "";
+  log("Normalize statement start");
+  const key = cacheKey("normalize-statement", settings.model, statement.trim());
+  const hit = cacheGet(key);
+  if (hit) { log("Normalize statement cache hit"); return hit; }
+
+  const content = await chat({
+    settings,
+    messages: [
+      { role: "system", content: NORMALIZE_STATEMENT_SYSTEM },
+      { role: "user", content: statement }
+    ],
+    maxTokens: 4000,
+    timeoutMs: 90000
+  });
+
+  const normalized = content.trim();
+  cacheSet(key, normalized);
+  log("Normalize statement success", `${normalized.length} chars`);
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
@@ -1528,7 +1593,8 @@ function buildSolvedContext(solvedProblems) {
   }).join("\n");
 }
 
-function buildContestMessages({ topic, solvedProblems, problemCount, minRating, maxRating, repairNote }) {
+function buildContestMessages({ topic, solvedProblems, problemCount, minRating, maxRating, avoidTitles, repairNote }) {
+  const avoidList = (Array.isArray(avoidTitles) ? avoidTitles : []).filter(Boolean);
   const user = [
     `TOPIC: ${topic}`,
     `NUMBER OF PROBLEMS: exactly ${problemCount}`,
@@ -1537,6 +1603,10 @@ function buildContestMessages({ topic, solvedProblems, problemCount, minRating, 
     "SOLVED PROBLEMS by this student on the same topic — use ONLY to gauge level and to AVOID overlap.",
     "Do NOT reuse, rename, translate, or lightly mutate any of these:",
     buildSolvedContext(solvedProblems),
+    avoidList.length
+      ? "\nPROBLEM TITLES ALREADY GENERATED IN PREVIOUS CONTESTS — every new problem must differ from ALL of these in both title AND underlying task (not a re-skin):\n"
+        + avoidList.slice(0, 60).map((t) => `- ${t}`).join("\n")
+      : "",
     repairNote ? `\nPREVIOUS ATTEMPT WAS REJECTED. Fix these issues and return corrected JSON only:\n${repairNote}` : ""
   ].join("\n");
   return [
@@ -1613,12 +1683,18 @@ function normalizeContest(parsed) {
 }
 
 // Hard schema validation. Returns a list of human-readable issues ([] = valid).
-function validateContest(c, { minRating, maxRating }) {
+function validateContest(c, { minRating, maxRating, avoidTitles }) {
   const errors = [];
   const probs = c.problems || [];
   if (probs.length < CONTEST.minProblems || probs.length > CONTEST.maxProblems) {
     errors.push(`Số bài phải từ ${CONTEST.minProblems}-${CONTEST.maxProblems} (đang có ${probs.length}).`);
   }
+
+  // Cross-contest dedupe: titles from every previously generated contest (plus
+  // the solved-problem list) are banned outright — a "new" contest that re-serves
+  // an old problem under the same name is exactly the duplication bug this guards.
+  const banned = new Set((Array.isArray(avoidTitles) ? avoidTitles : [])
+    .map((t) => String(t || "").trim().toLowerCase()).filter(Boolean));
 
   const titlesSeen = new Set();
   let prevRating = 0;
@@ -1627,6 +1703,7 @@ function validateContest(c, { minRating, maxRating }) {
     if (!p.title) errors.push(`${label}: thiếu tiêu đề.`);
     const tnorm = p.title.toLowerCase();
     if (tnorm && titlesSeen.has(tnorm)) errors.push(`${label}: tiêu đề trùng với bài khác.`);
+    if (tnorm && banned.has(tnorm)) errors.push(`${label}: tiêu đề trùng với một bài đã tạo trước đây — hãy ra đề hoàn toàn mới.`);
     titlesSeen.add(tnorm);
 
     if (!p.statement || p.statement.length < 40) errors.push(`${label}: đề bài quá ngắn hoặc trống.`);
@@ -1653,7 +1730,7 @@ function validateContest(c, { minRating, maxRating }) {
   return errors;
 }
 
-async function generateContest({ settings, topic, solvedProblems, problemCount, minRating, maxRating }) {
+async function generateContest({ settings, topic, solvedProblems, problemCount, minRating, maxRating, avoidTitles }) {
   const t = String(topic || "").trim();
   if (!t) throw new Error("Thiếu topic cho contest.");
   const count = Math.min(Math.max(Number(problemCount) || CONTEST.minProblems, CONTEST.minProblems), CONTEST.maxProblems);
@@ -1663,7 +1740,7 @@ async function generateContest({ settings, topic, solvedProblems, problemCount, 
   async function attempt(repairNote) {
     const content = await chat({
       settings,
-      messages: buildContestMessages({ topic: t, solvedProblems, problemCount: count, minRating: minR, maxRating: maxR, repairNote }),
+      messages: buildContestMessages({ topic: t, solvedProblems, problemCount: count, minRating: minR, maxRating: maxR, avoidTitles, repairNote }),
       jsonMode: true,
       maxTokens: 16000, // 5-7 full problems with statements + verified tests
       timeoutMs: 180000
@@ -1672,7 +1749,7 @@ async function generateContest({ settings, topic, solvedProblems, problemCount, 
     try { parsed = safeParseJson(content); }
     catch { throw new Error("AI không trả về JSON hợp lệ cho contest."); }
     const normalized = normalizeContest(parsed);
-    const errors = validateContest(normalized, { minRating: minR, maxRating: maxR });
+    const errors = validateContest(normalized, { minRating: minR, maxRating: maxR, avoidTitles });
     return { normalized, errors };
   }
 
@@ -1971,6 +2048,318 @@ Trả về JSON: { "score": 8, "passed": true, "summary": "1 câu tổng kết",
   };
 }
 
+// ---------------------------------------------------------------------------
+// Khu luyện tập — Điền Lõi (Core Fill), Debug tốc độ (Bug Rush) và Khung test
+// thi đấu (Exam plan). Đây là lớp "nguyên liệu thô" thuần AI: mọi output đều
+// được orchestrator tương ứng compile/run thật trước khi tới học sinh.
+// ---------------------------------------------------------------------------
+
+// Legacy single-gap markers (deck cũ + test cũ vẫn dùng cặp không đánh số).
+const COREFILL_MARKER_START = "/*__LOI_BAT_DAU__*/";
+const COREFILL_MARKER_END = "/*__LOI_KET_THUC__*/";
+// v2 multi-gap markers: mỗi đoạn lõi được bọc /*__LOI_BAT_DAU_k__*/ … /*__LOI_KET_THUC_k__*/
+function corefillGapStart(k) { return `/*__LOI_BAT_DAU_${k}__*/`; }
+function corefillGapEnd(k) { return `/*__LOI_KET_THUC_${k}__*/`; }
+
+// ---- Double-escape guard -----------------------------------------------------
+// Some models emit C++ inside JSON with literal "\n" escape PAIRS instead of
+// real newlines (double-escaping). JSON.parse then yields backslash-n text —
+// code that cannot compile. Detect the signature (has "\n" pairs, almost no
+// real newlines) and unescape. Verified against a live failure where the exam
+// generator arrived as one 1300-char line of "...\nusing namespace std;\n...".
+function normalizeCodeString(code) {
+  const s = String(code || "");
+  if (!s.includes("\\n") || s.split("\n").length > 2) return s;
+  // Quote-state walk: a `\n` INSIDE a C++ string/char literal is a legitimate
+  // escape the program needs verbatim (cout << "\n") — only the ones between
+  // statements are the double-escaped line breaks to restore. Verified against
+  // a live payload where blind unescaping split `"\n"` literals across lines
+  // and turned the generator into a CE.
+  let out = "";
+  let inStr = false;
+  let inChar = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    const next = i + 1 < s.length ? s[i + 1] : null;
+    if (ch === "\\" && next != null) {
+      if (inStr || inChar) { out += ch + next; i += 1; continue; }
+      if (next === "n") { out += "\n"; i += 1; continue; }
+      if (next === "t") { out += "\t"; i += 1; continue; }
+      if (next === "r") { i += 1; continue; }
+      if (next === '"') { out += '"'; i += 1; continue; }
+      if (next === "\\") { out += "\\"; i += 1; continue; }
+      out += ch;
+      continue;
+    }
+    if (!inChar && ch === '"') inStr = !inStr;
+    else if (!inStr && ch === "'") inChar = !inChar;
+    out += ch;
+  }
+  return out;
+}
+
+// ---- No-spoiler mechanical gate --------------------------------------------
+// A real content-quality bug from live E2E: an AI drill's buggyCode carried a
+// comment literally naming the fix. The phrase list is deliberately NARROW —
+// generic words ("sai", "lỗi", "bug") appear in innocent CP comments and a
+// false positive would reject a valid drill, burning a real API call.
+const SPOILER_PHRASES = [
+  "nên dùng", "nên là", "nên đổi", "phải là", "sửa thành", "đúng ra là", "đáp án đúng",
+  "should be", "should use", "instead of", "the fix", "correct version", "bug is here"
+];
+
+function extractCodeComments(code) {
+  return String(code || "").match(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g) || [];
+}
+
+/** Returns the first comment that spoils the fix, or null. Pure. */
+function findSpoilerComment(code) {
+  if (!code) return null;
+  for (const comment of extractCodeComments(code)) {
+    const lc = comment.toLowerCase();
+    if (SPOILER_PHRASES.some((p) => lc.includes(p))) return comment;
+  }
+  return null;
+}
+
+/** Removes every spoiler comment (mechanically safe: comments never change
+ *  compiled behavior). Non-spoiler comments are left alone. */
+function stripSpoilerComments(code) {
+  let out = String(code || "");
+  let guard = 0;
+  let hit;
+  while ((hit = findSpoilerComment(out)) && guard < 50) {
+    out = out.replace(hit, "");
+    guard += 1;
+  }
+  return out;
+}
+
+// ---- Điền Lõi — khung kỹ thuật nhiều chỗ điền -------------------------------
+// v2 doctrine: the AI writes the FULL statement + a complete reference
+// solution, then marks 2-4 CORE reasoning segments with numbered markers.
+// Everything outside the gaps is the "khung kỹ thuật" (includes, main, I/O,
+// data-structure shells — the part a snippet library would give you). The
+// student re-derives each gap in their OWN words/naming; the judge only cares
+// about behavior, so any correct fill passes.
+const COREFILL_SYSTEM = `Bạn là HLV thuật toán, tạo MỘT bài luyện "Điền Lõi" cho học sinh cấp 3 luyện thi lập trình.
+
+Ý TƯỞNG: em học sinh nhận được (1) đề bài đầy đủ và (2) một KHUNG KỸ THUẬT — lời giải C++ hoàn chỉnh nhưng bị khoét 2-4 ĐOẠN TƯ DUY CỐT LÕI. Em phải tự viết lại các đoạn đó theo cách hiểu và cách đặt tên của riêng em. Khung cho biết dùng KỸ THUẬT gì; đề bài quyết định điền gì.
+
+YÊU CẦU BẮT BUỘC:
+1. "statement": đề bài tiếng Việt, Markdown, đủ mục: mô tả, **Input**, **Output**, **Ràng buộc**, ít nhất 1 **Ví dụ** (input/output).
+2. "fullCode": lời giải C++ CHUẨN, HOÀN CHỈNH, biên dịch được, giải đúng bài. Trong đó bọc 2-4 đoạn lõi bằng marker đánh số, ví dụ đoạn 1:
+   /*__LOI_BAT_DAU_1__*/
+   ... (đoạn code lõi số 1) ...
+   /*__LOI_KET_THUC_1__*/
+   - Marker phải nằm trên DÒNG RIÊNG, đánh số 1,2,3,... theo thứ tự xuất hiện, không lồng nhau.
+   - Đoạn lõi = bước TƯ DUY: vòng lặp chuyển trạng thái DP, predicate nhị phân, bước hợp nhất, điều kiện đếm... KHÔNG khoét dòng đọc/ghi I/O hay khai báo thường.
+   - Phần khung còn lại phải TỰ ĐỨNG ĐƯỢC về cấu trúc: include, main, đọc input, in output, khai báo mảng/biến chính.
+   - KHÔNG comment nào trong khung được tiết lộ nội dung đoạn lõi.
+3. "gaps": mỗi đoạn lõi một mục { "index": k, "label": "nhiệm vụ đoạn k" } — label mô tả đoạn đó PHẢI ĐẠT ĐƯỢC GÌ (what), tuyệt đối không chứa công thức/code/cách làm (how). Ví dụ tốt: "Dựng bảng dp[i] = số cách xếp tới vị trí i". Ví dụ xấu: "dp[i] = dp[i-1] + dp[i-2]".
+4. "sampleTests": 4-8 input ĐÚNG ĐỊNH DẠNG đề (chỉ input, không cần output), phủ: ví dụ trong đề, biên nhỏ nhất, trùng lặp, giá trị âm/0 nếu hợp lệ, case lớn vừa phải.
+5. Bài toán phải MỚI (không trùng danh sách tránh), rating nằm trong dải được yêu cầu.
+
+TRẢ VỀ DUY NHẤT JSON:
+{ "title": "...", "topic": "...", "rating": 1200,
+  "statement": "...markdown tiếng Việt...",
+  "gaps": [{ "index": 1, "label": "..." }, ...],
+  "fullCode": "...",
+  "sampleTests": [{ "name": "t1", "input": "..." }, ...] }`;
+
+async function generateCoreFillDrill({ settings, topic, minRating, maxRating, avoidTitles, statement }) {
+  const floor = Math.max(Number(minRating) || COREFILL.minRatingFloor, COREFILL.minRatingFloor);
+  const ceil = Math.min(Number(maxRating) || COREFILL.maxRatingCeil, COREFILL.maxRatingCeil);
+  const avoid = (Array.isArray(avoidTitles) ? avoidTitles : []).filter(Boolean);
+  const byo = String(statement || "").trim();
+  // "Bring your own": the student pasted a real problem — solve THAT exact
+  // problem and carve gaps from its solution, never invent a different one.
+  const user = byo
+    ? [
+        "ĐỀ BÀI CÓ SẴN (do học sinh đưa) — DÙNG CHÍNH ĐỀ NÀY, không đổi nội dung, không thay bằng bài khác:",
+        byo.slice(0, COREFILL.maxStatementChars),
+        "",
+        'Nhiệm vụ: viết một lời giải C++ ĐÚNG cho đề trên, rồi khoét 2-4 đoạn lõi theo đúng quy tắc marker đánh số. Trường "statement" trong JSON = đề trên (giữ nguyên ý, chỉ chuẩn hoá Markdown nhẹ + đủ mục Input/Output/Ràng buộc/Ví dụ nếu đề thiếu). "rating" tự ước theo độ khó thật của đề.'
+      ].join("\n")
+    : [
+        `CHỦ ĐỀ: ${String(topic || "").trim() || "chọn một chủ đề nền tảng (prefix sum, two pointers, dp cơ bản, binary search, greedy...)"}`,
+        `RATING: trong khoảng ${floor}–${ceil}.`,
+        avoid.length ? `TRÁNH các bài đã có (không được trùng hay biến tấu nhẹ):\n${avoid.slice(0, 20).map((t) => `- ${t}`).join("\n")}` : ""
+      ].filter(Boolean).join("\n");
+
+  log("CoreFill generate start", byo ? "từ đề dán" : `${topic || "any"} (${floor}-${ceil})`);
+  const content = await chat({
+    settings,
+    messages: [{ role: "system", content: COREFILL_SYSTEM }, { role: "user", content: user }],
+    jsonMode: true,
+    maxTokens: 8000,
+    timeoutMs: 120000
+  });
+  let parsed;
+  try { parsed = safeParseJson(content); }
+  catch { throw new Error("AI không trả về JSON hợp lệ cho Điền Lõi."); }
+
+  const gaps = (Array.isArray(parsed.gaps) ? parsed.gaps : [])
+    .map((g) => ({ index: Math.round(Number(g && g.index) || 0), label: String((g && g.label) || "").trim() }))
+    .filter((g) => g.index >= 1 && g.label)
+    .sort((a, b) => a.index - b.index);
+  const sampleTests = (Array.isArray(parsed.sampleTests) ? parsed.sampleTests : [])
+    .map((t, i) => ({ name: String((t && t.name) || `t${i + 1}`).trim(), input: typeof (t && t.input) === "string" ? normalizeCodeString(t.input) : "" }))
+    .filter((t) => t.input.trim() !== "");
+
+  const drill = {
+    title: String(parsed.title || "").trim(),
+    topic: String(parsed.topic || topic || "").trim(),
+    rating: Math.min(Math.max(Math.round(Number(parsed.rating) || floor), floor), ceil),
+    statement: String(parsed.statement || "").trim().slice(0, COREFILL.maxStatementChars),
+    gaps,
+    // Legacy display string — the joined gap labels (older UI reads gapContract).
+    gapContract: gaps.map((g) => `[${g.index}] ${g.label}`).join(" · "),
+    fullCode: normalizeCodeString(String(parsed.fullCode || "")),
+    sampleTests
+  };
+  if (!drill.title) throw new Error("Điền Lõi: AI không trả về title.");
+  if (!drill.statement || drill.statement.length < 60) throw new Error("Điền Lõi: đề bài quá ngắn.");
+  if (!drill.fullCode.trim()) throw new Error("Điền Lõi: thiếu fullCode.");
+  if (!drill.sampleTests.length) throw new Error("Điền Lõi: thiếu sampleTests.");
+  log("CoreFill generate success", `${drill.title} · ${gaps.length} gap`);
+  return drill;
+}
+
+// ---- Debug tốc độ (Bug Rush) — drill + hint lũy tiến ------------------------
+const RUSH_SYSTEM = `Bạn là người tạo bài luyện "Debug tốc độ": một chương trình C++ ngắn có ĐÚNG MỘT lỗi logic (semantic bug), học sinh phải tự tìm và sửa trong thời gian giới hạn.
+
+YÊU CẦU BẮT BUỘC:
+1. "buggyCode": chương trình C++ 15-45 dòng, tự đứng được (đọc stdin, in stdout), BIÊN DỊCH SẠCH 100%, chứa đúng MỘT lỗi logic thuộc loài bug được giao. Code phải trông tự nhiên như code học sinh khá viết.
+2. "fixedCode": y hệt buggyCode ngoại trừ SỬA TỐI THIỂU đúng chỗ lỗi.
+3. TUYỆT ĐỐI KHÔNG comment nào trong buggyCode được ám chỉ lỗi ở đâu hay cách sửa (không "nên dùng...", không "should be...", không đánh dấu dòng lỗi). Comment bình thường mô tả code đang làm gì thì được.
+4. "testInputs": 4-8 input đúng định dạng, trong đó ĐA SỐ phải làm buggyCode cho kết quả KHÁC fixedCode (lộ bug), gồm cả case biên.
+5. "bugSummary": 1 câu tiếng Việt gọi tên chính xác lỗi (chỉ hiện SAU khi ván kết thúc).
+6. "hint1": gợi ý KHOANH VÙNG — chỉ ra hành vi sai hoặc vùng chức năng đáng ngờ (vd "để ý kết quả khi mảng có phần tử trùng nhau"), KHÔNG nói dòng nào, KHÔNG nói loại lỗi.
+7. "hint2": gợi ý KỸ THUẬT — gọi tên loại lỗi và vùng hẹp hơn (vd "điều kiện dừng của vòng while xử lý biên trái đang lệch một đơn vị"), vẫn KHÔNG đưa code sửa.
+
+TRẢ VỀ DUY NHẤT JSON:
+{ "title": "...", "tag": "...", "buggyCode": "...", "fixedCode": "...",
+  "bugSummary": "...", "hint1": "...", "hint2": "...",
+  "testInputs": ["...", "..."] }`;
+
+async function generateRushDrill({ settings, tag, difficultyLabel, avoidTitles }) {
+  const avoid = (Array.isArray(avoidTitles) ? avoidTitles : []).filter(Boolean);
+  const user = [
+    `LOÀI BUG PHẢI CÀI: ${String(tag || "off-by-one").trim()}`,
+    `ĐỘ KHÓ: ${String(difficultyLabel || "medium").trim()} (easy = bug lộ rõ trên input nhỏ; hard = bug chỉ lộ ở case biên/tinh vi).`,
+    avoid.length ? `TRÁNH trùng các bài đã có:\n${avoid.slice(0, 20).map((t) => `- ${t}`).join("\n")}` : ""
+  ].filter(Boolean).join("\n");
+
+  log("Rush generate start", `${tag} · ${difficultyLabel || "medium"}`);
+  const content = await chat({
+    settings,
+    messages: [{ role: "system", content: RUSH_SYSTEM }, { role: "user", content: user }],
+    jsonMode: true,
+    maxTokens: 6000,
+    timeoutMs: 120000
+  });
+  let parsed;
+  try { parsed = safeParseJson(content); }
+  catch { throw new Error("AI không trả về JSON hợp lệ cho Debug tốc độ."); }
+
+  const drill = {
+    title: String(parsed.title || "").trim(),
+    tag: String(parsed.tag || tag || "").trim(),
+    // Mechanical no-spoiler gate: strip any comment that names the fix. This
+    // never changes compiled behavior, so verification downstream still holds.
+    buggyCode: stripSpoilerComments(normalizeCodeString(String(parsed.buggyCode || ""))),
+    fixedCode: normalizeCodeString(String(parsed.fixedCode || "")),
+    bugSummary: String(parsed.bugSummary || "").trim(),
+    hint1: String(parsed.hint1 || "").trim(),
+    hint2: String(parsed.hint2 || "").trim(),
+    testInputs: (Array.isArray(parsed.testInputs) ? parsed.testInputs : [])
+      .map((i) => (typeof i === "string" ? normalizeCodeString(i) : ""))
+      .filter((i) => i.trim() !== "")
+  };
+  if (!drill.buggyCode.trim()) throw new Error("Debug tốc độ: thiếu buggyCode.");
+  if (!drill.fixedCode.trim()) throw new Error("Debug tốc độ: thiếu fixedCode.");
+  if (!drill.testInputs.length) throw new Error("Debug tốc độ: thiếu testInputs.");
+  log("Rush generate success", drill.title || drill.tag);
+  return drill;
+}
+
+// ---- Khung test thi đấu (Exam plan) -----------------------------------------
+// Contest-realistic test generation: ONE AI call that (a) slices the
+// statement's constraints into real subtasks and (b) writes a generator.cpp
+// that emits VALID inputs per subtask. No solving, no hints, no analysis —
+// deriving outputs and validating them is entirely the student's job (their
+// own brute/reference in the Stress pipeline).
+const EXAM_PLAN_SYSTEM = `Bạn là người RA ĐỀ của một kỳ thi lập trình. Từ đề bài được đưa, dựng KHUNG SINH TEST giống bộ test chấm thật. KHÔNG giải bài, KHÔNG phân tích thuật toán, KHÔNG gợi ý hướng làm — chỉ khung sinh test.
+
+YÊU CẦU:
+1. "subtasks": 3-6 subtask như đề thi thật, chia theo dải ràng buộc (N nhỏ để vét cạn, N trung bình, N sát trần, giá trị đặc biệt, cấu trúc đặc biệt như mảng đã sắp / toàn phần tử bằng nhau / đồ thị đường...). Mỗi subtask:
+   { "id": 1, "name": "tên ngắn", "note": "ràng buộc cụ thể của subtask (vd N ≤ 20, |a_i| ≤ 10)", "count": 25 }
+   Tổng count của mọi subtask PHẢI ≥ 100 (bộ test thi thật không bao giờ mỏng). Subtask biên nhỏ ít test hơn, subtask ngẫu nhiên lớn nhiều test hơn.
+2. "generatorCode": chương trình C++ generator:
+   - argv[1] = seed (dùng mt19937 với seed này), argv[2] = mode ("correctness"/"performance"), argv[3] = id subtask.
+   - switch theo argv[3]: mỗi subtask sinh input HỢP LỆ đúng định dạng đề và đúng ràng buộc của subtask đó.
+   - Với subtask biên: các seed nhỏ (1,2,3...) phải cho ra case biên CỐ ĐỊNH có chủ đích (N nhỏ nhất, toàn giá trị max, trùng lặp...) trước khi chuyển sang ngẫu nhiên.
+   - GIỚI HẠN KÍCH THƯỚC — LUẬT CỨNG, KHÔNG NGOẠI LỆ: mọi input generator in ra phải ≤ 200000 ký tự (runner cắt ở 1MB là fail cả batch). Dù đề cho N tới 10^5/10^18, subtask "lớn nhất" của KHUNG LUYỆN này dùng N ≤ 5000 (đủ phân biệt thuật toán, Brute O(N²) của học sinh vẫn sống trong ~2 giây). Trong code generator, hãy clamp N bằng hằng số (vd const int CAP = 5000;) để không thể vượt. Độ THẬT của bộ test nằm ở cấu trúc và độ phủ subtask, không phải kích thước tuyệt đối.
+   - Biên dịch sạch với g++ -std=c++17, chỉ dùng <bits/stdc++.h>.
+3. KHÔNG in gì ngoài input của bài. KHÔNG comment tiết lộ cách giải.
+
+TRẢ VỀ DUY NHẤT JSON:
+{ "subtasks": [{ "id": 1, "name": "...", "note": "...", "count": 25 }, ...],
+  "generatorCode": "..." }`;
+
+async function generateExamPlan({ settings, statement, meta }) {
+  const stmt = String(statement || "").trim();
+  if (!stmt) throw new Error("Đề bài đang trống — dán đề trước khi dựng khung test.");
+
+  const key = cacheKey("examplan", settings.model, stmt);
+  const hit = cacheGet(key);
+  if (hit) { log("Exam plan cache hit"); return hit; }
+
+  const metaLine = meta ? `Title: ${meta.title || ""} · Topic: ${meta.topic || ""}` : "";
+  log("Exam plan start");
+  const content = await chat({
+    settings,
+    messages: [
+      { role: "system", content: EXAM_PLAN_SYSTEM },
+      { role: "user", content: `${metaLine}\n\nĐỀ BÀI:\n${stmt.slice(0, 12000)}` }
+    ],
+    jsonMode: true,
+    maxTokens: 6000,
+    timeoutMs: 120000
+  });
+  let parsed;
+  try { parsed = safeParseJson(content); }
+  catch { throw new Error("AI không trả về JSON hợp lệ cho khung test."); }
+
+  let subtasks = (Array.isArray(parsed.subtasks) ? parsed.subtasks : [])
+    .map((s, i) => ({
+      id: Math.round(Number(s && s.id) || i + 1),
+      name: String((s && s.name) || `Subtask ${i + 1}`).trim(),
+      note: String((s && s.note) || "").trim(),
+      count: Math.min(Math.max(Math.round(Number(s && s.count) || 20), 1), 500)
+    }))
+    .filter((s, i, arr) => arr.findIndex((x) => x.id === s.id) === i)
+    .slice(0, 8);
+  if (!subtasks.length) throw new Error("Khung test: AI không trả về subtask nào.");
+
+  // A real judge's test set is never thin: scale counts up proportionally
+  // until the whole plan carries at least 100 tests.
+  const total = subtasks.reduce((a, s) => a + s.count, 0);
+  if (total < 100) {
+    const scale = 100 / total;
+    subtasks = subtasks.map((s) => ({ ...s, count: Math.min(500, Math.max(1, Math.ceil(s.count * scale))) }));
+  }
+
+  const generatorCode = normalizeCodeString(String(parsed.generatorCode || ""));
+  if (!generatorCode.trim()) throw new Error("Khung test: thiếu generatorCode.");
+
+  const result = { subtasks, generatorCode };
+  cacheSet(key, result);
+  log("Exam plan success", `${subtasks.length} subtask · ${subtasks.reduce((a, s) => a + s.count, 0)} test`);
+  return result;
+}
+
 module.exports = {
   testConnection,
   generateTests,
@@ -1978,6 +2367,7 @@ module.exports = {
   cleanupOcr,
   analyzeStatement,
   extractSamples,
+  normalizeStatementText,
   getHint,
   reviewMistakes,
   generateHelper,
@@ -1991,6 +2381,9 @@ module.exports = {
   generateEditorial,
   chatProblem,
   chatProblemStream,
+  // Moment diagnosis uses the generic chat adapter; keep this public so the
+  // SSE route and integrations share one stable entry point.
+  chat,
   formatRunHistory,
   generateContest,
   generateBoss,
@@ -2000,5 +2393,17 @@ module.exports = {
   detectProvider,
   looksGarbled,
   log,
-  NO_KEY_MESSAGE
+  NO_KEY_MESSAGE,
+  // Khu luyện tập (arena practice) AI layer
+  COREFILL_MARKER_START,
+  COREFILL_MARKER_END,
+  corefillGapStart,
+  corefillGapEnd,
+  generateCoreFillDrill,
+  generateRushDrill,
+  generateExamPlan,
+  findSpoilerComment,
+  stripSpoilerComments,
+  normalizeCodeString,
+  safeParseJson
 };

@@ -1,0 +1,4 @@
+{
+  "input": "3 4\nS...\n##.#\n...T\n",
+  "code": "#include <bits/stdc++.h>\nusing namespace std;\nint dx[] = {0, 1, 0, -1};\nint dy[] = {1, 0, -1, 0};\nint d[20][20];\nqueue<pair<int,int>> q;\nvoid bfs(int sx,int sy){ d[sx][sy]=0; q.push({sx,sy}); while(!q.empty()){ auto cur=q.front(); q.pop(); int x=cur.first,y=cur.second; for(int i=0;i<4;i++){ int nx=x+dx[i],ny=y+dy[i]; if(nx>=0 && ny>=0 && nx<20 && ny<20 && d[nx][ny]==-1){ d[nx][ny]=d[x][y]+1; q.push({nx,ny}); } } } }\n"
+}
