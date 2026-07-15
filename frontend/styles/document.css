@@ -769,6 +769,27 @@
 .an-step[data-line]:hover td { background: var(--panel-2, #17171c); }
 .an-actions { margin-top: 14px; }
 
+/* Multi-concept traces (B3): dijkstra + prefix-sum share the trace table;
+   rows carrying a real source line are clickable jump targets. */
+.an-step-jump { cursor: pointer; }
+.an-step-jump:hover td { background: var(--panel-2, #17171c); }
+.an-step-jump td:first-child { color: var(--accent, #e6a93e); }
+.an-path { margin: 8px 0; font-size: 12.5px; }
+.an-path code { font-family: var(--mono, monospace); background: var(--panel-2, #17171c); padding: 2px 8px; border-radius: 5px; }
+.an-mismatch { color: var(--wa, #e5544b); font-weight: 600; }
+tr[data-mismatch] td { background: color-mix(in srgb, var(--wa, #e5544b) 8%, transparent); }
+.an-build-head { margin: 12px 0 4px; font-size: 12px; color: var(--text-muted, #aab2c5); }
+.an-build-step b { color: var(--text, #e8e8ec); }
+.an-prefix-table th { font-family: var(--mono, monospace); }
+tr[data-stale] td { opacity: .55; }
+.an-relax { display: block; white-space: nowrap; }
+.an-relax.is-acc b { color: var(--ac, #35c26e); }
+.an-relax.is-rej { opacity: .6; }
+.an-offbyone { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border, #2c2c35); border-radius: 8px; }
+.an-ob-row { font-size: 12.5px; margin: 3px 0; }
+.an-ob-row.is-wrong { color: var(--wa, #e5544b); }
+.an-ob-row code { font-family: var(--mono, monospace); background: var(--panel-2, #17171c); padding: 1px 6px; border-radius: 4px; }
+
 /* ---- "Phát triển thành module" (features/derived-module.js) ---------------- */
 .dm-derived-from { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; font-size: 12.5px; }
 .dm-requirement { margin-bottom: 14px; }

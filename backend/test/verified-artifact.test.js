@@ -75,6 +75,11 @@ test("nextAction exposes exactly one reasoned action for Run, failure, and AC in
 
   const evolve = artifact.nextAction({ operation: "judge", verdict: "AC", intent: "derive-module", evidence: { id: "run-1" } });
   assert.equal(evolve.id, "create-grid-pathfinder");
+
+  const dijkstra = artifact.nextAction({ operation: "judge", verdict: "AC", intent: "derive-module", concept: "dijkstra", evidence: { id: "run-2" } });
+  assert.equal(dijkstra.id, "create-weighted-graph-router");
+  const prefix = artifact.nextAction({ operation: "judge", verdict: "AC", intent: "derive-module", concept: "prefix sum", evidence: { id: "run-3" } });
+  assert.equal(prefix.id, "create-range-sum-module");
   assert.equal(evolve.state, "evolve");
 
   const legacyEvolve = artifact.nextAction({ operation: "judge", verdict: "AC", intent: "derive-module" });

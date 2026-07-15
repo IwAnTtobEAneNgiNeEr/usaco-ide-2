@@ -19,10 +19,10 @@
          forge     identity re-pigment (warm graphite + amber-gold, Geist) — loaded last
        The order is intentional. Consolidating these into tokens/layout/components is a
        tracked roadmap item; see README "Frontend styling". -->
-  <link rel="stylesheet" href="./styles/main.css?v=3.2" />
+  <link rel="stylesheet" href="./styles/main.css?v=3.3" />
   <link rel="stylesheet" href="./styles/features.css?v=2.8" />
   <link rel="stylesheet" href="./styles/theme.css?v=2.3" />
-  <link rel="stylesheet" href="./styles/journey.css?v=3.4" />
+  <link rel="stylesheet" href="./styles/journey.css?v=3.5" />
   <link rel="stylesheet" href="./styles/polish.css?v=2.3" />
   <link rel="stylesheet" href="./styles/refine.css?v=3.1" />
   <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
@@ -32,7 +32,7 @@
   <!-- document.css v2 — the "tài liệu" language (Game Review, Biên Bản Pháp Y, reports).
        Neon-ink, cinema-dark like Statement/Journey (README-LOOPS-UX-CRITIQUE.md §4.0-1).
        Loaded before tokens.css so tokens stay authoritative for the verdict rail. -->
-  <link rel="stylesheet" href="./styles/document.css?v=2.8" />
+  <link rel="stylesheet" href="./styles/document.css?v=2.9" />
   <!-- arena.css — ⚔ Đấu Trường shell skin (HUD chip, match strip, reveal,
        gauntlet, bug-card line). SHELL family like document.css's mo-* block:
        token-driven, loaded BEFORE tokens.css so tokens stay authoritative. -->
@@ -197,6 +197,7 @@
                 <button id="btn-snippets" class="btn btn-ghost btn-sm" title="Thư viện thuật toán">§ Snippets</button>
                 <button id="btn-stress" class="btn btn-ghost btn-sm" title="Stress test &amp; đo độ phức tạp">Stress Lab</button>
                 <button id="btn-open-folder" class="btn btn-ghost btn-sm" title="Mở thư mục bài này trong VS Code">Mở trong VS Code</button>
+                <button id="btn-derived-module" class="btn btn-ghost btn-sm" type="button" title="Mở module dẫn xuất của bài này (tạo mới cần một lần Judge AC)">⑂ Module dẫn xuất</button>
                 <button id="btn-defense" class="btn btn-ghost btn-sm hidden" type="button" title="AI hỏi lại để bạn tự giải thích lời giải của mình">Giải thích lời giải</button>
                 <button id="btn-synth" class="btn btn-ghost btn-sm hidden" type="button" title="AI dựng một biến thể khó hơn của bài này">Bản khó hơn</button>
               </div>
@@ -691,6 +692,6 @@
   <!-- Toast host -->
   <div id="toast-host" class="toast-host"></div>
 
-  <script type="module" src="./src/main.js?v=6.5"></script>
+  <script type="module" src="./src/main.js?v=6.6"></script>
 </body>
 </html>

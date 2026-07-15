@@ -147,6 +147,15 @@ export const api = {
 
   // Problems
   listProblems: () => get("/api/problems"),
+  // Smart Library search (B1). `qs` is a prebuilt query string
+  // (core/search-model.js buildSearchParams) — server returns ranked results
+  // with its own "Vì sao khớp" reasons. 404 = backend without the route; the
+  // Library falls back to local filtering.
+  searchProblems: (qs) => get(`/api/problems/search${qs ? `?${qs}` : ""}`),
+  // Home entry policy (B2): ≤3 reasoned items; unfinished work ranks first.
+  // `qs` carries dismissed=/liked= (core/entry-model.js). 404 = backend
+  // without the route; the home keeps its local ladder.
+  entryRecommendations: (qs) => get(`/api/recommendations/entry${qs ? `?${qs}` : ""}`),
   getProblem: (id) => get(`/api/problems/${id}`),
   // Everything needed to open a problem (meta + files + tests) in one request.
   getWorkspace: (id) => get(`/api/problems/${id}/workspace`),
@@ -197,8 +206,16 @@ export const api = {
   evidence: (id, evidenceId) => get(`/api/problems/${id}/evidence/${encodeURIComponent(evidenceId)}`),
   evidenceByHref: (href) => get(href),
   bfsTrace: (id, evidenceId) => post(`/api/problems/${id}/analysis/bfs-trace`, { evidenceId }),
+  // Concept-scoped deterministic traces (B3). kind ∈ bfs-trace | dijkstra-trace
+  // | prefix-sum-trace (core/concept-detect.js). Server re-runs from the
+  // evidence's own code+input; 404/501 = trace not shipped → honest fallback.
+  analysisTrace: (id, kind, evidenceId) => post(`/api/problems/${id}/analysis/${encodeURIComponent(kind)}`, { evidenceId }),
   derivedArtifacts: (id) => get(`/api/problems/${id}/derived`),
   createGridPathfinder: (id, evidenceId) => post(`/api/problems/${id}/derived/grid-pathfinder`, { evidenceId }),
+  // Generic create for the contract's derived modules (B4): grid-pathfinder,
+  // weighted-graph-router, range-sum-module. Only a full Judge AC evidence id
+  // is accepted by the backend.
+  createDerivedModule: (id, moduleId, evidenceId) => post(`/api/problems/${id}/derived/${encodeURIComponent(moduleId)}`, { evidenceId }),
   getDerivedArtifact: (id, artifactId) => get(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}`),
   // Edit loop: read/write only GridPathfinder.cpp; the original main.cpp is
   // never touched (backend enforces this). Re-run verify after saving.

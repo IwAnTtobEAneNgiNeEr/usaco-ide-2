@@ -14,6 +14,7 @@ data/settings.json
 data/boss.json
 data/arena-*.json
 data/student-model.json
+data/backups/
 
 # Personal C++ starter template (Settings → Code template)
 data/template.cpp

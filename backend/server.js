@@ -44,6 +44,7 @@ const arenaSeal = require("./src/routes/arena-seal");
 const arenaSpecimen = require("./src/routes/arena-specimen");
 const arenaCoreFillRouter = require("./src/routes/arena-corefill");
 const arenaRushRouter = require("./src/routes/arena-rush");
+const recommendationsRouter = require("./src/routes/recommendations");
 
 const VERSION = "2.0.0";
 
@@ -92,6 +93,7 @@ function buildApp() {
   app.use("/api/problems", gameReviewRouter);
   app.use("/api/problems", momentRouter);
   app.use("/api/problems", verifiedArtifactsRouter);
+  app.use("/api/recommendations", recommendationsRouter);
   app.use("/api/problems", arenaReferenceRouter);
   app.use("/api/problems", arenaMatchRouter);
   app.use("/api/problems", arenaGhostRouter);

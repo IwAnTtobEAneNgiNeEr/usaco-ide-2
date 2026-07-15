@@ -108,7 +108,14 @@ function deriveStatus({ history, detailedHistory, currentCode } = {}) {
   return sha256(snapshot.code) === sha256(currentCode) ? "verified" : "stale";
 }
 
-function nextAction({ operation = "summary", verdict, derivedStatus, intent = "competitive", evidence = null } = {}) {
+function moduleActionForConcept(concept) {
+  const normalized = clean(concept).toLowerCase().replace(/[_\s]+/g, "-");
+  if (normalized === "dijkstra") return { id: "create-weighted-graph-router", label: "Create WeightedGraphRouter" };
+  if (normalized === "prefix-sum" || normalized === "prefixsum") return { id: "create-range-sum-module", label: "Create RangeSum" };
+  return { id: "create-grid-pathfinder", label: "Tạo GridPathfinder" };
+}
+
+function nextAction({ operation = "summary", verdict, derivedStatus, intent = "competitive", evidence = null, concept = "" } = {}) {
   const evidenceRef = evidence || null;
 
   if (operation === "run") {
@@ -132,7 +139,8 @@ function nextAction({ operation = "summary", verdict, derivedStatus, intent = "c
       if (!evidenceRef) {
         return { id: "judge-full-suite", state: "verify", label: "Tạo evidence mới", reason: "AC cũ chưa có evidence link; Judge lại để bind derivedFrom vào đúng run/snapshot." };
       }
-      return { id: "create-grid-pathfinder", state: "evolve", label: "Tạo GridPathfinder", reason: "Judge AC cho snapshot hiện tại; có thể tạo artifact dẫn xuất mà không ghi đè solution.", evidence: evidenceRef };
+      const moduleAction = moduleActionForConcept(concept);
+      return { ...moduleAction, state: "evolve", reason: "Judge AC matches the current snapshot; create a separate derived module without overwriting the solution.", evidence: evidenceRef };
     }
     return { id: "continue-plan", state: "evolve", label: "Tiếp tục kế hoạch", reason: "Judge AC đã verify solution; AC lịch sử không tự trở thành fresh/rated progress.", evidence: evidenceRef };
   }
@@ -154,13 +162,14 @@ function buildContract({ meta = {}, history, detailedHistory, currentCode, evide
   const derivedStatus = deriveStatus({ history: effectiveHistory, detailedHistory, currentCode });
   const latestJudge = judgeHistory(effectiveHistory)[0] || null;
   const normalized = normalizeMetadata(meta);
+  const concept = clean(meta.concept) || clean(meta.topic) || (Array.isArray(meta.tags) ? clean(meta.tags[0]) : "");
 
   return {
     version: 1,
     id: meta.id || "",
     title: meta.title || meta.id || "",
     ...normalized,
-    concept: clean(meta.concept) || clean(meta.topic) || (Array.isArray(meta.tags) ? clean(meta.tags[0]) : ""),
+    concept,
     difficulty: meta.difficulty || "unrated",
     derivedStatus,
     evidence,
@@ -171,6 +180,7 @@ function buildContract({ meta = {}, history, detailedHistory, currentCode, evide
       derivedStatus,
       intent,
       evidence,
+      concept,
     }),
     freshness: {
       freshWin: false,
@@ -196,5 +206,6 @@ module.exports = {
   hasHistoricalAcceptance,
   deriveStatus,
   nextAction,
+  moduleActionForConcept,
   buildContract,
 };

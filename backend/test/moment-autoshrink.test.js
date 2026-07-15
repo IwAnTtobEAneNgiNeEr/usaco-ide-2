@@ -31,7 +31,7 @@ const studentModel = require("../src/studentModel");
 const ai = require("../src/ai");
 const momentRouter = require("../src/routes/moment");
 
-const FAKE_IDS = ["mo-shrink-p1", "mo-shrink-p2", "mo-shrink-p3", "mo-shrink-p4"];
+const FAKE_IDS = ["mo-shrink-p1", "mo-shrink-p2", "mo-shrink-p3", "mo-shrink-p4", "mo-empty-provider"];
 
 test.after(async () => {
   await Promise.all(FAKE_IDS.map((id) => fs.rm(fileStore.problemDir(id), { recursive: true, force: true })));
@@ -198,5 +198,37 @@ test("WA degrades gracefully to the original input when no reference can be buil
     assert.ok(!events.some((e) => e.stage === "shrunk"), "no shrunk event — must fall back to diagnosing the original input");
     const done = events.find((e) => e.done);
     assert.equal(done.diagnosis.ok, true); // the diagnosis step itself still proceeds normally
+  });
+});
+
+test("empty Moment provider response returns and persists an evidence-only fallback", async () => {
+  const writes = [];
+  await withStubs([
+    [fileStore, "readJson", async () => null],
+    [fileStore, "writeJson", async (file, value) => { writes.push({ file, value }); }],
+    [studentModel, "noteRecurringBug", async () => { throw new Error("must not create inferred weakness"); }],
+    [settingsStore, "getAiSettings", async () => ({ apiKey: "test-key", model: "stub" })],
+    [settingsStore, "getSettings", async () => ({ timeMs: 2000 })],
+    [problemStore, "problemExists", async () => true],
+    [problemStore, "readMeta", async () => ({})],
+    [problemStore, "getFile", async (_id, kind) => (kind === "statement" ? "s" : "int main(){}")],
+    [ai, "chat", async () => ""],
+  ], async (port) => {
+    const { status, events } = await streamDiagnose(port, FAKE_IDS[4], {
+      verdict: "WA",
+      test: { testId: "t-empty", input: "1\n", expected: "2\n", actual: "3\n" },
+    });
+    assert.equal(status, 200);
+    const done = events.find((event) => event.done);
+    assert.equal(done.diagnosis.ok, false);
+    assert.equal(done.diagnosis.status, "evidence-only");
+    assert.equal(done.diagnosis.reason, "provider-output-empty");
+    assert.equal(done.diagnosis.evidence.testId, "t-empty");
+    assert.equal("tag" in done.diagnosis, false);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const evidenceWrite = writes.find(({ file, value }) => /moment[\\/].+\.json$/.test(file) && value.diagnosis);
+    assert.ok(evidenceWrite, "fallback must leave an auditable evidence file");
+    assert.equal(evidenceWrite.value.diagnosis.status, "evidence-only");
   });
 });

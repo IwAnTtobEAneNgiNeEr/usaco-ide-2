@@ -5,6 +5,8 @@ const problemStore = require("../problemStore");
 const evidenceStore = require("../evidenceStore");
 const verifiedArtifact = require("../verifiedArtifact");
 const bfsTrace = require("../bfsTrace");
+const dijkstraTrace = require("../dijkstraTrace");
+const prefixSumTrace = require("../prefixSumTrace");
 const derivedArtifactStore = require("../derivedArtifactStore");
 const { asyncHandler, requireProblem } = require("./_util");
 
@@ -57,6 +59,28 @@ router.post("/:id/analysis/bfs-trace", requireProblem, asyncHandler(async (req, 
   res.json({ analysis });
 }));
 
+async function evidenceBoundAnalysis(req, res, analyze) {
+  const evidenceId = req.body && req.body.evidenceId;
+  if (!evidenceId) return res.status(400).json({ error: "Missing evidenceId for the run to analyze." });
+  const evidence = await evidenceStore.readEvidence(req.problemId, evidenceId);
+  if (!evidence) return res.status(404).json({ error: "Evidence does not exist." });
+  const analysis = analyze({
+    code: evidence.codeSnapshot && evidence.codeSnapshot.code,
+    input: evidence.test && evidence.test.input,
+    verdict: evidence.run && evidence.run.verdict,
+  });
+  analysis.evidence = evidenceStore.toReference(evidence);
+  return res.json({ analysis });
+}
+
+router.post("/:id/analysis/dijkstra-trace", requireProblem, asyncHandler(async (req, res) => {
+  return evidenceBoundAnalysis(req, res, dijkstraTrace.traceDijkstra);
+}));
+
+router.post("/:id/analysis/prefix-sum-trace", requireProblem, asyncHandler(async (req, res) => {
+  return evidenceBoundAnalysis(req, res, prefixSumTrace.tracePrefixSum);
+}));
+
 router.get("/:id/derived", requireProblem, asyncHandler(async (req, res) => {
   res.json({ artifacts: await derivedArtifactStore.listArtifacts(req.problemId) });
 }));
@@ -65,6 +89,20 @@ router.post("/:id/derived/grid-pathfinder", requireProblem, asyncHandler(async (
   const evidenceId = req.body && req.body.evidenceId;
   if (!evidenceId) return res.status(400).json({ error: "Thiếu AC evidenceId để tạo derived artifact." });
   const artifact = await derivedArtifactStore.createGridPathfinder(req.problemId, evidenceId);
+  res.status(201).json({ artifact });
+}));
+
+router.post("/:id/derived/weighted-graph-router", requireProblem, asyncHandler(async (req, res) => {
+  const evidenceId = req.body && req.body.evidenceId;
+  if (!evidenceId) return res.status(400).json({ error: "Missing AC evidenceId for WeightedGraphRouter." });
+  const artifact = await derivedArtifactStore.createWeightedGraphRouter(req.problemId, evidenceId);
+  res.status(201).json({ artifact });
+}));
+
+router.post("/:id/derived/range-sum-module", requireProblem, asyncHandler(async (req, res) => {
+  const evidenceId = req.body && req.body.evidenceId;
+  if (!evidenceId) return res.status(400).json({ error: "Missing AC evidenceId for RangeSum." });
+  const artifact = await derivedArtifactStore.createRangeSumModule(req.problemId, evidenceId);
   res.status(201).json({ artifact });
 }));
 

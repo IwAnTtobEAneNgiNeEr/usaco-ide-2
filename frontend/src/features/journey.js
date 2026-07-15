@@ -16,6 +16,10 @@
 
 import { api } from "../api.js";
 import { escapeHtml } from "../md.js";
+import {
+  normalizeEntry, visibleSuggestions, feedbackEvent, entryQueryString,
+  parseHidden, serializeHidden, FEEDBACK_STORE_KEY, FEEDBACK_KINDS,
+} from "../core/entry-model.js";
 
 // Rotating daily quotes — picked by date so the home feels alive but stable
 // within a day.
@@ -151,8 +155,17 @@ function nextPrimary(p, plan, arena) {
   return { action: "new-problem", kicker: "Bắt đầu", title: "Tạo bài đầu tiên", why: "dán ảnh đề — AI đọc đề và dựng test cho em" };
 }
 
-function renderNextMove(p, plan, arena) {
-  const primary = nextPrimary(p, plan, arena);
+function renderNextMove(p, plan, arena, entry) {
+  // Entry policy (B2): when GET /api/recommendations/entry is available, the
+  // continue CTA comes from IT — the backend's own read of "work đang dở".
+  // Without the route (or with nothing to continue) the local ladder stays.
+  const primary = entry && entry.continueItem
+    ? {
+        action: "open-problem", id: entry.continueItem.id, kicker: "Tiếp tục",
+        title: displayProblemTitle(entry.continueItem.title),
+        why: entry.continueItem.reason || (entry.continueItem.lastVerdict ? `lần trước ${entry.continueItem.lastVerdict}` : ""),
+      }
+    : nextPrimary(p, plan, arena);
   const dataId = primary.id ? ` data-id="${escapeHtml(primary.id)}"` : "";
   const cta = `
     <button type="button" class="jh-next" data-action="${primary.action}"${dataId}>
@@ -165,8 +178,10 @@ function renderNextMove(p, plan, arena) {
   // Up to two quiet alternates from the arena's suggestions — never louder than
   // the primary, never the same problem. A self-select match, and a sealed
   // problem (identity hidden until opened — pure interleaved practice).
+  // With the entry API live, the reasoned suggestion list below replaces these
+  // (home policy: at most 3 suggestions total, all with reasons).
   const alts = [];
-  const nb = arena && arena.nextBet ? arena.nextBet : null;
+  const nb = !entry && arena && arena.nextBet ? arena.nextBet : null;
   if (nb) {
     const self = Array.isArray(nb.selfSelect) ? nb.selfSelect.find((s) => s.id !== primary.id) : null;
     if (self) {
@@ -195,7 +210,58 @@ function renderNextMove(p, plan, arena) {
 }
 
 // ---------------------------------------------------------------------------
-// Unit 2 — Kế hoạch hôm nay (the planner's short list; no second loud CTA)
+// Unit 1b — Search (the "bắt đầu gì?" half of the entry question)
+// ---------------------------------------------------------------------------
+
+// One search affordance that routes INTO the Library's own search — the home
+// never grows a second result list. Typing mirrors into #search live; Enter
+// jumps focus to the problem list.
+function renderHomeSearch() {
+  return `
+    <section class="jh-unit jh-search-unit" data-role="mint">
+      <label class="jh-search-label" for="jh-search">Tìm bài trong thư viện</label>
+      <input id="jh-search" class="input jh-search-input" type="search"
+        placeholder="Tên bài, chủ đề, concept… (Enter để xem kết quả)" autocomplete="off" />
+    </section>`;
+}
+
+// ---------------------------------------------------------------------------
+// Unit 2 — Gợi ý bắt đầu (entry API) — at most 3, each with a real reason and
+// a quiet feedback affordance (quá dễ / quá khó / không phù hợp).
+// ---------------------------------------------------------------------------
+
+function renderEntrySuggestions(entry, hidden) {
+  const items = visibleSuggestions(entry.suggestions, hidden);
+  if (!items.length) return "";
+  const rows = items.map((s) => `
+    <div class="jh-sug-row" data-sug-id="${escapeHtml(s.id)}">
+      <button type="button" class="jh-sug-open" data-action="open-problem" data-id="${escapeHtml(s.id)}">
+        <span class="jh-sug-title">${escapeHtml(displayProblemTitle(s.title))}${s.rating ? ` <span class="jh-sug-rating">~${s.rating}</span>` : ""}</span>
+        <span class="jh-sug-why">${escapeHtml(s.reason)}</span>
+      </button>
+      <button type="button" class="jh-sug-dismiss" data-action="sug-feedback" data-id="${escapeHtml(s.id)}"
+        title="Phản hồi gợi ý này" aria-label="Phản hồi gợi ý">✕</button>
+    </div>`).join("");
+  return `
+    <section class="jh-unit jh-sugs" data-role="violet">
+      <div class="jh-plan-head">
+        <span class="jh-plan-kicker">Gợi ý bắt đầu</span>
+        <span class="jh-plan-total">tối đa 3 · mỗi gợi ý có lý do · bỏ qua được</span>
+      </div>
+      <div class="jh-sug-rows">${rows}</div>
+    </section>`;
+}
+
+// The inline feedback strip that replaces a suggestion row when ✕ is clicked.
+function feedbackStripHtml(id) {
+  const btns = FEEDBACK_KINDS.map((k) =>
+    `<button type="button" class="jh-sug-fb" data-action="sug-feedback-send" data-id="${escapeHtml(id)}" data-kind="${k.id}">${k.label}</button>`
+  ).join("");
+  return `<div class="jh-sug-fbrow">${btns}<button type="button" class="jh-sug-fb jh-sug-fb-cancel" data-action="sug-feedback-cancel">Giữ lại</button></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Unit 2 (fallback) — Kế hoạch hôm nay (the planner's short list; no second loud CTA)
 // ---------------------------------------------------------------------------
 
 const PLAN_GLYPH = { review: "↻", quiz: "?", new: "+" };
@@ -470,13 +536,19 @@ function renderPractice(problems) {
 // Home v2 shell
 // ---------------------------------------------------------------------------
 
-function renderHome(p, plan, arena) {
+function renderHome(p, plan, arena, entry, hidden) {
   if (!p) return `<p class="jh-muted" style="padding:40px">Đang tải hành trình…</p>`;
 
+  // Entry policy (B2): the home answers ONE question — "Tiếp tục hoặc bắt đầu
+  // gì?". Continue CTA + search + ≤3 reasoned suggestions. The planner list
+  // renders only while the entry route isn't shipped (local fallback); stats/
+  // rating stay a thin secondary strip.
+  const startUnit = entry ? renderEntrySuggestions(entry, hidden) : renderPlan(plan);
   const body = p.totals.problems === 0 ? renderOnboarding() : `
     ${renderStatStrip(p, arena)}
-    ${renderNextMove(p, plan, arena)}
-    ${renderPlan(plan)}
+    ${renderNextMove(p, plan, arena, entry)}
+    ${renderHomeSearch()}
+    ${startUnit}
     <section class="jh-unit jh-context" id="jh-boss-host"></section>`;
 
   return `
@@ -532,12 +604,33 @@ export function initJourney(app) {
 
   let lastPlan = null;  // the day's plan — kept so click handlers can act on it
   let lastArena = null; // rating/roadmap/season/adjourned snapshot
+  let lastEntry = null; // normalized GET /api/recommendations/entry (null = route absent)
+  let entryUnavailable = false; // 404'd once → stop asking this session
+  let hiddenSug = parseHidden((() => { try { return localStorage.getItem(FEEDBACK_STORE_KEY); } catch { return "[]"; } })());
+  let homeSearchQ = ""; // survives innerHTML repaints
+
+  function persistHidden() {
+    try { localStorage.setItem(FEEDBACK_STORE_KEY, serializeHidden(hiddenSug)); } catch { /* private mode */ }
+  }
+
+  async function fetchEntry() {
+    if (entryUnavailable) return null;
+    try {
+      // The dismissal list rides along so server-side ranking respects it.
+      return normalizeEntry(await api.entryRecommendations(entryQueryString(hiddenSug)));
+    } catch (err) {
+      if (err && err.status === 404) entryUnavailable = true;
+      return null;
+    }
+  }
 
   function paintHome(p) {
-    if (!p) { host.innerHTML = renderHome(p, lastPlan, lastArena); return; }
+    if (!p) { host.innerHTML = renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug); return; }
     host.innerHTML = homeView === "profile"
       ? renderProfile(p, lastArena)
-      : (homeView === "practice" ? renderPractice(app.state.problems) : renderHome(p, lastPlan, lastArena));
+      : (homeView === "practice" ? renderPractice(app.state.problems) : renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug));
+    const homeSearch = host.querySelector("#jh-search");
+    if (homeSearch && homeSearchQ) homeSearch.value = homeSearchQ;
     // Satellite features (weekend challenge card) fill #jh-boss-host — only on
     // the Today view, where that slot exists.
     if (homeView === "today") {
@@ -596,12 +689,15 @@ export function initJourney(app) {
 
   async function refresh({ quiet = false } = {}) {
     try {
-      // Plan/arena fetches are best-effort — a hiccup must never break the home.
-      const [pRes, planRes, arenaRes] = await Promise.allSettled([api.progress(), api.plannerSession(), fetchArena()]);
+      // Plan/arena/entry fetches are best-effort — a hiccup must never break the home.
+      const [pRes, planRes, arenaRes, entryRes] = await Promise.allSettled([
+        api.progress(), api.plannerSession(), fetchArena(), fetchEntry(),
+      ]);
       if (pRes.status !== "fulfilled") throw new Error("progress failed");
       const p = pRes.value;
       lastPlan = planRes.status === "fulfilled" && planRes.value.plan ? planRes.value.plan : null;
       lastArena = arenaRes.status === "fulfilled" ? arenaRes.value : null;
+      lastEntry = entryRes.status === "fulfilled" ? entryRes.value : null;
       celebrate(quiet ? last : null, p);
       last = p;
       paintChips(p);
@@ -693,6 +789,25 @@ export function initJourney(app) {
       refresh();
     }
     else if (action === "plan-item") startPlanItem(lastPlan && lastPlan.items && lastPlan.items[Number(btn.dataset.idx)]);
+    // --- entry suggestion feedback (quá dễ / quá khó / không phù hợp) ---
+    else if (action === "sug-feedback") {
+      const row = btn.closest(".jh-sug-row");
+      if (row && !row.querySelector(".jh-sug-fbrow")) row.insertAdjacentHTML("beforeend", feedbackStripHtml(btn.dataset.id));
+    }
+    else if (action === "sug-feedback-cancel") {
+      const strip = btn.closest(".jh-sug-fbrow");
+      if (strip) strip.remove();
+    }
+    else if (action === "sug-feedback-send") {
+      const ev = feedbackEvent(btn.dataset.id, btn.dataset.kind);
+      // Recorded through the EXISTING per-problem event route (fire-and-forget);
+      // the dismissal itself is local and immediate.
+      if (ev) api.recordEvent(btn.dataset.id, ev.type, ev.data);
+      hiddenSug.add(btn.dataset.id);
+      persistHidden();
+      paintHome(last);
+      app.toast("Đã ghi nhận — gợi ý này sẽ không quay lại.", "ok");
+    }
     else if (action === "open-problem") app.selectProblem(btn.dataset.id);
     else if (action === "open-quiz") { if (app.openFlashQuiz) app.openFlashQuiz(); }
     else if (action === "mystery-reroll") {
@@ -725,6 +840,26 @@ export function initJourney(app) {
     else if (action === "open-mistakes") app.openMistakeBook && app.openMistakeBook();
     else if (action === "open-skilltree") app.openSkillTree && app.openSkillTree();
   });
+  // --- home search → the Library's ONE search box (no second result list) ---
+  host.addEventListener("input", (e) => {
+    const inp = e.target.closest("#jh-search");
+    if (!inp) return;
+    homeSearchQ = inp.value;
+    const librarySearch = document.getElementById("search");
+    if (librarySearch && librarySearch.value !== inp.value) {
+      librarySearch.value = inp.value;
+      librarySearch.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+  host.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || !e.target.closest("#jh-search")) return;
+    e.preventDefault();
+    const list = document.getElementById("problem-list");
+    const first = list && list.querySelector(".p-item");
+    if (first) first.scrollIntoView({ block: "nearest" });
+    document.getElementById("search")?.focus();
+  });
+
   // Double-click the name to rename inline (window.prompt is unavailable in
   // the Electron shell, so we swap in a real <input>).
   host.addEventListener("dblclick", (e) => {

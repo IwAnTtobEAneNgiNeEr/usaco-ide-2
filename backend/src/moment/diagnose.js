@@ -155,6 +155,44 @@ function parseDiagnosis(text, lineCount) {
   return { ok: true, tag, tagLabel: tagLabel(tag), lines, why, hint, raw };
 }
 
+function evidenceHash(value) {
+  return crypto.createHash("sha256").update(String(value == null ? "" : value)).digest("hex");
+}
+
+/**
+ * Validate the provider reply before it is allowed to become a diagnosis.
+ * If the provider returns an empty or malformed contract, preserve only
+ * observed failure evidence. In particular, do not guess a tag, source line,
+ * explanation, or fix from the verdict alone.
+ */
+function validateProviderDiagnosis({ raw, lineCount, verdict, test, code } = {}) {
+  const parsed = parseDiagnosis(raw, lineCount);
+  if (parsed.ok) return parsed;
+
+  const observed = test && typeof test === "object" ? test : {};
+  const providerText = String(raw || "");
+  return {
+    ok: false,
+    status: "evidence-only",
+    source: "observed-failure",
+    reason: providerText.trim() ? "provider-output-invalid" : "provider-output-empty",
+    raw: providerText,
+    evidence: {
+      verdict: ["WA", "RE", "TLE"].includes(verdict) ? verdict : "unknown",
+      testId: String(observed.testId || ""),
+      codeHash: evidenceHash(code),
+      inputHash: evidenceHash(observed.input),
+      lineCount: Math.max(0, Number(lineCount) || 0),
+      observed: {
+        input: middleTruncate(observed.input, 2000),
+        expected: middleTruncate(observed.expected, 1000),
+        actual: middleTruncate(observed.actual, 1000),
+        stderr: middleTruncate(observed.stderr, 1000),
+      },
+    },
+  };
+}
+
 // ---- cache key -------------------------------------------------------------
 
 /** Same code + same failing test = same diagnosis. Re-judges are free. */
@@ -172,5 +210,6 @@ module.exports = {
   numberCode,
   buildDiagnoseMessages,
   parseDiagnosis,
+  validateProviderDiagnosis,
   cacheKey,
 };

@@ -127,6 +127,55 @@ All verified-artifact errors use `{ "error": "stable human-readable message", "c
 
 `GET /api/problems` summary items include `rating`, `cfRating`, `derivedStatus`, and `provenance: { provider, collection, origin, activityKind, derivedFrom }`. These are projections; Judge history remains verdict truth.
 
+## HTTP contract v2: Dijkstra, Prefix Sum, and smart entry
+
+All analysis and derived routes below remain under `/api/problems/:id` unless an absolute `/api/...` path is shown.
+
+### Dijkstra analysis
+
+`POST /analysis/dijkstra-trace` with `{ "evidenceId": "run-..." }` reads only the stored code/input snapshot. The supported input is `n m`, exactly `m` integer weighted edges, then `source target`; weights must be non-negative and vertices must fit one consistent 0/1-based range.
+
+A supported `recognized-dijkstra-semantic-v1` response includes graph direction/index base, source-line markers, and bounded steps with `heapBefore`, `popped`, `stale`, `dist`, `visited`, `relaxations`, and `heapAfter`. The result includes all distances, reachability, distance, visited nodes, and reconstructed path. Unsupported source shapes, malformed graphs, and negative weights return a stable reason plus the exact evidence-input fallback; no trace steps are fabricated.
+
+### Prefix Sum analysis
+
+`POST /analysis/prefix-sum-trace` with `{ "evidenceId": "run-..." }` accepts evidence formatted as `n`, `n` integer values, `q`, then exactly `q` inclusive ranges. It recognizes either conventional 0-based (`prefix[i+1]`, `prefix[r+1]-prefix[l]`) or 1-based (`prefix[i]`, `prefix[r]-prefix[l-1]`) source contracts.
+
+The response includes the prefix construction, every range's index mapping/formula/terms/result/direct sum, and an evidence-backed off-by-one counterexample. If the stored values cannot distinguish the common wrong formula, the counterexample is honestly unavailable rather than invented.
+
+### Derived modules
+
+Concrete create routes are:
+
+- `POST /derived/weighted-graph-router`
+- `POST /derived/range-sum-module`
+
+Both require full Judge AC evidence, reject duplicate creation, and never edit the original `main.cpp`. WeightedGraphRouter tests distance, path, unreachable and validation behavior; `update-edge-weight-v2` is a real initially-failing requirement change. RangeSum tests 0/1-based boundaries, empty input, and multiple queries; `point-update-v2` is a real initially-failing requirement change.
+
+The existing `GET|PUT /derived/:artifactId/source`, `POST /derived/:artifactId/verify`, list/read, and explicit requirement activation routes work for all three fixed artifact ids. This is concrete dispatch, not a plugin framework.
+
+### Moment provider-output fallback
+
+Moment validates provider output before accepting a diagnosis. Empty or malformed output returns `ok=false`, `status="evidence-only"`, and `provider-output-empty|provider-output-invalid`. It persists only observed verdict/test data and code/input hashes. It never adds a tag, line, why, hint, mastery, rating, recurring bug, or Bug Card.
+
+### Search
+
+`GET /api/problems/search` supports `q`, `track`, `concept`, `provider`, `collection`, `status`, `minRating`, and `maxRating`. Every result has deterministic `whyMatched` and `matchScore`. Numeric filters exclude entries without rating evidence. Matching is normalized literal metadata search, not background semantic AI.
+
+### Recommendation entry
+
+`GET /api/recommendations/entry` supports `track`, `concept`, rating bounds, optional `targetRating`, and explicit CSV `liked`/`dismissed` feedback. It returns at most three items, each with `reason`, `scoreBreakdown`, evidence-preserving `ratingEvidence`, and `action.autoOpen=false`.
+
+Arena rating is used only when recorded games exist; otherwise difficulty context remains null. Recent content contributes only to the named freshness component and is never treated as a weakness. The response does not invent mastery or rating.
+
+### Curated migration
+
+`node backend/scripts/curated-content-migration.js` is dry-run by default; `--apply` writes after backing up every changing `meta.json`. The allowlist is exactly 15 real problems: 5 BFS, 5 Dijkstra, and 5 Prefix Sum. Only provider, collection, origin, activityKind, track, concept, and rating are patched. Titles and other user data are preserved, ratings must equal existing `analysis.cfRating`, and a second run is idempotent.
+
+`derivedStatus` is reported from Judge history and the current code snapshot. It is deliberately not persisted as a second source of truth.
+
+This v2 scope is only the three narrow C++ slices above. It adds no arbitrary tracer, Java/fullstack workspace, Arena/Quiz/reward expansion, large taxonomy, or universal plugin contract.
+
 ## Agent B integration notes
 
 - Dùng `evidence.href` thay vì tự dựng path hoặc ghép history bằng timestamp.

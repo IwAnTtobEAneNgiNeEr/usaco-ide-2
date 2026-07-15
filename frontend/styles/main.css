@@ -286,6 +286,14 @@ kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); backgro
 .p-rating-elo { color: var(--text-muted); font-weight: 600; }
 .p-rating-diff { color: var(--text-dim); }
 .p-rating-unrated { color: var(--text-dim); opacity: .8; }
+.p-concept { color: var(--text-muted); font-weight: 600; }
+.p-dstatus { flex: none; font-size: 9.5px; font-weight: 700; letter-spacing: .3px; border-radius: 4px; padding: 1px 5px; border: 1px solid var(--border); color: var(--text-dim); }
+.p-dstatus-ok { color: var(--ac, #35c78f); border-color: currentColor; }
+.p-dstatus-warn { color: var(--wa, #e06c5a); border-color: currentColor; }
+.p-dstatus-info { color: var(--text-muted); }
+/* "Vì sao khớp" — server (or honestly-local) match reasons under a search hit */
+.p-why { font-size: 10.5px; color: var(--text-dim); margin-top: 3px; font-style: italic; }
+.p-why::before { content: "› "; color: var(--accent); font-style: normal; }
 
 /* Left Sidebar specific inputs, selects, and topic selector */
 .explorer-filters .input {

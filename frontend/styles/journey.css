@@ -710,6 +710,50 @@
 .jh-plan-min { margin-left: auto; flex: none; font: 600 11px var(--mono); color: var(--text-dim); }
 .jh-plan-more { margin: 8px 4px 0; font-size: 10.5px; color: var(--text-dim); }
 
+/* ----- Unit 1b: Tìm bài (routes into the Library's own search) ----- */
+.jh-search-unit {
+  padding: 14px 20px 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 14px; background: var(--bg-soft);
+  box-shadow: var(--jh-edge), var(--jh-lift);
+}
+.jh-search-label { display: block; font: 700 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+.jh-search-input { width: 100%; }
+
+/* ----- Unit 2 (entry API): Gợi ý bắt đầu — ≤3 rows, each with a reason ----- */
+.jh-sugs {
+  padding: 18px 20px 15px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 14px; background: var(--bg-soft);
+  box-shadow: var(--jh-edge), var(--jh-lift);
+}
+.jh-sug-rows { display: flex; flex-direction: column; }
+.jh-sug-row { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.jh-sug-rows > .jh-sug-row + .jh-sug-row { border-top: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent); }
+.jh-sug-open {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+  padding: 11px 8px; border: 0; border-radius: 9px; background: transparent;
+  text-align: left; cursor: pointer; color: var(--text); font-family: var(--sans);
+  transition: background .14s ease;
+}
+.jh-sug-open:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.jh-sug-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.jh-sug-rating { font: 600 11px var(--mono); color: var(--text-dim); }
+.jh-sug-why { font-size: 11px; color: var(--text-dim); }
+.jh-sug-dismiss {
+  flex: none; margin-top: 12px; width: 22px; height: 22px; display: grid; place-items: center;
+  border: 1px solid transparent; border-radius: 6px; background: transparent;
+  color: var(--text-dim); cursor: pointer; font-size: 11px;
+}
+.jh-sug-dismiss:hover { color: var(--text); border-color: var(--border); }
+.jh-sug-fbrow { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 8px 10px; }
+.jh-sug-fb {
+  font: 600 11px var(--sans); color: var(--text-muted); background: var(--panel-2, transparent);
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+}
+.jh-sug-fb:hover { color: var(--text); border-color: var(--accent); }
+.jh-sug-fb-cancel { opacity: .7; border-style: dashed; }
+
 /* ----- Profile (S3) cards inherit the same depth for cohesion ----- */
 .jh-profile .jh-card, .jh-profile .jh-card-wide {
   box-shadow: var(--jh-edge), var(--jh-lift);

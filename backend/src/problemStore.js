@@ -33,6 +33,8 @@ function defaultMeta(id, overrides = {}) {
     origin: typeof overrides.origin === "string" ? overrides.origin : "user-authored",
     activityKind: typeof overrides.activityKind === "string" ? overrides.activityKind : "competitive-problem",
     derivedFrom: overrides.derivedFrom && typeof overrides.derivedFrom === "object" ? overrides.derivedFrom : null,
+    track: typeof overrides.track === "string" ? overrides.track : "",
+    concept: typeof overrides.concept === "string" ? overrides.concept : "",
     topic: overrides.topic || "",
     difficulty: overrides.difficulty || "unrated",
     rating: overrides.rating == null ? null : overrides.rating,
@@ -97,6 +99,8 @@ async function toSummary(meta) {
     origin: meta.origin,
     activityKind: meta.activityKind,
     derivedFrom: meta.derivedFrom,
+    track: meta.track,
+    concept: meta.concept,
     provenance: { provider: meta.provider, collection: meta.collection, origin: meta.origin, activityKind: meta.activityKind, derivedFrom: meta.derivedFrom },
     derivedStatus: artifact.derivedStatus,
     rating: meta.rating == null ? null : meta.rating,
@@ -155,7 +159,7 @@ async function createProblem(input = {}) {
   return readMeta(id);
 }
 
-const META_PATCHABLE = ["title", "source", "provider", "collection", "origin", "activityKind", "derivedFrom", "topic", "difficulty", "status", "tags", "lastVerdict", "fileName", "usacoMode", "usesChecker", "timeLimitMs", "analysis", "defense", "match", "reviewCount", "lastReviewedAt", "hintsUsed", "stressSeedsRan", "rating", "cfRating"];
+const META_PATCHABLE = ["title", "source", "provider", "collection", "origin", "activityKind", "derivedFrom", "track", "concept", "topic", "difficulty", "status", "tags", "lastVerdict", "fileName", "usacoMode", "usesChecker", "timeLimitMs", "analysis", "defense", "match", "reviewCount", "lastReviewedAt", "hintsUsed", "stressSeedsRan", "rating", "cfRating"];
 
 async function updateProblem(id, patch = {}) {
   return withLock(id, async () => {

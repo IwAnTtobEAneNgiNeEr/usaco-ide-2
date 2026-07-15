@@ -1,7 +1,21 @@
 // problems.js — left Problem Explorer: search, filter, list, create, duplicate, delete.
+//
+// Smart Library (B1): ONE library, two hướng (Luyện thi / Thuật toán & ứng
+// dụng) as a filter — never a second list. Text search goes through the real
+// GET /api/problems/search and shows the server's own "Vì sao khớp"; when that
+// route isn't shipped yet the list falls back to local filtering with locally
+// computed (and locally worded) match reasons — no fake server relevance.
 
 import { api } from "./api.js";
 import { escapeHtml } from "./md.js";
+import {
+  normTopic, trackOf, matchesFilters, searchQueryString, applyLocalFilters,
+  normalizeSearchResults, localReasons, displayTitle,
+} from "./core/search-model.js";
+
+// topic-filter.js imports these from here — keep the re-export stable.
+export { normTopic, trackOf };
+
 function relTime(iso) {
   if (!iso) return "";
   const then = new Date(iso).getTime();
@@ -16,26 +30,27 @@ function relTime(iso) {
   if (day < 30) return `${day}d ago`;
   return new Date(iso).toLocaleDateString();
 }
-// Normalize a topic/tag for tolerant matching: "Binary Search" / "binary_search" -> "binarysearch".
-export function normTopic(s) {
-  return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
 
 // ---- Artifact-contract compatibility reads (additive fields, old data OK) ----
-// provider/collection/origin/activityKind/derivedFrom come from the Verified
-// Artifact contract. Old folders only have free-text `source`; we display what
-// exists and never invent values for missing fields.
+// provider/collection/origin/activityKind/derivedFrom/derivedStatus come from
+// the Verified Artifact contract. Old folders only have free-text `source`; we
+// display what exists and never invent values for missing fields.
 const ORIGIN_LABELS = {
   imported: "nhập ngoài", ocr: "OCR", "user-authored": "tự viết",
   "ai-generated": "AI tạo", derived: "dẫn xuất",
 };
 const DIFF_LABELS = { easy: "Dễ", medium: "Vừa", hard: "Khó" };
 
-// Hai hướng công việc: mọi bài cũ là competitive-problem (đúng bản chất data),
-// chỉ algorithm-module thuộc hướng "Thuật toán & ứng dụng".
-export function trackOf(p) {
-  return p && p.activityKind === "algorithm-module" ? "build" : "compete";
-}
+// derivedStatus is a projection from Judge history (docs/VERIFIED-ARTIFACT-API.md).
+// "unverified" is the default state of every old folder — showing it on each
+// row would be noise, so only the informative states get a chip.
+const DERIVED_STATUS_LABELS = {
+  verified: { text: "đã xác minh", cls: "ok" },
+  "in-progress": { text: "đang làm", cls: "info" },
+  "needs-work": { text: "cần sửa", cls: "warn" },
+  "historically-accepted": { text: "AC cũ", cls: "info" },
+  stale: { text: "code đổi sau AC", cls: "warn" },
+};
 
 // Rating thật (analysis/cfRating) → số; không có → nhãn độ khó; không cả hai
 // → "Chưa xếp". Không bịa số từ chữ.
@@ -46,26 +61,63 @@ export function ratingLabel(p) {
   return d ? { text: d, kind: "diff" } : { text: "Chưa xếp", kind: "unrated" };
 }
 
-function matchesFilters(p, f) {
-  if (f.track && trackOf(p) !== f.track) return false;
-  if (f.source && p.source !== f.source) return false;
-  if (f.status && p.status !== f.status) return false;
-  if (f.difficulty && p.difficulty !== f.difficulty) return false;
-  if (f.topics && f.topics.length) {
-    const hay = new Set([p.topic, ...(p.tags || [])].filter(Boolean).map(normTopic));
-    if (!f.topics.some((t) => hay.has(t))) return false;
+// ---- server search state (module-local; renderProblems stays synchronous) ----
+// sig = the query-string of the last request; items = normalized results for
+// that sig; unavailable = the route 404'd (backend not merged) → local-only
+// for the rest of the session.
+const serverSearch = { sig: null, items: null, pending: false, unavailable: false };
+let searchDebounce = null;
+
+function kickServerSearch(app) {
+  const { filters } = app.state;
+  if (serverSearch.unavailable || !filters.search) return;
+  const sig = searchQueryString(filters);
+  if (sig === serverSearch.sig || serverSearch.pending) return;
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(async () => {
+    serverSearch.pending = true;
+    try {
+      const raw = await api.searchProblems(sig);
+      const items = normalizeSearchResults(raw);
+      serverSearch.sig = sig;
+      serverSearch.items = items; // null = malformed → local fallback for this sig
+    } catch (err) {
+      if (err && err.status === 404) serverSearch.unavailable = true;
+      serverSearch.sig = sig;
+      serverSearch.items = null;
+    } finally {
+      serverSearch.pending = false;
+      // Only repaint if this answer is still for the query on screen.
+      if (searchQueryString(app.state.filters) === serverSearch.sig) renderProblems(app);
+    }
+  }, 220);
+}
+
+// The rows to show + where their "Vì sao khớp" comes from.
+function visibleRows(app) {
+  const { problems, filters } = app.state;
+  const sig = searchQueryString(filters);
+  if (filters.search && !serverSearch.unavailable) kickServerSearch(app);
+
+  if (filters.search && serverSearch.sig === sig && Array.isArray(serverSearch.items)) {
+    // Server-ranked results (q/status), merged over the local summary so
+    // projection fields the search payload omits still render; hướng/nguồn/
+    // độ khó/topics stay local filters on top (server track ≠ Library track).
+    const byId = new Map(problems.map((p) => [p.id, p]));
+    const merged = serverSearch.items
+      .map((r) => ({ ...(byId.get(r.id) || {}), ...r, __reasons: r.reasons, __serverMatch: true }))
+      .filter((r) => r.id);
+    return applyLocalFilters(merged, filters);
   }
-  if (f.search) {
-    const hay = `${p.title} ${p.topic} ${p.source} ${(p.tags || []).join(" ")}`.toLowerCase();
-    if (!hay.includes(f.search.toLowerCase())) return false;
-  }
-  return true;
+  return problems
+    .filter((p) => matchesFilters(p, filters))
+    .map((p) => ({ ...p, __reasons: localReasons(p, filters), __serverMatch: false }));
 }
 
 export function renderProblems(app) {
   const { problems, filters, currentId } = app.state;
   const list = app.el.problemList;
-  const visible = problems.filter((p) => matchesFilters(p, filters));
+  const visible = visibleRows(app);
 
   // Populate source filter + datalist from existing problems.
   const sources = [...new Set(problems.map((p) => p.source).filter(Boolean))].sort();
@@ -80,8 +132,11 @@ export function renderProblems(app) {
   }
 
   const solved = problems.filter((p) => p.status === "solved" || p.lastVerdict === "AC").length;
+  const searchTag = filters.search
+    ? (serverSearch.unavailable || !visible.some((v) => v.__serverMatch) ? " · tìm cục bộ" : " · tìm qua server")
+    : "";
   app.el.problemCount.textContent = problems.length
-    ? `${visible.length}/${problems.length} · ✓ ${solved} đã giải`
+    ? `${visible.length}/${problems.length} · ✓ ${solved} đã giải${searchTag}`
     : "0 problems";
 
   if (visible.length === 0) {
@@ -96,33 +151,36 @@ export function renderProblems(app) {
 
   list.innerHTML = visible.map((p) => {
     const v = p.lastVerdict ? `<span class="vbadge v-${escapeHtml(p.lastVerdict)}">${escapeHtml(p.lastVerdict)}</span>` : "";
-    // Nguồn: field mới provider·collection nếu có, fallback source cũ.
-    const srcLabel = [p.provider, p.collection].filter(Boolean).join(" · ") || p.source || "";
+    // Nguồn: provider › collection (contract) nếu có, fallback source cũ.
+    const srcLabel = [p.provider, p.collection].filter(Boolean).join(" › ") || p.source || "";
     const originLabel = ORIGIN_LABELS[p.origin] || "";
     const isModule = trackOf(p) === "build";
-    // p.derivedFrom is the only real "this artifact was derived" signal
-    // (docs/VERIFIED-ARTIFACT-API.md §Derived GridPathfinder). Whether a
-    // *derived module exists for* this problem is a per-problem GET
-    // (/:id/derived) — too expensive to fan out across a 163-row list, so
-    // it's surfaced inside the problem itself (AC card), not here.
+    // p.derivedFrom is the only real "this artifact was derived" signal.
     const derived = p.derivedFrom || p.origin === "derived";
+    const derivedStatus = DERIVED_STATUS_LABELS[p.derivedStatus] || null;
     const rating = ratingLabel(p);
     const parts = [
       srcLabel && `<span class="p-src">${escapeHtml(srcLabel)}</span>`,
-      p.topic && `<span>${escapeHtml(p.topic)}</span>`,
+      p.concept && `<span class="p-concept">${escapeHtml(p.concept)}</span>`,
+      !p.concept && p.topic && `<span>${escapeHtml(p.topic)}</span>`,
       originLabel && `<span class="p-origin">${escapeHtml(originLabel)}</span>`,
       derived && `<span class="p-derived" title="Phát triển từ một artifact gốc">⑂ dẫn xuất</span>`,
+      derivedStatus && `<span class="p-dstatus p-dstatus-${escapeHtml(derivedStatus.cls)}" title="Trạng thái xác minh (từ lịch sử Judge)">${escapeHtml(derivedStatus.text)}</span>`,
       `<span class="p-rating p-rating-${rating.kind}">${escapeHtml(rating.text)}</span>`,
       `<span>${relTime(p.updatedAt)}</span>`,
     ].filter(Boolean);
+    const reasons = (p.__reasons || []).length
+      ? `<div class="p-why" title="${p.__serverMatch ? "Lý do khớp từ server tìm kiếm" : "Khớp cục bộ trên máy"}">Vì sao khớp: ${p.__reasons.map((r) => escapeHtml(r)).join(" · ")}</div>`
+      : "";
     return `
       <div class="p-item ${p.id === currentId ? "active" : ""}" data-id="${escapeHtml(p.id)}">
         <div class="p-row">
-          <span class="p-title">${escapeHtml(p.title)}</span>
+          <span class="p-title">${escapeHtml(displayTitle(p))}</span>
           ${isModule ? '<span class="p-kind" title="Module thuật toán & ứng dụng">Module</span>' : ""}
           ${v}
         </div>
         <div class="p-sub">${parts.join(' <span class="p-dot"></span> ') || "<span style='color:var(--text-dim)'>no source</span>"}</div>
+        ${reasons}
         <div class="p-actions">
           <button class="icon-btn dup" data-act="dup" title="Duplicate">⧉</button>
           <button class="icon-btn" data-act="del" title="Delete">✕</button>

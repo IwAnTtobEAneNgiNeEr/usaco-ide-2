@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "track": "verified-artifact",
+  "derivedStatus": { "mode": "computed", "source": "judge-history+code-snapshot", "persisted": false },
+  "problems": [
+    { "id": "107-me-cung-co-duong-di-khong", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "bfs", "rating": 800, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-109-quan-ma-it-buoc-nhat-bfs", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "bfs", "rating": 1300, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-112-bfs-khoang-cach-tu-s", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "bfs", "rating": 800, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-113-in-duong-di-ngan-nhat", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "bfs", "rating": 1200, "ratingEvidence": "analysis.cfRating" },
+    { "id": "do-thi-bai-60-duong-di-ngan-nhat-trong-me-cung", "provider": "tech28", "collection": "tech28-graphs", "origin": "imported", "activityKind": "competitive-problem", "concept": "bfs", "rating": 1200, "ratingEvidence": "analysis.cfRating" },
+
+    { "id": "bai-112-quan-tuong-tren-ban-co-co-chi-phi", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "dijkstra", "rating": 1500, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-113-quan-hau-tren-ban-co-co-chi-phi", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "dijkstra", "rating": 1200, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-114-robot-nhay-dac-biet", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "dijkstra", "rating": 1400, "ratingEvidence": "analysis.cfRating" },
+    { "id": "c-dijkstra", "provider": "codeforces", "collection": "codeforces-imports", "origin": "imported", "activityKind": "competitive-problem", "concept": "dijkstra", "rating": 1500, "ratingEvidence": "analysis.cfRating" },
+    { "id": "tim-duong-di-voi-chi-phi-nho-nhat-tren-luoi-dijkstra-heap", "provider": "openai", "collection": "chatgpt-imports", "origin": "ai-generated", "activityKind": "competitive-problem", "concept": "dijkstra", "rating": 1000, "ratingEvidence": "analysis.cfRating" },
+
+    { "id": "31-truy-van-tong-doan-l-r", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "prefix-sum", "rating": 800, "ratingEvidence": "analysis.cfRating" },
+    { "id": "32-nhieu-query-sum-voi-n-q-lon", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "prefix-sum", "rating": 800, "ratingEvidence": "analysis.cfRating" },
+    { "id": "33-dem-doan-con-co-tong-k-bang-prefix-map", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "prefix-sum", "rating": 1200, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-8-dem-doan-con-co-tong-chan", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "prefix-sum", "rating": 800, "ratingEvidence": "analysis.cfRating" },
+    { "id": "bai-9-dem-doan-con-co-tong-chia-het-cho-k", "provider": "speedrun", "collection": "speedrun-120", "origin": "imported", "activityKind": "competitive-problem", "concept": "prefix-sum", "rating": 800, "ratingEvidence": "analysis.cfRating" }
+  ]
+}

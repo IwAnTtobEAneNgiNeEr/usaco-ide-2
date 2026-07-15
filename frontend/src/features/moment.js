@@ -63,6 +63,12 @@ function jumpToLine(app, lineNo) {
   const n = Math.max(1, Math.min(Number(lineNo) || 1, doc.lines));
   const line = doc.line(n);
   view.dispatch({ selection: { anchor: line.from, head: line.to }, scrollIntoView: true });
+  // Keep the legacy textarea/status bridge in sync with programmatic CM jumps.
+  // Keyboard/click updates already flow the other way through editor.js, but
+  // without this the editor opened the correct line while still saying Ln 1.
+  if (typeof ed.setSelectionRange === "function") ed.setSelectionRange(line.from, line.to);
+  const cursor = document.getElementById("cursor-pos");
+  if (cursor) cursor.textContent = `Ln ${n} · Col 1`;
   view.focus();
 }
 
@@ -110,7 +116,10 @@ function chipListFor(app, payload) {
   // §7: cùng cấp secondary với "Phân tích code này", không ngang hàng CTA chính).
   // Backend chỉ nhận full Judge AC evidence (derivedArtifactStore.createGridPathfinder).
   if (payload.kind === "judge" && v === "AC" && app.openDerivedModule && evidenceRef) {
-    list.push({ g: "⑂", label: "Phát triển thành module", run: () => app.openDerivedModule(evidenceRef) });
+    // Label names the concept's own module (GridPathfinder / WeightedGraphRouter
+    // / RangeSum) so the secondary action says exactly what it grows into.
+    const dmLabel = app.derivedModuleLabelFor ? app.derivedModuleLabelFor(app.state.meta) : "Phát triển thành module";
+    list.push({ g: "⑂", label: dmLabel, run: () => app.openDerivedModule(evidenceRef) });
   }
   for (const c of base) {
     // CE: khi primary của card đã là "Giải thích lỗi" thì chip trùng bị bỏ

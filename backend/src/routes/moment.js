@@ -35,7 +35,7 @@ const { shrinkInput } = require("../autopsy/shrink");
 const studentModel = require("../studentModel");
 const cardStore = require("../arena/cardStore");
 const { recordProblemEvent } = require("../recorder");
-const { buildDiagnoseMessages, parseDiagnosis, cacheKey } = require("../moment/diagnose");
+const { buildDiagnoseMessages, validateProviderDiagnosis, cacheKey } = require("../moment/diagnose");
 const { asyncHandler, requireProblem } = require("./_util");
 
 const router = express.Router();
@@ -238,12 +238,20 @@ router.post("/:id/moment-diagnose", requireProblem, asyncHandler(async (req, res
       throw error;
     }
 
-    const diagnosis = parseDiagnosis(raw, lineCount);
+    const diagnosis = validateProviderDiagnosis({
+      raw,
+      lineCount,
+      verdict,
+      test: diagTest,
+      code,
+    });
     if (diagnosis.ok) {
       cache.entries[key] = { diagnosis, savedAt: Date.now() };
       await writeCache(id, cache);
-      persistDiagnosis(id, { verdict, testId: test.testId, key, diagnosis, cached: false });
     }
+    // Invalid/empty provider output is also persisted as evidence-only audit
+    // data, but never feeds the Student Model or Bug Cards (both require ok).
+    persistDiagnosis(id, { verdict, testId: test.testId, key, diagnosis, cached: false });
     sse({ done: true, diagnosis });
   } catch (error) {
     sse({ error: error.message || "Chẩn đoán thất bại.", code: error.code || "" });

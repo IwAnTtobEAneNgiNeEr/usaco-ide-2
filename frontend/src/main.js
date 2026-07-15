@@ -1,8 +1,8 @@
 // main.js — bootstraps USACO IDE 2.0, owns shared state, and wires modules.
 
-import { api } from "./api.js?v=2.7";
+import { api } from "./api.js?v=2.8";
 import { initLayout, setTab, setView, setLayoutMode, cycleLayoutMode, getSavedLayoutMode } from "./layout.js?v=2.5";
-import { initProblems, renderProblems } from "./problems.js?v=2.4";
+import { initProblems, renderProblems } from "./problems.js?v=2.5";
 import { initEditor, renderMeta, setEditorFiles } from "./editor.js?v=2.3";
 import { mountCmEditor } from "./editor-cm.js?v=2.4";
 import { initTests, renderTests } from "./testcases.js?v=2.4";
@@ -17,9 +17,9 @@ import { initTopicFilter } from "./features/topic-filter.js?v=2.3";
 import { initDesktopShell } from "./features/desktop-launcher.js?v=2.3";
 import { initWaReview } from "./features/wa-review.js?v=2.4";
 import { initGameReview } from "./features/game-review.js?v=3.1";
-import { initMoment } from "./features/moment.js?v=2.8"; // supersedes verdict-rail's listener (chips live on inside the card)
-import { initAnalysis } from "./features/analysis.js?v=1.1"; // "Phân tích code này" — evidence-based, Verified Artifact Loop P3
-import { initDerivedModule } from "./features/derived-module.js?v=1.1"; // "Phát triển thành module" — GridPathfinder + edit surface, Verified Artifact Loop P4
+import { initMoment } from "./features/moment.js?v=2.9"; // supersedes verdict-rail's listener (chips live on inside the card)
+import { initAnalysis } from "./features/analysis.js?v=1.2"; // "Phân tích code này" — evidence-based, Verified Artifact Loop P3
+import { initDerivedModule } from "./features/derived-module.js?v=1.2"; // "Phát triển thành module" — GridPathfinder + edit surface, Verified Artifact Loop P4
 import { initFlashQuiz } from "./features/flash-quiz.js?v=1.3"; // câu hỏi = lỗi thật từ Student Model
 import { initArena } from "./features/arena.js?v=1.5"; // ⚔ Luyện tập xếp hạng: HUD + match strip + app.arena helpers
 import { initActivityWorkspace } from "./features/activity-workspace.js?v=1.3";
@@ -33,7 +33,7 @@ import { initDashboard } from "./features/dashboard.js?v=2.4";
 import { initMiniChat } from "./features/mini-chat.js?v=2.7";
 import { initSynthesizer } from "./features/synthesizer.js?v=2.5";
 import { initContests } from "./features/contests.js?v=3.1";
-import { initJourney } from "./features/journey.js?v=3.4";
+import { initJourney } from "./features/journey.js?v=3.5";
 import { initCommandPalette } from "./features/command-palette.js?v=2.7";
 import { initMistakeBook } from "./features/mistake-book.js?v=2.5";
 import { initBoss } from "./features/boss.js?v=2.3";

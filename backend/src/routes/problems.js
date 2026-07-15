@@ -12,11 +12,23 @@ const ai = require("../ai");
 const verifyTests = require("../verifyTests");
 const { PROVENANCE, statementHash } = require("../trustLayer");
 const personalizedPractice = require("../personalizedPractice");
+const smartContent = require("../smartContent");
 const { recordProblemEvent } = require("../recorder");
 const { asyncHandler, requireProblem } = require("./_util");
 
 const router = express.Router();
 const RATING_FILE = path.join(config.DATA_DIR, "arena-rating.json");
+
+// GET /api/problems/search - deterministic metadata search with inspectable matches.
+router.get("/search", asyncHandler(async (req, res) => {
+  const problems = await problemStore.listProblems();
+  const filters = {
+    q: req.query.q, track: req.query.track, concept: req.query.concept,
+    provider: req.query.provider, collection: req.query.collection, status: req.query.status,
+    minRating: req.query.minRating, maxRating: req.query.maxRating,
+  };
+  res.json({ results: smartContent.searchProblems(problems, filters), filters });
+}));
 
 // POST /api/problems/personalized — create ONE fresh normal problem from the
 // student's 5-10 most recently worked problems and current Arena Elo. This is

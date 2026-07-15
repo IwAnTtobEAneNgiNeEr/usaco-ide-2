@@ -14,6 +14,7 @@ const {
   numberCode,
   buildDiagnoseMessages,
   parseDiagnosis,
+  validateProviderDiagnosis,
   cacheKey,
 } = require("../src/moment/diagnose");
 
@@ -145,6 +146,44 @@ test("parseDiagnosis: unknown tag falls back to khac; missing VISAO = not ok", (
 test("parseDiagnosis clamps line numbers to the numbered range and caps at 3", () => {
   const d = parseDiagnosis("TAG: khac\nLINES: 0, 1, 2, 3, 4, 99\nVISAO: x.\nGOIY: y.", 4);
   assert.deepEqual(d.lines, [1, 2, 3]);
+});
+
+test("empty provider output falls back to observed evidence without inventing a diagnosis", () => {
+  const fallback = validateProviderDiagnosis({
+    raw: "   ",
+    lineCount: 3,
+    verdict: "WA",
+    code: "int main(){return 0;}",
+    test: { testId: "07", input: "2\n", expected: "3\n", actual: "4\n", stderr: "" },
+  });
+  assert.equal(fallback.ok, false);
+  assert.equal(fallback.status, "evidence-only");
+  assert.equal(fallback.reason, "provider-output-empty");
+  assert.equal(fallback.evidence.verdict, "WA");
+  assert.equal(fallback.evidence.testId, "07");
+  assert.equal(fallback.evidence.observed.expected, "3\n");
+  assert.equal(fallback.evidence.observed.actual, "4\n");
+  assert.match(fallback.evidence.codeHash, /^[a-f0-9]{64}$/);
+  assert.match(fallback.evidence.inputHash, /^[a-f0-9]{64}$/);
+  assert.equal("tag" in fallback, false);
+  assert.equal("lines" in fallback, false);
+  assert.equal("why" in fallback, false);
+  assert.equal("hint" in fallback, false);
+});
+
+test("malformed provider output is evidence-only and preserves the raw reply for audit", () => {
+  const fallback = validateProviderDiagnosis({
+    raw: "TAG: off-by-one\nLINES: 8\nGOIY: thử lại.",
+    lineCount: 12,
+    verdict: "RE",
+    code: "x",
+    test: { input: "1", stderr: "segfault" },
+  });
+  assert.equal(fallback.ok, false);
+  assert.equal(fallback.reason, "provider-output-invalid");
+  assert.match(fallback.raw, /off-by-one/);
+  assert.equal(fallback.evidence.observed.stderr, "segfault");
+  assert.equal("tag" in fallback, false, "an unvalidated provider tag must not become fact");
 });
 
 test("cacheKey: same evidence = same key, any field change = new key", () => {
