@@ -1,5 +1,7 @@
 # Verified Artifact Loop
 
+Deprecated — xem README-CPLUSPLUS-PLAN.md.
+
 > **BFS vertical slice: implemented and release-gated (2026-07-16).** Competitive Judge evidence, deterministic supported/unsupported BFS trace, editable derived `GridPathfinder`, requirement-change Work loop, legacy compatibility, and original `main.cpp` preservation are covered by canonical tests. No broader algorithm/runtime support is implied.
 
 > **Trạng thái: đề xuất để chủ dự án duyệt.** Khi được duyệt, file này là luật cho mọi thay đổi liên quan flow sản phẩm mới. Nó không thay thế các ràng buộc local-first, an toàn chạy C++ và tính trung thực dữ liệu hiện có.

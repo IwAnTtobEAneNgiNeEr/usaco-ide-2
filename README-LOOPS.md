@@ -5,6 +5,8 @@
 > Người viết: Claude Fable 5 (2026-07-05). Chủ dự án: Phúc.
 > File này là **luật**, không phải gợi ý. Nếu task của bạn mâu thuẫn với file này, dừng lại và hỏi Phúc.
 
+Deprecated — xem README-CPLUSPLUS-PLAN.md.
+
 ---
 
 ## 0. North star

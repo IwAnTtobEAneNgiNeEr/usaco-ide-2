@@ -136,6 +136,13 @@
 .mo-next-compact .mo-next-title { font-size: 13px; }
 .mo-next-compact .mo-next-why { font-size: 10px; }
 
+.dm-unified-panel { font-size: 12px; line-height: 1.5; }
+.dm-unified-panel h3 { margin: 12px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); }
+.dm-unified-panel h3:first-child { margin-top: 0; }
+.dm-unified-panel p { margin: 0; }
+.dm-unified-panel ul { margin: 0; padding-left: 17px; }
+.dm-unified-panel pre { max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 11px; }
+
 .rp-result { font-size: 12px; padding: 8px 10px; border-radius: 8px; line-height: 1.5; }
 .rp-ok { background: rgba(80, 200, 120, 0.10); border: 1px solid rgba(80, 200, 120, 0.35); }
 .rp-unreach { background: rgba(230, 180, 80, 0.10); border: 1px solid rgba(230, 180, 80, 0.35); }

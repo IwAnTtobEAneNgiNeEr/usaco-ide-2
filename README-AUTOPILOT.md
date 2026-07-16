@@ -6,6 +6,8 @@
 >
 > **STATUS 2026-07-05 (phiên tiếp theo, Sonnet 5): TOÀN BỘ TASK BOARD §4 ĐÃ XONG (M1-M8).** M5 hóa ra đã có sẵn từ trước (chỉ audit, không code). Verified E2E thật trên :5099: momentum "Bài thứ 2 hôm nay · streak 8 ngày" (M7) + CTA "Nước tiếp theo" đọc đúng từ planner "Ôn lại: Bài 7. Đếm cặp số 2 · đến hạn ôn (lần 1)..." (M8), settings toggle hiện đúng (M1), timer click không lỗi (M6), 0 console error toàn phiên. Backend 230 test (224 pass), frontend 46 (45 pass) — 6+1 fail còn lại đều pre-existing, không liên quan. Phát hiện quan trọng nhất: "Flash Quiz" nhắc trong README-LOOPS §5 **không tồn tại** (chỉ CSS chết + help-text) — xem M8. Việc còn mở cho agent sau: D2 (Journey Home UI cho giáo án), xây UI Flash Quiz thật (hoặc xóa nhắc-tới nếu quyết định không làm), `edit-snapshot`/`tab`/`idle` recorder events, prompt-tuning thêm nếu GOIY vẫn lộ đáp án trong thực tế dùng.
 
+Deprecated — xem README-CPLUSPLUS-PLAN.md.
+
 ---
 
 ## 0. Khám nghiệm tử thi của chính Pháp y (root-cause — đọc để không lặp lại)
