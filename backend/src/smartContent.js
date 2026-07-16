@@ -36,6 +36,7 @@ function searchProblems(problems, filters = {}) {
     const track = trackOf(problem);
     const rating = ratingOf(problem);
     if (filters.track && !exact(track, filters.track)) continue;
+    if (filters.activityKind && !exact(problem.activityKind, filters.activityKind)) continue;
     if (filters.concept && !exact(concept, filters.concept) && !(problem.tags || []).some((tag) => exact(tag, filters.concept))) continue;
     if (filters.provider && !exact(problem.provider, filters.provider)) continue;
     if (filters.collection && !exact(problem.collection, filters.collection)) continue;
@@ -56,6 +57,7 @@ function searchProblems(problems, filters = {}) {
       if (!score) continue;
     }
     if (filters.track) whyMatched.push(`Track filter: ${track}`);
+    if (filters.activityKind) whyMatched.push(`Activity filter: ${problem.activityKind}`);
     if (filters.concept) whyMatched.push(`Concept filter: ${concept}`);
     if (filters.provider) whyMatched.push(`Provider filter: ${problem.provider}`);
     if (filters.collection) whyMatched.push(`Collection filter: ${problem.collection}`);
@@ -115,6 +117,75 @@ function recommendEntries(problems, options = {}) {
   return candidates.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).slice(0, 3);
 }
 
+function difficultyOf(item) {
+  const explicit = Number(item && item.difficulty);
+  if (Number.isFinite(explicit)) return explicit;
+  const rating = ratingOf(item || {});
+  return rating == null ? 1 : Math.max(1, Math.min(3, Math.round((rating - 600) / 700)));
+}
+
+function recommendCatalogEntries(items, options = {}) {
+  const candidates = (Array.isArray(items) ? items : []).filter((item) => {
+    if (!item || !item.id) return false;
+    if (options.track && !exact(trackOf(item), options.track)) return false;
+    if (options.concept && !exact(conceptOf(item), options.concept) && !(item.tags || []).some((tag) => exact(tag, options.concept))) return false;
+    return true;
+  });
+  const byId = new Map(candidates.map((item) => [String(item.id), item]));
+  const feedback = (options.feedback || []).filter((entry) => !options.track || exact(entry.track, options.track));
+
+  return candidates.map((item) => {
+    let score = 0;
+    const reason = [];
+    const scoreBreakdown = {};
+    if (options.track) { score += 20; scoreBreakdown.track = 20; reason.push(`Matches requested track ${trackOf(item)}.`); }
+    if (options.concept) { score += 15; scoreBreakdown.concept = 15; reason.push(`Matches requested concept ${conceptOf(item)}.`); }
+    if (["needs-work", "unverified"].includes(item.derivedStatus)) {
+      const value = item.derivedStatus === "needs-work" ? 30 : 18;
+      score += value; scoreBreakdown.workInProgress = value; reason.push(`Module status ${item.derivedStatus} has a concrete next action.`);
+    } else if (item.derivedStatus === "verified") {
+      score += 6; scoreBreakdown.evidence = 6; reason.push("Current verifier history supports this module.");
+    }
+    if (item.activityKind === "applied-simulation") { score += 8; scoreBreakdown.applied = 8; reason.push("Applies a verified module to user-supplied input."); }
+
+    let ownFeedback = null;
+    for (const entry of feedback) {
+      const source = byId.get(String(entry.itemId));
+      if (!source) continue;
+      if (String(item.id) === String(entry.itemId)) {
+        ownFeedback = entry;
+        const demotion = ["not_relevant", "already_know"].includes(entry.signal) ? -220 : -70;
+        score += demotion;
+        scoreBreakdown.userFeedback = (scoreBreakdown.userFeedback || 0) + demotion;
+        reason.push(`${entry.signal} feedback demotes this exact item.`);
+      } else if (entry.signal === "too_easy" && difficultyOf(item) > difficultyOf(source)) {
+        score += 12; scoreBreakdown.userFeedback = (scoreBreakdown.userFeedback || 0) + 12;
+        reason.push(`Favored as a harder alternative after too_easy feedback on ${entry.itemId}.`);
+      } else if (entry.signal === "too_hard" && difficultyOf(item) < difficultyOf(source)) {
+        score += 12; scoreBreakdown.userFeedback = (scoreBreakdown.userFeedback || 0) + 12;
+        reason.push(`Favored as an easier alternative after too_hard feedback on ${entry.itemId}.`);
+      }
+    }
+    if (!reason.length) reason.push("Available catalog entry; no mastery was inferred.");
+    return {
+      item,
+      id: item.id,
+      title: item.title,
+      track: trackOf(item),
+      concept: conceptOf(item),
+      provider: item.provider,
+      collection: item.collection,
+      status: item.status,
+      derivedStatus: item.derivedStatus,
+      reason,
+      score,
+      scoreBreakdown,
+      feedback: ownFeedback,
+      action: { type: "offer", autoOpen: false, open: item.open },
+    };
+  }).sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id))).slice(0, 3);
+}
+
 function csv(value) { return String(value || "").split(",").map((part) => part.trim()).filter(Boolean); }
 
-module.exports = { fold, conceptOf, trackOf, ratingOf, searchProblems, recommendEntries, csv };
+module.exports = { fold, conceptOf, trackOf, ratingOf, searchProblems, recommendEntries, recommendCatalogEntries, difficultyOf, csv };

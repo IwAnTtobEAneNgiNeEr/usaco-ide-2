@@ -1,7 +1,7 @@
 # Applied Algorithms v1 API Contract
 
-Status: **locked for v1**  
-Owner: Core/Product Systems  
+Status: **locked for v1**
+Owner: Core/Product Systems
 Base: `56fed199d3627733faf2e862778f041e5773852a`
 
 This is the binding backend/frontend contract for the module-first Applied Algorithms v1 slice. Additive fields are allowed; existing field names, enum values, nullability, endpoint meanings, and response envelopes must not change during v1 integration.

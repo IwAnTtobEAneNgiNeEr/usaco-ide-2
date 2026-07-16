@@ -10,6 +10,7 @@ const evidenceStore = require("./evidenceStore");
 const gridPathfinder = require("./gridPathfinder");
 const weightedGraphRouter = require("./weightedGraphRouter");
 const rangeSum = require("./rangeSum");
+const { decorateWorkspace } = require("./moduleWorkspaceContract");
 
 // Backward-compatible export used by the BFS tests.
 const FILE_NAMES = ["GridPathfinder.hpp", "GridPathfinder.cpp", "GridPathfinder.test.cpp", "GridPathfinder.requirement-change.test.cpp"];
@@ -66,7 +67,7 @@ async function getArtifact(problemId, artifactId = gridPathfinder.ARTIFACT_ID) {
   const manifest = await fileStore.readJson(manifestPath(problemId, artifactId), null);
   if (!manifest) return null;
   const [files, runs] = await Promise.all([readFiles(problemId, artifactId), readRuns(problemId, artifactId)]);
-  return { ...manifest, derivedStatus: definition.deriveStatus(manifest, runs), nextAction: definition.nextAction(manifest, runs), files, runs };
+  return decorateWorkspace({ ...manifest, derivedStatus: definition.deriveStatus(manifest, runs, files), nextAction: definition.nextAction(manifest, runs, files), files, runs }, { storage: "local" });
 }
 
 async function listArtifacts(problemId) {
@@ -102,11 +103,20 @@ async function verifyArtifact(problemId, artifactId, suite) {
   const code = definition.composeTranslationUnit(artifact.files, suite);
   const settings = await settingsStore.getSettings();
   const result = await judgeService.compileAndRun({ code, settings, input: "", expected: "OK\n" });
+  const hiddenCode = typeof definition.composeHiddenTranslationUnit === "function"
+    ? definition.composeHiddenTranslationUnit(artifact.files, suite)
+    : null;
+  const hiddenResult = hiddenCode
+    ? await judgeService.compileAndRun({ code: hiddenCode, settings, input: "", expected: "OK\n" })
+    : null;
+  const publicVerdict = result.compilerMissing || !result.compileOk ? "CE" : result.verdict;
+  const hiddenVerdict = hiddenResult && (hiddenResult.compilerMissing || !hiddenResult.compileOk ? "CE" : hiddenResult.verdict);
   const run = {
     version: 1, kind: "derived-check", id: `check-${crypto.randomUUID()}`, artifactId, suite,
     requirementId: artifact.checks[suite].requirementId,
-    verdict: result.compilerMissing || !result.compileOk ? "CE" : result.verdict,
-    codeHash: definition.sourceHash(artifact.files, suite), stdout: result.stdout || "", stderr: result.stderr || "", timeMs: result.timeMs || 0, at: new Date().toISOString(),
+    verdict: publicVerdict === "AC" && (!hiddenResult || hiddenVerdict === "AC") ? "AC" : publicVerdict === "AC" ? hiddenVerdict : publicVerdict,
+    codeHash: definition.sourceHash(artifact.files, suite), stdout: result.stdout || "", stderr: [result.stderr, hiddenResult && hiddenResult.stderr].filter(Boolean).join("\n"),
+    timeMs: (result.timeMs || 0) + (hiddenResult && hiddenResult.timeMs || 0), suites: hiddenResult ? { public: publicVerdict, hidden: hiddenVerdict } : { public: publicVerdict }, at: new Date().toISOString(),
   };
   await fileStore.writeJson(path.join(artifactDir(problemId, artifactId), "runs", `${run.id}.json`), run);
   return { check: run, artifact: await getArtifact(problemId, artifactId) };
@@ -118,11 +128,12 @@ async function activateRequirementChange(problemId, artifactId, changeId) {
   const manifest = await fileStore.readJson(manifestPath(problemId, artifactId), null);
   if (!manifest) { const error = new Error("Derived artifact does not exist."); error.status = 404; throw error; }
   const runs = await readRuns(problemId, artifactId);
-  if (definition.deriveStatus(manifest, runs) !== "verified") { const error = new Error("Baseline must pass before activating a requirement change."); error.status = 409; throw error; }
+  const files = await readFiles(problemId, artifactId);
+  if (definition.deriveStatus(manifest, runs, files) !== "verified") { const error = new Error("Baseline must pass before activating a requirement change."); error.status = 409; throw error; }
   manifest.requirements = manifest.requirements.map((requirement) => requirement.id === manifest.currentRequirementId ? { ...requirement, status: "superseded" } : requirement.id === changeId ? { ...requirement, status: "active", activatedAt: new Date().toISOString() } : requirement);
   manifest.currentRequirementId = changeId; manifest.updatedAt = new Date().toISOString();
   await fileStore.writeJson(manifestPath(problemId, artifactId), manifest);
   return getArtifact(problemId, artifactId);
 }
 
-module.exports = { FILE_NAMES, artifactDir, getArtifact, readSource, saveSource, listArtifacts, createGridPathfinder, createWeightedGraphRouter, createRangeSumModule, verifyArtifact, activateRequirementChange };
+module.exports = { FILE_NAMES, definitionFor, artifactDir, getArtifact, readSource, saveSource, listArtifacts, createGridPathfinder, createWeightedGraphRouter, createRangeSumModule, verifyArtifact, activateRequirementChange };

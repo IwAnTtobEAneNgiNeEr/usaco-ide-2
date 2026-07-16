@@ -45,6 +45,8 @@ const arenaSpecimen = require("./src/routes/arena-specimen");
 const arenaCoreFillRouter = require("./src/routes/arena-corefill");
 const arenaRushRouter = require("./src/routes/arena-rush");
 const recommendationsRouter = require("./src/routes/recommendations");
+const catalogRouter = require("./src/routes/catalog");
+const modulesRouter = require("./src/routes/modules");
 
 const VERSION = "2.0.0";
 
@@ -94,6 +96,8 @@ function buildApp() {
   app.use("/api/problems", momentRouter);
   app.use("/api/problems", verifiedArtifactsRouter);
   app.use("/api/recommendations", recommendationsRouter);
+  app.use("/api/catalog", catalogRouter);
+  app.use("/api/modules", modulesRouter);
   app.use("/api/problems", arenaReferenceRouter);
   app.use("/api/problems", arenaMatchRouter);
   app.use("/api/problems", arenaGhostRouter);

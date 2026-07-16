@@ -108,6 +108,27 @@ int main() {
 }
 `;
 
+const HIDDEN_BASELINE_TEST = `#include "GridPathfinder.hpp"
+#include <iostream>
+int main(){
+  const std::vector<std::string> grid={"....",".##.","...."};
+  if(GridPathfinder::shortestPath(grid,{0,0},{2,3})!=5) return 1;
+  if(GridPathfinder::shortestPath(grid,{0,0},{2,3})!=5) return 2;
+  if(GridPathfinder::shortestPath({}, {0,0}, {0,0})!=-1) return 3;
+  std::cout<<"OK\\n";
+}
+`;
+
+const HIDDEN_CHANGE_TEST = `#include "GridPathfinder.hpp"
+#include <iostream>
+int main(){
+  const std::vector<std::string> grid={"...","...","..."};
+  if(GridPathfinder::shortestPath(grid,{0,0},{2,2})!=2) return 1;
+  if(GridPathfinder::shortestPath(grid,{2,0},{0,2})!=2) return 2;
+  std::cout<<"OK\\n";
+}
+`;
+
 function buildScaffold({ problemId, sourceTitle, evidence, createdAt } = {}) {
   const at = createdAt || new Date().toISOString();
   return {
@@ -116,6 +137,7 @@ function buildScaffold({ problemId, sourceTitle, evidence, createdAt } = {}) {
       id: ARTIFACT_ID,
       title: "GridPathfinder",
       activityKind: "algorithm-module",
+      track: "algorithm-engineering",
       provider: "local",
       collection: sourceTitle || "",
       origin: "derived",
@@ -150,6 +172,7 @@ function buildScaffold({ problemId, sourceTitle, evidence, createdAt } = {}) {
         "requirement-change": { requirementId: CHANGE_REQUIREMENT, file: "GridPathfinder.requirement-change.test.cpp" },
       },
       createdAt: at,
+      updatedAt: at,
     },
     files: {
       "GridPathfinder.hpp": HEADER,
@@ -172,6 +195,12 @@ function composeTranslationUnit(files, suite) {
   ].join("\n");
 }
 
+function composeHiddenTranslationUnit(files, suite) {
+  const stripLocalInclude = (value) => String(value || "").replace(/^#include\s+"GridPathfinder\.hpp"\s*$/gm, "");
+  const test = suite === "requirement-change" ? HIDDEN_CHANGE_TEST : HIDDEN_BASELINE_TEST;
+  return [files["GridPathfinder.hpp"], stripLocalInclude(files["GridPathfinder.cpp"]), stripLocalInclude(test)].join("\n");
+}
+
 function latestRun(runs, suite) {
   return (Array.isArray(runs) ? runs : [])
     .filter((run) => run && run.suite === suite)
@@ -179,17 +208,19 @@ function latestRun(runs, suite) {
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0] || null;
 }
 
-function deriveStatus(manifest, runs) {
+function deriveStatus(manifest, runs, files) {
   const suite = manifest && manifest.currentRequirementId === CHANGE_REQUIREMENT
     ? "requirement-change"
     : "baseline";
   const run = latestRun(runs, suite);
   if (!run) return suite === "baseline" ? "unverified" : "needs-work";
-  return run.verdict === "AC" ? "verified" : "needs-work";
+  if (run.verdict !== "AC") return "needs-work";
+  if (files && run.codeHash !== sourceHash(files, suite)) return "needs-work";
+  return "verified";
 }
 
-function nextAction(manifest, runs) {
-  const status = deriveStatus(manifest, runs);
+function nextAction(manifest, runs, files) {
+  const status = deriveStatus(manifest, runs, files);
   const change = manifest && Array.isArray(manifest.requirements)
     ? manifest.requirements.find((item) => item.id === CHANGE_REQUIREMENT)
     : null;
@@ -209,7 +240,7 @@ function nextAction(manifest, runs) {
 }
 
 function sourceHash(files, suite) {
-  return sha256(composeTranslationUnit(files, suite));
+  return sha256(`${composeTranslationUnit(files, suite)}\n${composeHiddenTranslationUnit(files, suite)}`);
 }
 
 module.exports = {
@@ -218,6 +249,7 @@ module.exports = {
   CHANGE_REQUIREMENT,
   buildScaffold,
   composeTranslationUnit,
+  composeHiddenTranslationUnit,
   deriveStatus,
   nextAction,
   sourceHash,

@@ -112,6 +112,13 @@ router.get("/:id/derived/:artifactId", requireProblem, asyncHandler(async (req, 
   res.json({ artifact });
 }));
 
+// Applied Algorithms v1 naming alias; the existing /derived route remains compatible.
+router.get("/:id/derived-artifacts/:artifactId", requireProblem, asyncHandler(async (req, res) => {
+  const artifact = await derivedArtifactStore.getArtifact(req.problemId, req.params.artifactId);
+  if (!artifact) return res.status(404).json({ error: "Derived artifact does not exist." });
+  res.json({ artifact });
+}));
+
 router.get("/:id/derived/:artifactId/source", requireProblem, asyncHandler(async (req, res) => {
   res.json(await derivedArtifactStore.readSource(req.problemId, req.params.artifactId));
 }));
