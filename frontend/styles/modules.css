@@ -1,0 +1,160 @@
+/* modules.css — Applied Algorithms v1 surfaces (Agent B).
+   Library module rows, home direction buttons, module-workspace additions
+   (requirement ladder, fail evidence, Route Planner). Loaded BEFORE tokens.css
+   so the design-system tokens keep the last word. */
+
+/* ---- Library: module rows in the one list ---- */
+.p-group-label {
+  padding: 8px 12px 4px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.p-item-module { cursor: pointer; }
+.p-item-module .p-title { color: var(--accent, #e8b45a); }
+.p-item-module:focus-visible {
+  outline: 2px solid var(--accent, #e8b45a);
+  outline-offset: -2px;
+}
+.p-mod-prov { color: var(--text-dim); }
+.p-mod-req {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted, var(--text-dim));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.p-mod-cta {
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, #e8b45a);
+}
+
+/* ---- Home: hai hướng bắt đầu ---- */
+.jh-directions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.jh-dir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--panel-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.09));
+  border-radius: 10px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.15s ease;
+}
+.jh-dir:hover, .jh-dir:focus-visible { border-color: var(--accent, #e8b45a); }
+.jh-dir-k {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.jh-dir strong { font-size: 14px; }
+.jh-dir-why { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+@media (max-width: 640px) {
+  .jh-directions { grid-template-columns: 1fr; }
+}
+
+.jh-sug-reset {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  cursor: pointer;
+}
+.jh-sug-reset:hover { color: var(--text, #eee); border-color: var(--accent, #e8b45a); }
+
+/* ---- Module workspace: brief / interface / tests ---- */
+.dm-brief-block { margin: 10px 0; font-size: 12px; line-height: 1.55; }
+.dm-brief { margin: 0 0 6px; }
+.dm-iface code {
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--panel-2, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.09));
+}
+.dm-tests ul { margin: 4px 0 0; padding-left: 18px; }
+.dm-tests li { margin: 2px 0; }
+
+/* ---- Module workspace: ladder + evidence ---- */
+.dm-ladder { margin: 10px 0; font-size: 12px; }
+.dm-ladder ul { list-style: none; margin: 4px 0 0; padding: 0; }
+.dm-ladder-item { padding: 2px 0; color: var(--text-dim); }
+.dm-ladder-item.cur { color: var(--text, #eee); }
+.dm-ladder-now { color: var(--accent, #e8b45a); font-size: 11px; }
+.dm-evidence { margin: 10px 0; }
+.dm-evidence-head { font-size: 12px; margin-bottom: 4px; }
+.dm-evidence-body { max-height: 180px; overflow: auto; }
+
+/* ---- Route Planner ---- */
+.dm-planner {
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.09));
+  border-radius: 10px;
+}
+.dm-planner-head { font-weight: 600; font-size: 13px; }
+.dm-planner-sub, .dm-planner-foot { font-size: 11px; margin-top: 4px; line-height: 1.5; }
+.dm-planner-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.dm-planner-grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) minmax(260px, 1.2fr);
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .dm-planner-grid { grid-template-columns: 1fr; }
+}
+.rp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.rp-row label { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); }
+.rp-in { width: 64px; padding: 3px 6px; font-size: 12px; }
+.rp-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.rp-table th {
+  text-align: left; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-dim); padding: 2px 4px;
+}
+.rp-table td { padding: 2px 4px; }
+.mo-next-compact { padding: 8px 12px; }
+.mo-next-compact .mo-next-title { font-size: 13px; }
+.mo-next-compact .mo-next-why { font-size: 10px; }
+
+.rp-result { font-size: 12px; padding: 8px 10px; border-radius: 8px; line-height: 1.5; }
+.rp-ok { background: rgba(80, 200, 120, 0.10); border: 1px solid rgba(80, 200, 120, 0.35); }
+.rp-unreach { background: rgba(230, 180, 80, 0.10); border: 1px solid rgba(230, 180, 80, 0.35); }
+.rp-err { background: rgba(230, 90, 90, 0.10); border: 1px solid rgba(230, 90, 90, 0.4); }
+
+.rp-svg { width: 100%; height: auto; display: block; }
+.rp-edge { stroke: var(--text-dim, #888); stroke-width: 1.2; opacity: 0.7; }
+.rp-edge-path { stroke: var(--accent, #e8b45a); stroke-width: 2.4; opacity: 1; }
+#rp-arrow path { fill: var(--text-dim, #888); }
+#rp-arrow-hot path { fill: var(--accent, #e8b45a); }
+.rp-w { font-size: 9px; fill: var(--text-dim, #888); text-anchor: middle; }
+.rp-w-path { fill: var(--accent, #e8b45a); font-weight: 700; }
+.rp-node { cursor: pointer; }
+.rp-node circle {
+  fill: var(--panel-2, #1c1c22);
+  stroke: var(--border, #555);
+  stroke-width: 1.4;
+}
+.rp-node text { font-size: 10px; fill: var(--text, #ddd); text-anchor: middle; pointer-events: none; }
+.rp-node.hot circle { stroke: var(--accent, #e8b45a); stroke-width: 2; }
+.rp-node.src circle { fill: rgba(80, 200, 120, 0.25); stroke: rgb(80, 200, 120); }
+.rp-node.dst circle { fill: rgba(230, 120, 90, 0.25); stroke: rgb(230, 120, 90); }

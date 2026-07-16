@@ -1,8 +1,8 @@
 // main.js — bootstraps USACO IDE 2.0, owns shared state, and wires modules.
 
-import { api } from "./api.js?v=2.8";
+import { api } from "./api.js?v=2.9";
 import { initLayout, setTab, setView, setLayoutMode, cycleLayoutMode, getSavedLayoutMode } from "./layout.js?v=2.5";
-import { initProblems, renderProblems } from "./problems.js?v=2.5";
+import { initProblems, renderProblems } from "./problems.js?v=2.6";
 import { initEditor, renderMeta, setEditorFiles } from "./editor.js?v=2.3";
 import { mountCmEditor } from "./editor-cm.js?v=2.4";
 import { initTests, renderTests } from "./testcases.js?v=2.4";
@@ -19,7 +19,7 @@ import { initWaReview } from "./features/wa-review.js?v=2.4";
 import { initGameReview } from "./features/game-review.js?v=3.1";
 import { initMoment } from "./features/moment.js?v=2.9"; // supersedes verdict-rail's listener (chips live on inside the card)
 import { initAnalysis } from "./features/analysis.js?v=1.2"; // "Phân tích code này" — evidence-based, Verified Artifact Loop P3
-import { initDerivedModule } from "./features/derived-module.js?v=1.2"; // "Phát triển thành module" — GridPathfinder + edit surface, Verified Artifact Loop P4
+import { initDerivedModule } from "./features/derived-module.js?v=1.4"; // module workspace: problem-derived + standalone catalog + Route Planner
 import { initFlashQuiz } from "./features/flash-quiz.js?v=1.3"; // câu hỏi = lỗi thật từ Student Model
 import { initArena } from "./features/arena.js?v=1.5"; // ⚔ Luyện tập xếp hạng: HUD + match strip + app.arena helpers
 import { initActivityWorkspace } from "./features/activity-workspace.js?v=1.3";
@@ -33,7 +33,7 @@ import { initDashboard } from "./features/dashboard.js?v=2.4";
 import { initMiniChat } from "./features/mini-chat.js?v=2.7";
 import { initSynthesizer } from "./features/synthesizer.js?v=2.5";
 import { initContests } from "./features/contests.js?v=3.1";
-import { initJourney } from "./features/journey.js?v=3.5";
+import { initJourney } from "./features/journey.js?v=3.6";
 import { initCommandPalette } from "./features/command-palette.js?v=2.7";
 import { initMistakeBook } from "./features/mistake-book.js?v=2.5";
 import { initBoss } from "./features/boss.js?v=2.3";
@@ -45,6 +45,7 @@ import { initWelcome } from "./features/welcome.js?v=2.4";
 import { initOverflowMenus } from "./features/overflow-menu.js?v=2.3";
 import { initEditorAppearance } from "./features/editor-appearance.js?v=2.4";
 import { createBus } from "./core/bus.js";
+import { normalizeModules } from "./core/module-model.js";
 import { initWorkspaces } from "./features/workspaces.js?v=1.1";
 import { initPanelSignals, clearTabAttn } from "./features/panel-signals.js?v=1.0";
 
@@ -53,6 +54,7 @@ const $ = (id) => document.getElementById(id);
 const app = {
   state: {
     problems: [],
+    modules: [],   // standalone Applied Algorithms catalog modules ([] = none/route absent)
     currentId: null,
     meta: null,
     settings: { autosave: true, autosaveDelayMs: 800, tabSize: 4, compareMode: "loose", timeMs: 2000 },
@@ -236,6 +238,19 @@ app.setCompilerPill = (compiler) => {
 app.refreshProblems = async () => {
   const { problems } = await api.listProblems();
   app.state.problems = problems;
+  renderProblems(app);
+};
+
+// Standalone catalog modules (Applied Algorithms v1). A 404 means the backend
+// predates the pilot — the Library then simply shows no module rows. Fetched
+// separately from problems so an error here never blocks the problem list.
+app.refreshModules = async () => {
+  try {
+    const normalized = normalizeModules(await api.listModules());
+    app.state.modules = normalized || [];
+  } catch {
+    app.state.modules = [];
+  }
   renderProblems(app);
 };
 
@@ -1229,6 +1244,7 @@ async function boot() {
   app.setTab(initialTab);
 
   await app.refreshProblems();
+  app.refreshModules(); // non-blocking: module rows appear when the list answers
   // Startup goes straight to the editor — reopen the last problem (or the most
   // recently updated one) so power users land on code, not a dashboard. The
   // Journey home stays one click away via the 🏠 chip. Only a truly empty

@@ -15,6 +15,8 @@ data/boss.json
 data/arena-*.json
 data/student-model.json
 data/backups/
+# Applied Algorithms module state (per-user saves/runs, written by the app)
+data/algorithm-modules/
 
 # Personal C++ starter template (Settings → Code template)
 data/template.cpp

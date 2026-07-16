@@ -12,6 +12,10 @@ import {
   normTopic, trackOf, matchesFilters, searchQueryString, applyLocalFilters,
   normalizeSearchResults, localReasons, displayTitle,
 } from "./core/search-model.js";
+import {
+  normalizeModules, visibleModules, moduleCta, moduleProvenance,
+  moduleLocalReasons, MODULE_STATUS,
+} from "./core/module-model.js";
 
 // topic-filter.js imports these from here — keep the re-export stable.
 export { normTopic, trackOf };
@@ -114,10 +118,40 @@ function visibleRows(app) {
     .map((p) => ({ ...p, __reasons: localReasons(p, filters), __serverMatch: false }));
 }
 
+// ---- standalone module rows (Applied Algorithms v1, B1) ----------------------
+// One list, two lenses: catalog modules render as pinned rows ABOVE the problem
+// rows whenever the current filters admit them. GET /api/modules 404s on a
+// backend without the pilot → app.state.modules stays [] and nothing renders.
+
+function moduleRowHtml(m, filters, currentId) {
+  const status = MODULE_STATUS[m.status] || MODULE_STATUS["needs-work"];
+  const provenance = moduleProvenance(m);
+  const cta = moduleCta(m);
+  const reasons = moduleLocalReasons(m, filters.search);
+  const parts = [
+    `<span class="p-src">${escapeHtml([m.provider, m.collection].filter(Boolean).join(" › "))}</span>`,
+    m.concept && `<span class="p-concept">${escapeHtml(m.concept)}</span>`,
+    `<span class="p-mod-prov" title="${provenance.kind === "standalone" ? "Module độc lập trong catalog — mở trực tiếp, không cần bài OJ" : "Module phát triển từ một bài đã AC"}">${escapeHtml(provenance.text)}</span>`,
+    `<span class="p-dstatus p-dstatus-${status.cls}" title="Trạng thái theo lần verify gần nhất">${escapeHtml(status.text)}</span>`,
+  ].filter(Boolean);
+  return `
+    <div class="p-item p-item-module ${m.id === currentId ? "active" : ""}" data-module-id="${escapeHtml(m.artifactId)}" role="button" tabindex="0" aria-label="Mở module ${escapeHtml(m.title)}">
+      <div class="p-row">
+        <span class="p-title">${escapeHtml(m.title)}</span>
+        <span class="p-kind" title="Module thuật toán & ứng dụng">Module</span>
+      </div>
+      <div class="p-sub">${parts.join(' <span class="p-dot"></span> ')}</div>
+      ${m.requirement ? `<div class="p-mod-req" title="Requirement hiện hành">${escapeHtml(m.requirement)}</div>` : ""}
+      ${reasons.length ? `<div class="p-why" title="Khớp cục bộ trên máy">Vì sao khớp: ${reasons.map((r) => escapeHtml(r)).join(" · ")}</div>` : ""}
+      <div class="p-mod-cta">${escapeHtml(cta.label)}</div>
+    </div>`;
+}
+
 export function renderProblems(app) {
   const { problems, filters, currentId } = app.state;
   const list = app.el.problemList;
   const visible = visibleRows(app);
+  const modRows = visibleModules(app.state.modules || [], filters);
 
   // Populate source filter + datalist from existing problems.
   const sources = [...new Set(problems.map((p) => p.source).filter(Boolean))].sort();
@@ -135,21 +169,29 @@ export function renderProblems(app) {
   const searchTag = filters.search
     ? (serverSearch.unavailable || !visible.some((v) => v.__serverMatch) ? " · tìm cục bộ" : " · tìm qua server")
     : "";
+  const moduleTag = modRows.length ? ` · ${modRows.length} module` : "";
   app.el.problemCount.textContent = problems.length
-    ? `${visible.length}/${problems.length} · ✓ ${solved} đã giải${searchTag}`
-    : "0 problems";
+    ? `${visible.length}/${problems.length} · ✓ ${solved} đã giải${moduleTag}${searchTag}`
+    : (modRows.length ? `${modRows.length} module` : "0 problems");
 
-  if (visible.length === 0) {
+  if (visible.length === 0 && modRows.length === 0) {
     const emptyMsg = problems.length === 0
       ? "Chưa có bài nào. Bấm <b>+ Bài mới</b>."
       : (filters.track === "build"
-        ? "Chưa có module nào. Module thuật toán được phát triển từ một bài đã AC (nút <b>Phát triển thành module</b> sau khi AC)."
+        ? "Không có module nào khớp bộ lọc hiện tại."
         : "Không có kết quả.");
     list.innerHTML = `<div style="padding:20px 12px;color:var(--text-dim);font-size:12px;text-align:center">${emptyMsg}</div>`;
     return;
   }
 
-  list.innerHTML = visible.map((p) => {
+  // Module rows pin above the problem rows — one list, never a second library.
+  const moduleBlock = modRows.length
+    ? `<div class="p-group-label" title="Module trong catalog Thuật toán &amp; ứng dụng — mở trực tiếp">Module thuật toán</div>` +
+      modRows.map((m) => moduleRowHtml(m, filters, currentId)).join("") +
+      (visible.length ? `<div class="p-group-label">Bài tập</div>` : "")
+    : "";
+
+  list.innerHTML = moduleBlock + visible.map((p) => {
     const v = p.lastVerdict ? `<span class="vbadge v-${escapeHtml(p.lastVerdict)}">${escapeHtml(p.lastVerdict)}</span>` : "";
     // Nguồn: provider › collection (contract) nếu có, fallback source cũ.
     const srcLabel = [p.provider, p.collection].filter(Boolean).join(" › ") || p.source || "";
@@ -257,6 +299,11 @@ export function initProblems(app) {
 
   // List interactions (delegated)
   el.problemList.addEventListener("click", async (e) => {
+    const moduleItem = e.target.closest("[data-module-id]");
+    if (moduleItem) {
+      if (app.openStandaloneModule) app.openStandaloneModule(moduleItem.dataset.moduleId);
+      return;
+    }
     const item = e.target.closest(".p-item");
     if (!item) return;
     const id = item.dataset.id;
@@ -288,5 +335,15 @@ export function initProblems(app) {
       return;
     }
     app.selectProblem(id);
+  });
+
+  // Keyboard: Enter/Space on a focused module row opens it (rows are buttons
+  // in behavior; problem rows already get clicks via mouse-first flows).
+  el.problemList.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const moduleItem = e.target.closest && e.target.closest("[data-module-id]");
+    if (!moduleItem) return;
+    e.preventDefault();
+    if (app.openStandaloneModule) app.openStandaloneModule(moduleItem.dataset.moduleId);
   });
 }

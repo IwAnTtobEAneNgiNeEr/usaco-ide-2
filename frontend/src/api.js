@@ -224,6 +224,25 @@ export const api = {
   verifyDerivedArtifact: (id, artifactId, suite) => post(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/verify`, { suite }),
   activateRequirementChange: (id, artifactId, changeId) => post(`/api/problems/${id}/derived/${encodeURIComponent(artifactId)}/requirement-changes/${encodeURIComponent(changeId)}/activate`, {}),
 
+  // ---- Applied Algorithms v1 — standalone catalog modules (/api/modules) ----
+  // Same artifact vocabulary as the per-problem derived routes, but scoped to
+  // the catalog pilot (grid-pathfinder, weighted-graph-router, range-sum-module).
+  // 404 on the list = backend without the pilot → the Library simply shows no
+  // module rows (honest absence, never fabricated ones).
+  listModules: () => get("/api/modules"),
+  // POST /open materializes the curated module on first open and is idempotent
+  // thereafter (contract §Open/materialize) — the canonical way in.
+  openModule: (artifactId) => post(`/api/modules/${encodeURIComponent(artifactId)}/open`, {}),
+  getModule: (artifactId) => get(`/api/modules/${encodeURIComponent(artifactId)}`),
+  getModuleSource: (artifactId) => get(`/api/modules/${encodeURIComponent(artifactId)}/source`),
+  saveModuleSource: (artifactId, source) => put(`/api/modules/${encodeURIComponent(artifactId)}/source`, { source }),
+  verifyModule: (artifactId, suite) => post(`/api/modules/${encodeURIComponent(artifactId)}/verify`, { suite }),
+  activateModuleRequirementChange: (artifactId, changeId) => post(`/api/modules/${encodeURIComponent(artifactId)}/requirement-changes/${encodeURIComponent(changeId)}/activate`, {}),
+  // Route Planner (B4): compiles & runs the REAL verified WeightedGraphRouter
+  // on the structured input (contract §Route Planner Simulation).
+  // 409 = module not verified yet; 422 = compile/runtime failure.
+  simulateRoute: (input) => post("/api/modules/weighted-graph-router/simulate", { input }),
+
   // Recorder events only the frontend can observe (README-AUTOPILOT.md M6).
   // Fire-and-forget by convention — callers should not await/block on this.
   recordEvent: (id, type, data) => post(`/api/problems/${id}/event`, { type, data }).catch(() => {}),

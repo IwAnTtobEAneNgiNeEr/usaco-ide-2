@@ -17,10 +17,14 @@
 
 export const FEEDBACK_STORE_KEY = "usaco2.entryFeedback.v1";
 
+// Each kind states its real effect on future suggestions — the dismissal list
+// rides to the server as `dismissed=` and the kind is recorded via the
+// per-problem event route. No mastery/rating is ever written from here.
 export const FEEDBACK_KINDS = [
-  { id: "too-easy", label: "Quá dễ" },
-  { id: "too-hard", label: "Quá khó" },
-  { id: "not-relevant", label: "Không phù hợp" },
+  { id: "too-easy", label: "Quá dễ", effect: "bài này bị ẩn; gợi ý sau ưu tiên mức khó hơn từ dữ liệu chấm" },
+  { id: "too-hard", label: "Quá khó", effect: "bài này bị ẩn; gợi ý sau lùi về mức đang vững" },
+  { id: "not-relevant", label: "Không đúng mục tiêu", effect: "bài này bị ẩn khỏi gợi ý; không ảnh hưởng độ khó" },
+  { id: "already-known", label: "Đã biết", effect: "bài này bị ẩn; KHÔNG tính là đã giải — chỉ Judge AC mới tạo mastery" },
 ];
 
 const MAX_SUGGESTIONS = 3;

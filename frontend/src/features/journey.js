@@ -20,6 +20,7 @@ import {
   normalizeEntry, visibleSuggestions, feedbackEvent, entryQueryString,
   parseHidden, serializeHidden, FEEDBACK_STORE_KEY, FEEDBACK_KINDS,
 } from "../core/entry-model.js";
+import { translateReason } from "../core/module-model.js";
 
 // Rotating daily quotes — picked by date so the home feels alive but stable
 // within a day.
@@ -163,7 +164,7 @@ function renderNextMove(p, plan, arena, entry) {
     ? {
         action: "open-problem", id: entry.continueItem.id, kicker: "Tiếp tục",
         title: displayProblemTitle(entry.continueItem.title),
-        why: entry.continueItem.reason || (entry.continueItem.lastVerdict ? `lần trước ${entry.continueItem.lastVerdict}` : ""),
+        why: translateReason(entry.continueItem.reason) || (entry.continueItem.lastVerdict ? `lần trước ${entry.continueItem.lastVerdict}` : ""),
       }
     : nextPrimary(p, plan, arena);
   const dataId = primary.id ? ` data-id="${escapeHtml(primary.id)}"` : "";
@@ -210,6 +211,28 @@ function renderNextMove(p, plan, arena, entry) {
 }
 
 // ---------------------------------------------------------------------------
+// Unit 1a — Hai hướng bắt đầu (B2): the home must let the user START either
+// direction deliberately, not only continue. Two quiet, equal buttons that
+// route into the ONE Library with the matching lens — no second surface.
+// ---------------------------------------------------------------------------
+
+function renderStartDirections(moduleCount) {
+  return `
+    <section class="jh-unit jh-directions" aria-label="Bắt đầu một hướng">
+      <button type="button" class="jh-dir" data-action="start-compete">
+        <span class="jh-dir-k">Bắt đầu</span>
+        <strong>Luyện thi</strong>
+        <span class="jh-dir-why">giải đề trong giới hạn, Judge xác minh</span>
+      </button>
+      <button type="button" class="jh-dir" data-action="start-build">
+        <span class="jh-dir-k">Bắt đầu</span>
+        <strong>Thuật toán &amp; ứng dụng</strong>
+        <span class="jh-dir-why">${moduleCount ? `${moduleCount} module trong catalog — mở trực tiếp, verify bằng test thật` : "module phát triển từ bài đã AC hoặc từ catalog"}</span>
+      </button>
+    </section>`;
+}
+
+// ---------------------------------------------------------------------------
 // Unit 1b — Search (the "bắt đầu gì?" half of the entry question)
 // ---------------------------------------------------------------------------
 
@@ -232,12 +255,25 @@ function renderHomeSearch() {
 
 function renderEntrySuggestions(entry, hidden) {
   const items = visibleSuggestions(entry.suggestions, hidden);
-  if (!items.length) return "";
+  const hiddenCount = hidden instanceof Set ? hidden.size : 0;
+  const resetBtn = hiddenCount
+    ? `<button type="button" class="jh-sug-reset" data-action="sug-feedback-reset" title="Xóa ${hiddenCount} phản hồi đã ghi — mọi bài từng ẩn có thể được gợi ý lại">Đặt lại (${hiddenCount})</button>`
+    : "";
+  if (!items.length) {
+    return hiddenCount ? `
+      <section class="jh-unit jh-sugs" data-role="violet">
+        <div class="jh-plan-head">
+          <span class="jh-plan-kicker">Gợi ý bắt đầu</span>
+          ${resetBtn}
+        </div>
+        <div class="an-note">Em đã ẩn hết gợi ý hiện có — đặt lại để nhận gợi ý mới, hoặc tìm bài trong thư viện.</div>
+      </section>` : "";
+  }
   const rows = items.map((s) => `
     <div class="jh-sug-row" data-sug-id="${escapeHtml(s.id)}">
       <button type="button" class="jh-sug-open" data-action="open-problem" data-id="${escapeHtml(s.id)}">
         <span class="jh-sug-title">${escapeHtml(displayProblemTitle(s.title))}${s.rating ? ` <span class="jh-sug-rating">~${s.rating}</span>` : ""}</span>
-        <span class="jh-sug-why">${escapeHtml(s.reason)}</span>
+        <span class="jh-sug-why">${escapeHtml(translateReason(s.reason))}</span>
       </button>
       <button type="button" class="jh-sug-dismiss" data-action="sug-feedback" data-id="${escapeHtml(s.id)}"
         title="Phản hồi gợi ý này" aria-label="Phản hồi gợi ý">✕</button>
@@ -247,15 +283,18 @@ function renderEntrySuggestions(entry, hidden) {
       <div class="jh-plan-head">
         <span class="jh-plan-kicker">Gợi ý bắt đầu</span>
         <span class="jh-plan-total">tối đa 3 · mỗi gợi ý có lý do · bỏ qua được</span>
+        ${resetBtn}
       </div>
       <div class="jh-sug-rows">${rows}</div>
     </section>`;
 }
 
 // The inline feedback strip that replaces a suggestion row when ✕ is clicked.
+// Each button's tooltip states the REAL effect on future suggestions (B5) —
+// no signal here ever fakes mastery.
 function feedbackStripHtml(id) {
   const btns = FEEDBACK_KINDS.map((k) =>
-    `<button type="button" class="jh-sug-fb" data-action="sug-feedback-send" data-id="${escapeHtml(id)}" data-kind="${k.id}">${k.label}</button>`
+    `<button type="button" class="jh-sug-fb" data-action="sug-feedback-send" data-id="${escapeHtml(id)}" data-kind="${k.id}" title="${escapeHtml(k.effect || "")}">${k.label}</button>`
   ).join("");
   return `<div class="jh-sug-fbrow">${btns}<button type="button" class="jh-sug-fb jh-sug-fb-cancel" data-action="sug-feedback-cancel">Giữ lại</button></div>`;
 }
@@ -536,7 +575,7 @@ function renderPractice(problems) {
 // Home v2 shell
 // ---------------------------------------------------------------------------
 
-function renderHome(p, plan, arena, entry, hidden) {
+function renderHome(p, plan, arena, entry, hidden, moduleCount) {
   if (!p) return `<p class="jh-muted" style="padding:40px">Đang tải hành trình…</p>`;
 
   // Entry policy (B2): the home answers ONE question — "Tiếp tục hoặc bắt đầu
@@ -547,6 +586,7 @@ function renderHome(p, plan, arena, entry, hidden) {
   const body = p.totals.problems === 0 ? renderOnboarding() : `
     ${renderStatStrip(p, arena)}
     ${renderNextMove(p, plan, arena, entry)}
+    ${renderStartDirections(moduleCount)}
     ${renderHomeSearch()}
     ${startUnit}
     <section class="jh-unit jh-context" id="jh-boss-host"></section>`;
@@ -625,10 +665,11 @@ export function initJourney(app) {
   }
 
   function paintHome(p) {
-    if (!p) { host.innerHTML = renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug); return; }
+    const moduleCount = (app.state.modules || []).length;
+    if (!p) { host.innerHTML = renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug, moduleCount); return; }
     host.innerHTML = homeView === "profile"
       ? renderProfile(p, lastArena)
-      : (homeView === "practice" ? renderPractice(app.state.problems) : renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug));
+      : (homeView === "practice" ? renderPractice(app.state.problems) : renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug, moduleCount));
     const homeSearch = host.querySelector("#jh-search");
     if (homeSearch && homeSearchQ) homeSearch.value = homeSearchQ;
     // Satellite features (weekend challenge card) fill #jh-boss-host — only on
@@ -760,6 +801,18 @@ export function initJourney(app) {
     else if (action === "open-profile") { homeView = "profile"; paintHome(last); }
     else if (action === "open-practice") { homeView = "practice"; paintHome(last); }
     else if (action === "home-back") { homeView = "today"; paintHome(last); }
+    // --- hai hướng bắt đầu (B2): route into the ONE Library with the lens set ---
+    else if (action === "start-compete" || action === "start-build") {
+      const track = action === "start-build" ? "build" : "compete";
+      const trackBtn = document.querySelector(`#track-row [data-track="${track}"]`);
+      if (trackBtn) trackBtn.click();
+      // reveal the sidebar if it was collapsed, then land focus on the list
+      document.body.classList.remove("sidebar-collapsed");
+      const list = document.getElementById("problem-list");
+      const first = list && list.querySelector(".p-item");
+      if (first) { first.scrollIntoView({ block: "nearest" }); first.focus && first.focus(); }
+      else document.getElementById("search")?.focus();
+    }
     else if (action === "open-random") document.getElementById("btn-random")?.click();
     else if (action === "open-contests") app.openContests?.();
     else if (action === "open-corefill") app.openCorefill?.();
@@ -806,7 +859,17 @@ export function initJourney(app) {
       hiddenSug.add(btn.dataset.id);
       persistHidden();
       paintHome(last);
-      app.toast("Đã ghi nhận — gợi ý này sẽ không quay lại.", "ok");
+      // Tell the user the REAL effect of the kind they picked (B5).
+      const kind = FEEDBACK_KINDS.find((k) => k.id === btn.dataset.kind);
+      app.toast(kind ? `Đã ghi nhận “${kind.label}” — ${kind.effect}.` : "Đã ghi nhận.", "ok");
+      refresh({ quiet: true }); // re-ask the entry route with the updated dismissed= list
+    }
+    else if (action === "sug-feedback-reset") {
+      const n = hiddenSug.size;
+      hiddenSug = new Set();
+      persistHidden();
+      app.toast(`Đã xóa ${n} phản hồi — gợi ý được xếp lại từ đầu, không bài nào còn bị ẩn.`, "ok");
+      refresh({ quiet: true });
     }
     else if (action === "open-problem") app.selectProblem(btn.dataset.id);
     else if (action === "open-quiz") { if (app.openFlashQuiz) app.openFlashQuiz(); }
