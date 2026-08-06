@@ -923,3 +923,63 @@
   .jh-unit-next .jh-next { transition: none; }
   .jh-profile .jh-pcard:hover { transform: none; }
 }
+
+/* Home focus block: one decision, one primary CTA. Uses only shared tokens. */
+.jh-focus {
+  display: grid;
+  gap: var(--space-12);
+  padding: var(--space-20);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--edge-light), var(--shadow-md);
+}
+.jh-focus-head {
+  color: var(--text-dim);
+  font: 700 var(--text-badge)/1 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.jh-focus-primary {
+  display: grid;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-20);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--sans);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--edge-light);
+}
+.jh-focus-primary:hover { background: var(--surface-3); }
+.jh-focus-primary:focus-visible,
+.jh-focus-option:focus-visible { outline: none; box-shadow: var(--ring); }
+.jh-focus-kicker { color: var(--accent); font: 700 var(--text-badge)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.jh-focus-primary strong { color: var(--text); font-size: var(--text-h-l); line-height: var(--lh-tight); }
+.jh-focus-primary > span:not(.jh-focus-kicker):not(.jh-focus-go) { color: var(--text-muted); font-size: var(--text-body); line-height: var(--lh-body); }
+.jh-focus-go { color: var(--accent); font-size: var(--text-caption); font-weight: 700; }
+.jh-focus-options { display: grid; gap: var(--space-4); }
+.jh-focus-options-label { color: var(--text-dim); font-size: var(--text-caption); }
+/* Same surface step as .jh-focus-primary (--surface-2), just without the
+   accent border — an option row should read as a quieter SIBLING of the
+   primary CTA, not a near-invisible ghost sitting on the bare page
+   background (the old --surface-0 was literally --bg, i.e. indistinguishable
+   from empty space). */
+.jh-focus-option {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font: 600 var(--text-caption)/var(--lh-body) var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+.jh-focus-option:hover { border-color: var(--border); color: var(--text); background: var(--surface-hover); }
+.jh-focus-option small { color: var(--text-dim); font: 400 var(--text-caption)/var(--lh-body) var(--sans); }
+@media (prefers-reduced-motion: reduce) { .jh-focus-primary, .jh-focus-option { transition: none; } }

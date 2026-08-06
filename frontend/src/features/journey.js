@@ -17,9 +17,10 @@
 import { api } from "../api.js";
 import { escapeHtml } from "../md.js";
 import {
-  normalizeEntry, visibleSuggestions, feedbackEvent, entryQueryString,
+  normalizeEntry, visibleSuggestions, entryQueryString,
   parseHidden, serializeHidden, FEEDBACK_STORE_KEY, FEEDBACK_KINDS,
 } from "../core/entry-model.js";
+import { TRACKS } from "../core/track-contract.js";
 import { translateReason } from "../core/module-model.js";
 
 // Rotating daily quotes — picked by date so the home feels alive but stable
@@ -36,23 +37,31 @@ const QUOTES = [
 ];
 
 const NAME_KEY = "usaco2.userName";
+const tr = (english, vietnamese) => document.documentElement.lang === "en" ? english : vietnamese;
+const levelLabel = (value) => ({ "Người mới": "Newcomer", "Tập sự": "Apprentice", "Thành thạo": "Skilled", "Chuyên gia": "Expert" }[value] || value);
 
 function userName() {
-  try { return localStorage.getItem(NAME_KEY) || "bạn"; } catch { return "bạn"; }
+  try { return localStorage.getItem(NAME_KEY) || tr("there", "bạn"); } catch { return tr("there", "bạn"); }
 }
 
 function greeting() {
   const h = new Date().getHours();
-  if (h < 11) return "Chào buổi sáng";
-  if (h < 14) return "Chào buổi trưa";
-  if (h < 18) return "Chào buổi chiều";
-  return "Chào buổi tối";
+  if (h < 11) return tr("Good morning", "Chào buổi sáng");
+  if (h < 14) return tr("Good afternoon", "Chào buổi trưa");
+  if (h < 18) return tr("Good afternoon", "Chào buổi chiều");
+  return tr("Good evening", "Chào buổi tối");
 }
 
 function quoteOfDay() {
   const d = new Date();
   const idx = (d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate()) % QUOTES.length;
-  return QUOTES[idx];
+  const englishQuotes = [
+    "Every AC today is a step toward tomorrow's contest.", "WA is not failure — it is a test case you just learned from.",
+    "Careful thinking beats fast guessing.", "The hardest algorithm is the one you start.",
+    "Today's streak matters more than yesterday's score.", "Read twice, code once, debug less.",
+    "You do not need to be great to start, but you need to start to become great.", "One problem a day becomes 365 in a year."
+  ];
+  return tr(englishQuotes[idx], QUOTES[idx]);
 }
 
 const VERDICT_CLASS = { AC: "jh-v-ac", WA: "jh-v-wa", TLE: "jh-v-tle", RE: "jh-v-re", CE: "jh-v-ce" };
@@ -84,27 +93,28 @@ function renderStatStrip(p, arena) {
     ? `<b>${rating.rating}</b><span class="jh-stat-tag">${escapeHtml((rating.tier && rating.tier.name) || "rating")}</span>`
     : `<b>—</b><span class="jh-stat-tag">rating</span>`;
   return `
-    <button type="button" class="jh-stats" data-action="open-profile" title="Mở Hồ sơ học tập">
+    <button type="button" class="jh-stats" data-action="open-profile" title="${tr("Open learning profile", "Mở Hồ sơ học tập")}">
       <span class="jh-stat ${streakCls}">
-        <span class="jh-stat-k">Chuỗi</span>
-        <b>${p.streak.current}</b><span class="jh-stat-tag">ngày${p.streak.best ? ` · kỷ lục ${p.streak.best}` : ""}</span>
+        <span class="jh-stat-k">${tr("Streak", "Chuỗi")}</span>
+        <b>${p.streak.current}</b><span class="jh-stat-tag">${tr("days", "ngày")}${p.streak.best ? tr(` · best ${p.streak.best}`, ` · kỷ lục ${p.streak.best}`) : ""}</span>
       </span>
       <span class="jh-stat-div" aria-hidden="true"></span>
       <span class="jh-stat">
-        <span class="jh-stat-k">Cấp</span>
-        <b>${x.level}</b><span class="jh-stat-tag">${escapeHtml(x.levelName)}</span>
+        <span class="jh-stat-k">${tr("Level", "Cấp")}</span>
+        <b>${x.level}</b><span class="jh-stat-tag">${escapeHtml(document.documentElement.lang === "en" ? levelLabel(x.levelName) : x.levelName)}</span>
       </span>
       <span class="jh-stat-div" aria-hidden="true"></span>
       <span class="jh-stat">
-        <span class="jh-stat-k">Xếp hạng</span>
+        <span class="jh-stat-k">${tr("Rating", "Xếp hạng")}</span>
         ${ratingSeg}
       </span>
-      <span class="jh-stat-open" aria-hidden="true">Hồ sơ →</span>
+      <span class="jh-stat-open" aria-hidden="true">${tr("Profile →", "Hồ sơ →")}</span>
     </button>`;
 }
 
 // ---------------------------------------------------------------------------
-// Unit 1 — Nước đi tiếp theo (the home's single loud CTA + up to 2 alternates)
+// Focus block — the home's one decision surface. It owns every answer to
+// “Tiếp tục làm gì / bắt đầu gì?” so Home never presents competing plans.
 // ---------------------------------------------------------------------------
 
 // The priority ladder (REDESIGN-IA §2): an unfinished/adjourned match (nợ WA)
@@ -119,212 +129,83 @@ function nextPrimary(p, plan, arena) {
 
   // 1) Nợ WA — an adjourned or WA-carrying match is the strongest reason to return.
   if (adj) {
-    const why = adj.waCount ? `còn ${adj.waCount} test chưa qua — quay lại xử nốt` : "trận đang bỏ dở — quay lại kết thúc";
-    return { action: "open-problem", id: adj.id, kicker: "Nợ WA", title: displayProblemTitle(adj.title || adj.id), why };
+    const why = adj.waCount ? tr(`${adj.waCount} tests are still failing — finish the job`, `còn ${adj.waCount} test chưa qua — quay lại xử nốt`) : tr("match in progress — return and finish it", "trận đang bỏ dở — quay lại kết thúc");
+    return { action: "open-problem", id: adj.id, kicker: tr("WA debt", "Nợ WA"), title: displayProblemTitle(adj.title || adj.id), why };
   }
   if (revenge) {
     const why = revenge.gauntletLastResult === "broken"
       ? "AC cũ bị một test khó phá — món nợ chưa trả"
       : "trận đã buông — món nợ chưa trả";
-    return { action: "open-problem", id: revenge.id, kicker: "Nợ WA", title: displayProblemTitle(revenge.title || revenge.id), why };
+    return { action: "open-problem", id: revenge.id, kicker: tr("WA debt", "Nợ WA"), title: displayProblemTitle(revenge.title || revenge.id), why };
   }
 
   // 2) Bài dở — a problem opened but not yet solved.
   const c = p.continueProblem;
   if (c && c.lastVerdict !== "AC" && c.status !== "solved") {
     const bits = [c.lastVerdict ? `lần trước ${c.lastVerdict}` : "đang làm dở", c.topic].filter(Boolean).join(" · ");
-    return { action: "open-problem", id: c.id, kicker: "Tiếp tục", title: displayProblemTitle(c.title), why: bits };
+    return { action: "open-problem", id: c.id, kicker: tr("Continue", "Tiếp tục"), title: displayProblemTitle(c.title), why: bits };
   }
 
   // 3) Kế hoạch — the planner's first actionable pick.
   const item = plan && Array.isArray(plan.items) ? plan.items.find((it) => it.kind === "quiz" || it.id) : null;
   if (item) {
     if (item.kind === "quiz") {
-      return { action: "open-quiz", kicker: "Nước đi tiếp theo", title: "Ôn lỗi nhanh — nhắc lại lỗi cũ", why: item.reason || "vài phút active recall trước khi giải bài mới" };
+      return { action: "open-quiz", kicker: tr("Next step", "Nước đi tiếp theo"), title: tr("Quick review — revisit an old mistake", "Ôn lỗi nhanh — nhắc lại lỗi cũ"), why: item.reason || tr("a few minutes of active recall before a new problem", "vài phút active recall trước khi giải bài mới") };
     }
     const prefix = item.kind === "review" ? "Ôn lại: " : "";
-    return { action: "open-problem", id: item.id, kicker: "Nước đi tiếp theo", title: prefix + displayProblemTitle(item.title || item.id), why: item.reason || "" };
+    return { action: "open-problem", id: item.id, kicker: tr("Next step", "Nước đi tiếp theo"), title: prefix + displayProblemTitle(item.title || item.id), why: item.reason || "" };
   }
 
   // 4) A solved-through-everything day, or a returning veteran — offer a fresh bài.
   if (c) {
-    return { action: "open-problem", id: c.id, kicker: "Xem lại", title: displayProblemTitle(c.title), why: "bài gần nhất — mở lại nếu muốn luyện thêm" };
+    return { action: "open-problem", id: c.id, kicker: tr("Review", "Xem lại"), title: displayProblemTitle(c.title), why: tr("your latest problem — reopen it to practice more", "bài gần nhất — mở lại nếu muốn luyện thêm") };
   }
   if (document.getElementById("btn-random")) {
-    return { action: "open-random", kicker: "Nước đi tiếp theo", title: "Mở một bài mới", why: "chưa có việc nào tồn — luyện một bài ngẫu nhiên trong tầm" };
+    return { action: "open-random", kicker: tr("Next step", "Nước đi tiếp theo"), title: tr("Open a new problem", "Mở một bài mới"), why: tr("nothing is pending — practice a suitable random problem", "chưa có việc nào tồn — luyện một bài ngẫu nhiên trong tầm") };
   }
-  return { action: "new-problem", kicker: "Bắt đầu", title: "Tạo bài đầu tiên", why: "dán ảnh đề — AI đọc đề và dựng test cho em" };
+  return { action: "new-problem", kicker: tr("Start", "Bắt đầu"), title: tr("Create your first problem", "Tạo bài đầu tiên"), why: tr("paste a statement image — AI reads it and prepares tests", "dán ảnh đề — AI đọc đề và dựng test cho em") };
 }
 
-function renderNextMove(p, plan, arena, entry) {
-  // Entry policy (B2): when GET /api/recommendations/entry is available, the
-  // continue CTA comes from IT — the backend's own read of "work đang dở".
-  // Without the route (or with nothing to continue) the local ladder stays.
-  const primary = entry && entry.continueItem
+function renderFocus(p, plan, arena, entry) {
+  // The entry route has the best view of unfinished work. Standalone modules
+  // are deliberately excluded: Practice only recommends problem-solving work.
+  const continueItem = entry && entry.continueItem && entry.continueItem.open?.type !== "module"
+    ? entry.continueItem
+    : null;
+  const primary = continueItem
     ? {
-        action: "open-problem", id: entry.continueItem.id, kicker: "Tiếp tục",
-        title: displayProblemTitle(entry.continueItem.title),
-        why: translateReason(entry.continueItem.reason) || (entry.continueItem.lastVerdict ? `lần trước ${entry.continueItem.lastVerdict}` : ""),
+        action: "open-problem", id: continueItem.id, kicker: "Việc cần làm ngay",
+        title: displayProblemTitle(continueItem.title),
+        why: translateReason(continueItem.reason) || (continueItem.lastVerdict ? `lần trước ${continueItem.lastVerdict}` : ""),
       }
     : nextPrimary(p, plan, arena);
   const dataId = primary.id ? ` data-id="${escapeHtml(primary.id)}"` : "";
-  const cta = `
-    <button type="button" class="jh-next" data-action="${primary.action}"${dataId}>
-      <span class="jh-next-kicker">${escapeHtml(primary.kicker)}</span>
-      <span class="jh-next-title">${escapeHtml(primary.title)}</span>
-      ${primary.why ? `<span class="jh-next-why">${escapeHtml(primary.why)}</span>` : ""}
-      <span class="jh-next-go" aria-hidden="true">→</span>
-    </button>`;
-
-  // Up to two quiet alternates from the arena's suggestions — never louder than
-  // the primary, never the same problem. A self-select match, and a sealed
-  // problem (identity hidden until opened — pure interleaved practice).
-  // With the entry API live, the reasoned suggestion list below replaces these
-  // (home policy: at most 3 suggestions total, all with reasons).
-  const alts = [];
-  const nb = !entry && arena && arena.nextBet ? arena.nextBet : null;
-  if (nb) {
-    const self = Array.isArray(nb.selfSelect) ? nb.selfSelect.find((s) => s.id !== primary.id) : null;
-    if (self) {
-      alts.push(`<button type="button" class="jh-alt" data-action="open-problem" data-id="${escapeHtml(self.id)}">
-        <span class="jh-alt-g" aria-hidden="true">◈</span><span class="jh-alt-t">Bài cân sức: ${escapeHtml(displayProblemTitle(self.title || self.id))}</span>
-      </button>`);
-    }
-    const my = nb.mysteryBet;
-    if (my && my.opened && my.id && my.id !== primary.id) {
-      alts.push(`<button type="button" class="jh-alt" data-action="open-problem" data-id="${escapeHtml(my.id)}">
-        <span class="jh-alt-g" aria-hidden="true">◍</span><span class="jh-alt-t">Bài niêm phong (đã mở): ${escapeHtml(displayProblemTitle(my.title || my.id))}</span>
-      </button>`);
-    } else if (my && !my.opened) {
-      alts.push(`<button type="button" class="jh-alt is-sealed" data-action="mystery-open">
-        <span class="jh-alt-g" aria-hidden="true">◍</span><span class="jh-alt-t">Bài niêm phong ~${my.cfRating || "?"} — đề giấu tới khi em mở</span>
-        <span class="jh-alt-x" data-action="mystery-reroll" title="Đổi đề niêm phong (1 lần/ngày)">đổi</span>
-      </button>`);
-    }
-  }
-
-  return `
-    <section class="jh-unit jh-unit-next" data-role="cyan">
-      ${cta}
-      ${alts.length ? `<div class="jh-next-alts">${alts.join("")}</div>` : ""}
-    </section>`;
-}
-
-// ---------------------------------------------------------------------------
-// Unit 1a — Hai hướng bắt đầu (B2): the home must let the user START either
-// direction deliberately, not only continue. Two quiet, equal buttons that
-// route into the ONE Library with the matching lens — no second surface.
-// ---------------------------------------------------------------------------
-
-function renderStartDirections(moduleCount) {
-  return `
-    <section class="jh-unit jh-directions" aria-label="Bắt đầu một hướng">
-      <button type="button" class="jh-dir" data-action="start-compete">
-        <span class="jh-dir-k">Bắt đầu</span>
-        <strong>Luyện thi</strong>
-        <span class="jh-dir-why">giải đề trong giới hạn, Judge xác minh</span>
-      </button>
-      <button type="button" class="jh-dir" data-action="start-build">
-        <span class="jh-dir-k">Bắt đầu</span>
-        <strong>Thuật toán &amp; ứng dụng</strong>
-        <span class="jh-dir-why">${moduleCount ? `${moduleCount} module trong catalog — mở trực tiếp, verify bằng test thật` : "module phát triển từ bài đã AC hoặc từ catalog"}</span>
-      </button>
-    </section>`;
-}
-
-// ---------------------------------------------------------------------------
-// Unit 1b — Search (the "bắt đầu gì?" half of the entry question)
-// ---------------------------------------------------------------------------
-
-// One search affordance that routes INTO the Library's own search — the home
-// never grows a second result list. Typing mirrors into #search live; Enter
-// jumps focus to the problem list.
-function renderHomeSearch() {
-  return `
-    <section class="jh-unit jh-search-unit" data-role="mint">
-      <label class="jh-search-label" for="jh-search">Tìm bài trong thư viện</label>
-      <input id="jh-search" class="input jh-search-input" type="search"
-        placeholder="Tên bài, chủ đề, concept… (Enter để xem kết quả)" autocomplete="off" />
-    </section>`;
-}
-
-// ---------------------------------------------------------------------------
-// Unit 2 — Gợi ý bắt đầu (entry API) — at most 3, each with a real reason and
-// a quiet feedback affordance (quá dễ / quá khó / không phù hợp).
-// ---------------------------------------------------------------------------
-
-function renderEntrySuggestions(entry, hidden) {
-  const items = visibleSuggestions(entry.suggestions, hidden);
-  const hiddenCount = hidden instanceof Set ? hidden.size : 0;
-  const resetBtn = hiddenCount
-    ? `<button type="button" class="jh-sug-reset" data-action="sug-feedback-reset" title="Xóa ${hiddenCount} phản hồi đã ghi — mọi bài từng ẩn có thể được gợi ý lại">Đặt lại (${hiddenCount})</button>`
+  const suggestions = entry
+    ? visibleSuggestions(entry.suggestions, new Set())
+      .filter((item) => item.open?.type !== "module" && item.id !== primary.id)
+      .slice(0, 2)
+      .map((item) => ({ id: item.id, title: displayProblemTitle(item.title), why: translateReason(item.reason) }))
+    : (plan?.items || [])
+      .filter((item) => item.id && item.id !== primary.id)
+      .slice(0, 2)
+      .map((item) => ({ id: item.id, title: displayProblemTitle(item.title || item.id), why: item.reason || "" }));
+  const alternatives = suggestions.length
+    ? `<div class="jh-focus-options"><span class="jh-focus-options-label">${tr("Or switch to", "Nếu em muốn đổi bài")}</span>${suggestions.map((item) => `
+        <button type="button" class="jh-focus-option" data-action="open-problem" data-id="${escapeHtml(item.id)}">
+          <span>${escapeHtml(item.title)}</span>${item.why ? `<small>${escapeHtml(item.why)}</small>` : ""}
+        </button>`).join("")}</div>`
     : "";
-  if (!items.length) {
-    return hiddenCount ? `
-      <section class="jh-unit jh-sugs" data-role="violet">
-        <div class="jh-plan-head">
-          <span class="jh-plan-kicker">Gợi ý bắt đầu</span>
-          ${resetBtn}
-        </div>
-        <div class="an-note">Em đã ẩn hết gợi ý hiện có — đặt lại để nhận gợi ý mới, hoặc tìm bài trong thư viện.</div>
-      </section>` : "";
-  }
-  const rows = items.map((s) => `
-    <div class="jh-sug-row" data-sug-id="${escapeHtml(s.id)}">
-      <button type="button" class="jh-sug-open" data-action="open-problem" data-id="${escapeHtml(s.id)}">
-        <span class="jh-sug-title">${escapeHtml(displayProblemTitle(s.title))}${s.rating ? ` <span class="jh-sug-rating">~${s.rating}</span>` : ""}</span>
-        <span class="jh-sug-why">${escapeHtml(translateReason(s.reason))}</span>
+
+  return `
+    <section class="jh-unit jh-focus" aria-label="${tr("What to do next", "Việc nên làm tiếp theo")}">
+      <div class="jh-focus-head"><span>${tr("What should you work on today?", "Hôm nay nên làm gì?")}</span></div>
+      <button type="button" class="jh-focus-primary" data-action="${primary.action}"${dataId}>
+        <span class="jh-focus-kicker">${escapeHtml(primary.kicker)}</span>
+        <strong>${escapeHtml(primary.title)}</strong>
+        ${primary.why ? `<span>${escapeHtml(primary.why)}</span>` : ""}
+        <span class="jh-focus-go" aria-hidden="true">${tr("Continue →", "Tiếp tục →")}</span>
       </button>
-      <button type="button" class="jh-sug-dismiss" data-action="sug-feedback" data-id="${escapeHtml(s.id)}"
-        title="Phản hồi gợi ý này" aria-label="Phản hồi gợi ý">✕</button>
-    </div>`).join("");
-  return `
-    <section class="jh-unit jh-sugs" data-role="violet">
-      <div class="jh-plan-head">
-        <span class="jh-plan-kicker">Gợi ý bắt đầu</span>
-        <span class="jh-plan-total">tối đa 3 · mỗi gợi ý có lý do · bỏ qua được</span>
-        ${resetBtn}
-      </div>
-      <div class="jh-sug-rows">${rows}</div>
-    </section>`;
-}
-
-// The inline feedback strip that replaces a suggestion row when ✕ is clicked.
-// Each button's tooltip states the REAL effect on future suggestions (B5) —
-// no signal here ever fakes mastery.
-function feedbackStripHtml(id) {
-  const btns = FEEDBACK_KINDS.map((k) =>
-    `<button type="button" class="jh-sug-fb" data-action="sug-feedback-send" data-id="${escapeHtml(id)}" data-kind="${k.id}" title="${escapeHtml(k.effect || "")}">${k.label}</button>`
-  ).join("");
-  return `<div class="jh-sug-fbrow">${btns}<button type="button" class="jh-sug-fb jh-sug-fb-cancel" data-action="sug-feedback-cancel">Giữ lại</button></div>`;
-}
-
-// ---------------------------------------------------------------------------
-// Unit 2 (fallback) — Kế hoạch hôm nay (the planner's short list; no second loud CTA)
-// ---------------------------------------------------------------------------
-
-const PLAN_GLYPH = { review: "↻", quiz: "?", new: "+" };
-
-function renderPlan(plan) {
-  if (!plan || !Array.isArray(plan.items) || plan.items.length === 0) return "";
-  const rows = plan.items.slice(0, 3).map((it, i) => `
-    <button type="button" class="jh-plan-row" data-action="plan-item" data-idx="${i}">
-      <span class="jh-plan-glyph">${PLAN_GLYPH[it.kind] || "+"}</span>
-      <span class="jh-plan-main">
-        <span class="jh-plan-title">${it.kind === "quiz" ? "Ôn lỗi nhanh — nhắc lại lỗi hay gặp" : escapeHtml(displayProblemTitle(it.title || it.id))}</span>
-        <span class="jh-plan-why">${escapeHtml(it.reason || "")}</span>
-      </span>
-      <span class="jh-plan-min">${it.estMinutes}p</span>
-    </button>`).join("");
-  const more = plan.items.length > 3 ? `<div class="jh-plan-more">+${plan.items.length - 3} mục nữa trong buổi</div>` : "";
-  return `
-    <section class="jh-unit jh-plan" data-role="violet">
-      <div class="jh-plan-head">
-        <span class="jh-plan-kicker">Kế hoạch hôm nay</span>
-        <span class="jh-plan-total">~${plan.totalMinutes} phút · đến hạn ôn → lỗi hay gặp → chủ đề yếu</span>
-      </div>
-      <div class="jh-plan-rows">${rows}</div>
-      ${more}
+      ${alternatives}
     </section>`;
 }
 
@@ -453,9 +334,19 @@ function renderRankCard(a) {
 
 // Repeat-error file (renamed from the old specimen cabinet): bug cards due for review on the same
 // [3,7,21,60] clock as problem reviews, plus recurring counterexamples.
-function renderRepeatErrors(queue, bosses) {
+function renderRepeatErrors(queue, bosses, problems) {
   const cardsDue = (queue || []).filter((it) => it.type === "card").slice(0, 4);
-  const bossRows = (bosses || []).slice(0, 2);
+  // Test-data hygiene: zz-* ids are test fixtures that historically leaked into
+  // real data files; never show them even if one slips through again.
+  const bossRows = (bosses || []).filter((b) => !/^zz-/.test(String(b.problemId || ""))).slice(0, 2);
+  // The backend names a boss by its counterexample hash ("Sai kết quả #5fec")
+  // — an internal id, banned from UI (§15.2). Render the problem's real title
+  // and the actual failing input instead: that's the evidence a student can
+  // act on.
+  const titleFor = (problemId) => {
+    const match = (problems || []).find((item) => item.id === problemId);
+    return match ? displayProblemTitle(match.title || match.id) : "";
+  };
   if (!cardsDue.length && !bossRows.length) {
     return `<div class="jh-card-head"><span class="jh-card-icon" aria-hidden="true"></span><span>Hồ sơ lỗi lặp</span></div>
       <p class="jh-muted">Chưa có lỗi tới hạn ôn — mỗi WA có chẩn đoán sẽ được ghi vào đây và nhắc lại đúng lúc.</p>`;
@@ -466,12 +357,17 @@ function renderRepeatErrors(queue, bosses) {
       <span class="ar-led-main">${escapeHtml(c.label)} <span class="ar-led-sub">mức ${c.level} · quá hạn ôn ${c.overdueBy} ngày</span></span>
       <span class="ar-led-act">Ôn →</span>
     </button>`).join("");
-  const bossRowsHtml = bossRows.map((b, i) => `
+  const bossRowsHtml = bossRows.map((b, i) => {
+    const title = titleFor(b.problemId) || "Bài đã xóa khỏi thư viện";
+    const input = String(b.minimalInput == null ? "" : b.minimalInput).trim().slice(0, 18);
+    const evidenceBit = input ? ` · test nhỏ nhất: «${escapeHtml(input)}»` : "";
+    return `
     <button type="button" class="ar-led-row is-boss" style="--i:${cardsDue.length + i}" data-action="open-problem" data-id="${escapeHtml(b.problemId)}">
       <span class="ar-led-g">⟁</span>
-      <span class="ar-led-main">«${escapeHtml(b.name)}» <span class="ar-led-sub">lỗi lặp lại ${b.count} lần — quay lại xử dứt điểm</span></span>
+      <span class="ar-led-main">${escapeHtml(title)} <span class="ar-led-sub">sai lặp lại ${b.count} lần${evidenceBit} — quay lại xử dứt điểm</span></span>
       <span class="ar-led-act">Mở →</span>
-    </button>`).join("");
+    </button>`;
+  }).join("");
   return `
     <div class="jh-card-head"><span class="jh-card-icon" aria-hidden="true"></span><span>Hồ sơ lỗi lặp</span><span class="jh-card-sub">${cardsDue.length ? `${cardsDue.length} lỗi tới hạn ôn` : "lỗi lặp có tên"}</span></div>
     ${dueRows}${bossRowsHtml}`;
@@ -510,21 +406,21 @@ function profileCard(role, index, label, inner) {
     </section>`;
 }
 
-function renderProfile(p, arena) {
+function renderProfile(p, arena, problems) {
   if (!p) return `<p class="jh-muted" style="padding:40px">Đang tải hồ sơ…</p>`;
   const a = arena || {};
   return `
     <div class="journey-home jh-profile">
       <header class="jh-head jh-profile-head">
         <div class="jh-head-text">
-          <nav class="jh-view-nav" aria-label="Khu vực chính"><button type="button" data-action="home-back">Hôm nay</button><button type="button" data-action="open-practice">Luyện tập</button><button type="button" class="active" data-action="open-profile">Hồ sơ</button></nav>
+          <nav class="jh-view-nav" aria-label="Khu vực chính"><button type="button" data-action="home-back">Hôm nay</button><button type="button" data-action="open-practice">Luyện tập</button><button type="button" data-action="open-xuong">Xưởng</button><button type="button" class="active" data-action="open-profile">Hồ sơ</button></nav>
           <div class="jh-greet">Hồ sơ học tập</div>
           <div class="jh-quote">Nhìn lại: em đã học được gì và còn yếu ở đâu.</div>
         </div>
       </header>
 
       <div class="jh-grid">
-        ${profileCard("amber", "01", "Bộ nhớ lỗi", renderRepeatErrors(a.specimenQueue, a.bosses))}
+        ${profileCard("amber", "01", "Bộ nhớ lỗi", renderRepeatErrors(a.specimenQueue, a.bosses, problems))}
         ${profileCard("cyan", "02", "Kỹ năng", renderSkills(p.skills))}
       </div>
       <div class="jh-grid">
@@ -543,17 +439,19 @@ function renderPractice(problems) {
   const topics = [...new Set(recent.flatMap((problem) => [problem.topic, ...(problem.tags || [])]).filter(Boolean))].slice(0, 3);
   const evidence = topics.length ? topics.join(" · ") : "chủ đề em vừa học";
   const cards = [
-    { action: "open-random", role: "cyan", index: "01", title: "Bài phù hợp", label: "Cá nhân hóa", copy: `Tạo một bài mới từ 5–10 bài gần nhất, cân theo Elo. Tín hiệu hiện tại: ${evidence}.`, meta: "AI tạo đề · có test · vào IDE chuẩn" },
-    { action: "open-contests", role: "violet", index: "02", title: "Tạo contest", label: "Bộ đề", copy: "Dựng một vòng luyện có dải Elo và chủ đề rõ ràng; mỗi bài mở trong đúng workspace code chuẩn.", meta: "Nhiều bài · tiến độ · Run/Judge chung" },
-    { action: "open-corefill", role: "mint", index: "03", title: "Điền lõi", label: "Mini-topic", copy: "Khôi phục phần logic còn thiếu trong một lời giải hoàn chỉnh, tập trung vào invariant thay vì cú pháp.", meta: "CodeMirror · chấm test · phản hồi tức thì" },
-    { action: "open-rush", role: "amber", index: "04", title: "Debug tốc độ", label: "Mini-topic", copy: "Sửa bug dưới áp lực thời gian nhưng vẫn dùng cùng format Statement, editor, console và shortcut.", meta: "Chuỗi bug · timer · test thật" },
-    { action: "open-stress", role: "cyan", index: "05", title: "Sinh Test / Stress Test", label: "Kỹ năng thi đấu", copy: "Generator → Brute Force → Solution, replay đúng seed lỗi hoặc chuyển sang Performance Mode.", meta: "3 editor C++ · realtime · fixed/random seed" }
+    // Card contract (README §15.4): mỗi card nói VIỆC em làm và KẾT QUẢ em
+    // nhận; dòng meta = kết quả/bằng chứng, không bao giờ là tech stack.
+    { action: "open-random", role: "cyan", index: "01", title: "Bài phù hợp", label: "Cá nhân hóa", copy: `AI ra một đề mới vừa tầm, nhắm đúng chỗ em vừa luyện (${evidence}). Em giải như bài thi thật — Judge chấm, sai thì Coach mổ.`, meta: "Kết quả: một bài mới để em giải và kiểm chứng đúng điểm đang yếu" },
+    { action: "open-contests", role: "violet", index: "02", title: "Bộ đề theo chủ đề", label: "Bộ đề", copy: "Chọn chủ đề và dải Elo, AI dựng 5–7 bài khó dần. Em làm lần lượt; AC tới đâu, tiến độ ghi tới đó.", meta: "Kết quả: một vòng luyện trọn vẹn, có tiến độ để quay lại" },
+    { action: "open-corefill", role: "mint", index: "03", title: "Điền lõi", label: "Sửa tư duy", copy: "Một lời giải hoàn chỉnh bị khoét đúng đoạn lõi. Em viết lại phần đó; sai là thấy ngay test nào gãy và vì sao.", meta: "Kết quả: nắm chắc invariant của dạng bài, không thuộc vẹt" },
+    { action: "open-rush", role: "amber", index: "04", title: "Debug tốc độ", label: "Săn bug", copy: "Code chạy được nhưng giấu đúng một lỗi logic. Em tìm và sửa trước khi hết giờ — sai mất mạng, bug vẫn là của em.", meta: "Kết quả: mắt soi bug nhanh hơn sau mỗi ván" },
+    { action: "open-stress", role: "cyan", index: "05", title: "Stress Test", label: "Kỹ năng thi đấu", copy: "Chọn một bài đã có lời giải trước. Em viết generator và brute force; app đối chiếu với Solution đến khi lộ case sai nhỏ nhất.", meta: "Kết quả: bắt được bug ẩn trong lời giải trước khi giám khảo bắt" }
   ];
   return `
     <div class="journey-home jh-practice">
       <header class="jh-head">
         <div class="jh-head-text">
-          <nav class="jh-view-nav" aria-label="Khu vực chính"><button type="button" data-action="home-back">Hôm nay</button><button type="button" class="active" data-action="open-practice">Luyện tập</button><button type="button" data-action="open-profile">Hồ sơ</button></nav>
+          <nav class="jh-view-nav" aria-label="Khu vực chính"><button type="button" data-action="home-back">Hôm nay</button><button type="button" class="active" data-action="open-practice">Luyện tập</button><button type="button" data-action="open-xuong">Xưởng</button><button type="button" data-action="open-profile">Hồ sơ</button></nav>
           <div class="jh-greet">Phòng luyện kỹ năng</div>
           <div class="jh-quote">Chọn đúng công cụ cho mục tiêu hiện tại; mọi hoạt động code dùng cùng một nhịp thao tác.</div>
         </div>
@@ -575,27 +473,21 @@ function renderPractice(problems) {
 // Home v2 shell
 // ---------------------------------------------------------------------------
 
-function renderHome(p, plan, arena, entry, hidden, moduleCount) {
+function renderHome(p, plan, arena, entry) {
   if (!p) return `<p class="jh-muted" style="padding:40px">Đang tải hành trình…</p>`;
 
-  // Entry policy (B2): the home answers ONE question — "Tiếp tục hoặc bắt đầu
-  // gì?". Continue CTA + search + ≤3 reasoned suggestions. The planner list
-  // renders only while the entry route isn't shipped (local fallback); stats/
-  // rating stay a thin secondary strip.
-  const startUnit = entry ? renderEntrySuggestions(entry, hidden) : renderPlan(plan);
+  // Stat/rating stay secondary. The single focus block replaces the former
+  // Next move, Gợi ý bắt đầu, Kế hoạch và Kèo surfaces.
   const body = p.totals.problems === 0 ? renderOnboarding() : `
     ${renderStatStrip(p, arena)}
-    ${renderNextMove(p, plan, arena, entry)}
-    ${renderStartDirections(moduleCount)}
-    ${renderHomeSearch()}
-    ${startUnit}
+    ${renderFocus(p, plan, arena, entry)}
     <section class="jh-unit jh-context" id="jh-boss-host"></section>`;
 
   return `
     <div class="journey-home">
       <header class="jh-head">
         <div class="jh-head-text">
-          <nav class="jh-view-nav" aria-label="Khu vực chính"><button type="button" class="active" data-action="home-back">Hôm nay</button><button type="button" data-action="open-practice">Luyện tập</button><button type="button" data-action="open-profile">Hồ sơ</button></nav>
+          <nav class="jh-view-nav" aria-label="${tr("Main areas", "Khu vực chính")}"><button type="button" class="active" data-action="home-back">${tr("Today", "Hôm nay")}</button><button type="button" data-action="open-practice">${tr("Practice", "Luyện tập")}</button><button type="button" data-action="open-xuong">${tr("Workshop", "Xưởng")}</button><button type="button" data-action="open-profile">${tr("Profile", "Hồ sơ")}</button></nav>
           <div class="jh-greet">${greeting()}, <span class="jh-name" title="Nhấp đúp để đổi tên">${escapeHtml(userName())}</span></div>
           <div class="jh-quote">“${escapeHtml(quoteOfDay())}”</div>
         </div>
@@ -615,15 +507,15 @@ export function initJourney(app) {
 
   let last = null;        // previous snapshot, for delta detection
   let refreshTimer = null;
-  let homeView = "today"; // today | practice | profile
+  let homeView = "today"; // today | practice | xuong | profile
 
   // --- topbar chips (created here so index.html stays lean) ---
   const topActions = document.querySelector(".topbar-actions");
   const chipWrap = document.createElement("div");
   chipWrap.className = "jh-chips";
   chipWrap.innerHTML = `
-    <button id="jh-chip-home" class="btn btn-ghost btn-sm" title="Trang chủ hành trình" aria-label="Trang chủ hành trình">⌂</button>
-    <button id="jh-chip-streak" class="jh-chip" title="Chuỗi ngày luyện tập" aria-label="Chuỗi ngày luyện tập">Chuỗi <b>0</b></button>
+    <button id="jh-chip-home" class="btn btn-ghost btn-sm" title="${tr("Journey home", "Trang chủ hành trình")}" aria-label="${tr("Journey home", "Trang chủ hành trình")}">⌂</button>
+    <button id="jh-chip-streak" class="jh-chip" title="${tr("Practice streak", "Chuỗi ngày luyện tập")}" aria-label="${tr("Practice streak", "Chuỗi ngày luyện tập")}">${tr("Streak", "Chuỗi")} <b>0</b></button>
     <button id="jh-chip-xp" class="jh-chip" title="Cấp độ &amp; XP">Lv <b>0</b></button>`;
   if (topActions) topActions.insertBefore(chipWrap, topActions.firstChild);
   const chipStreak = chipWrap.querySelector("#jh-chip-streak b");
@@ -631,6 +523,9 @@ export function initJourney(app) {
   const chipXp = chipWrap.querySelector("#jh-chip-xp b");
 
   const goHome = () => { app.clearEditor(); };
+  // Deep-link vào view Xưởng (dùng bởi nút "← Xưởng" trong project workspace).
+  // clearEditor PHẢI chạy trước vì wrapper của nó reset homeView về "today".
+  app.openXuongList = () => { app.clearEditor(); homeView = "xuong"; paintHome(last); };
   chipWrap.querySelector("#jh-chip-home").addEventListener("click", goHome);
   chipStreakBtn.addEventListener("click", goHome);
   chipWrap.querySelector("#jh-chip-xp").addEventListener("click", goHome);
@@ -647,6 +542,8 @@ export function initJourney(app) {
   let lastEntry = null; // normalized GET /api/recommendations/entry (null = route absent)
   let entryUnavailable = false; // 404'd once → stop asking this session
   let hiddenSug = parseHidden((() => { try { return localStorage.getItem(FEEDBACK_STORE_KEY); } catch { return "[]"; } })());
+  let useFeedbackCache = false;
+  let lastFeedbackItem = null;
   let homeSearchQ = ""; // survives innerHTML repaints
 
   function persistHidden() {
@@ -657,19 +554,42 @@ export function initJourney(app) {
     if (entryUnavailable) return null;
     try {
       // The dismissal list rides along so server-side ranking respects it.
-      return normalizeEntry(await api.entryRecommendations(entryQueryString(hiddenSug)));
+      useFeedbackCache = false;
+      const track = app.state.filters.track === TRACKS.ALGORITHM_ENGINEERING ? TRACKS.ALGORITHM_ENGINEERING : TRACKS.COMPETITIVE;
+      return normalizeEntry(await api.entryRecommendations(entryQueryString(track)));
     } catch (err) {
       if (err && err.status === 404) entryUnavailable = true;
+      useFeedbackCache = true;
       return null;
     }
   }
 
+  // Xưởng (S6) renders through features/xuong.js — journey only provides the
+  // shell + nav so all four surfaces share one header pattern.
+  function renderXuongShell() {
+    return `
+    <div class="journey-home jh-practice">
+      <header class="jh-head">
+        <div class="jh-head-text">
+          <nav class="jh-view-nav" aria-label="Khu vực chính"><button type="button" data-action="home-back">Hôm nay</button><button type="button" data-action="open-practice">Luyện tập</button><button type="button" class="active" data-action="open-xuong">Xưởng</button><button type="button" data-action="open-profile">Hồ sơ</button></nav>
+          <div class="jh-greet">Xưởng</div>
+          <div class="jh-quote">Chạy sản phẩm trước để hiểu vì sao thuật toán tồn tại — rồi thực hành, Verify và tiến hóa.</div>
+        </div>
+      </header>
+      <div id="xg-host"></div>
+    </div>`;
+  }
+
   function paintHome(p) {
-    const moduleCount = (app.state.modules || []).length;
-    if (!p) { host.innerHTML = renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug, moduleCount); return; }
+    if (!p) { host.innerHTML = renderHome(p, lastPlan, lastArena, lastEntry); return; }
     host.innerHTML = homeView === "profile"
-      ? renderProfile(p, lastArena)
-      : (homeView === "practice" ? renderPractice(app.state.problems) : renderHome(p, lastPlan, lastArena, lastEntry, hiddenSug, moduleCount));
+      ? renderProfile(p, lastArena, app.state.problems)
+      : (homeView === "practice" ? renderPractice(app.state.problems)
+        : (homeView === "xuong" ? renderXuongShell() : renderHome(p, lastPlan, lastArena, lastEntry)));
+    if (homeView === "xuong") {
+      const xgHost = host.querySelector("#xg-host");
+      if (xgHost && app.xuong) app.xuong.mountList(xgHost);
+    }
     const homeSearch = host.querySelector("#jh-search");
     if (homeSearch && homeSearchQ) homeSearch.value = homeSearchQ;
     // Satellite features (weekend challenge card) fill #jh-boss-host — only on
@@ -747,6 +667,11 @@ export function initJourney(app) {
     } catch { /* backend hiccup — keep old chips */ }
   }
   app.refreshJourney = refresh;
+  document.addEventListener("localechange", () => {
+    chipStreakBtn.childNodes[0].nodeValue = `${tr("Streak", "Chuỗi")} `;
+    if (!host.classList.contains("hidden")) paintHome(last);
+    if (!app.state.currentId) app.el.currentTitle.textContent = tr("Journey", "Hành trình");
+  });
 
   document.addEventListener("personalized:state", (event) => {
     const card = host.querySelector('[data-action="open-random"]');
@@ -786,7 +711,7 @@ export function initJourney(app) {
   app.clearEditor = (...args) => {
     const r = origClear.apply(app, args);
     homeView = "today";
-    app.el.currentTitle.textContent = "Hành trình";
+    app.el.currentTitle.textContent = tr("Journey", "Hành trình");
     paintHome(last);
     refresh();
     return r;
@@ -800,10 +725,11 @@ export function initJourney(app) {
     if (action === "new-problem") app.openMetaModal(null);
     else if (action === "open-profile") { homeView = "profile"; paintHome(last); }
     else if (action === "open-practice") { homeView = "practice"; paintHome(last); }
+    else if (action === "open-xuong") { homeView = "xuong"; paintHome(last); }
     else if (action === "home-back") { homeView = "today"; paintHome(last); }
     // --- hai hướng bắt đầu (B2): route into the ONE Library with the lens set ---
-    else if (action === "start-compete" || action === "start-build") {
-      const track = action === "start-build" ? "build" : "compete";
+    else if (action === "start-competitive" || action === "start-algorithm-engineering") {
+      const track = action === "start-algorithm-engineering" ? TRACKS.ALGORITHM_ENGINEERING : TRACKS.COMPETITIVE;
       const trackBtn = document.querySelector(`#track-row [data-track="${track}"]`);
       if (trackBtn) trackBtn.click();
       // reveal the sidebar if it was collapsed, then land focus on the list
@@ -818,7 +744,12 @@ export function initJourney(app) {
     else if (action === "open-corefill") app.openCorefill?.();
     else if (action === "open-rush") app.openRush?.();
     else if (action === "open-stress") {
-      const id = app.state.currentId || (app.state.problems || [])[0]?.id;
+      // Stress-test needs a solution to hammer. From the Home card there's no
+      // current problem, so prefer one the student has actually solved (AC)
+      // over an arbitrary first row that may be an unsolved import with no code.
+      const problems = app.state.problems || [];
+      const solved = problems.find((p) => p.lastVerdict === "AC" || p.status === "solved");
+      const id = app.state.currentId || (solved && solved.id) || problems[0]?.id;
       if (!id) { app.toast("Cần có ít nhất một bài để mở Sinh Test.", "err"); return; }
       if (app.state.currentId !== id) await app.selectProblem(id);
       app.openStress?.(id);
@@ -852,26 +783,38 @@ export function initJourney(app) {
       if (strip) strip.remove();
     }
     else if (action === "sug-feedback-send") {
-      const ev = feedbackEvent(btn.dataset.id, btn.dataset.kind);
-      // Recorded through the EXISTING per-problem event route (fire-and-forget);
-      // the dismissal itself is local and immediate.
-      if (ev) api.recordEvent(btn.dataset.id, ev.type, ev.data);
-      hiddenSug.add(btn.dataset.id);
-      persistHidden();
-      paintHome(last);
-      // Tell the user the REAL effect of the kind they picked (B5).
       const kind = FEEDBACK_KINDS.find((k) => k.id === btn.dataset.kind);
-      app.toast(kind ? `Đã ghi nhận “${kind.label}” — ${kind.effect}.` : "Đã ghi nhận.", "ok");
-      refresh({ quiet: true }); // re-ask the entry route with the updated dismissed= list
+      const track = app.state.filters.track === TRACKS.ALGORITHM_ENGINEERING ? TRACKS.ALGORITHM_ENGINEERING : TRACKS.COMPETITIVE;
+      if (!kind) return;
+      try {
+        await api.recommendationFeedback(btn.dataset.id, { track, signal: kind.id });
+        lastFeedbackItem = btn.dataset.id;
+        app.toast(`Đã ghi nhận “${kind.label}” — ${kind.effect}.`, "ok");
+      } catch {
+        // Cache only when the canonical local-first store is unavailable.
+        hiddenSug.add(btn.dataset.id);
+        persistHidden();
+        useFeedbackCache = true;
+        app.toast("Chưa gửi được phản hồi; đã lưu tạm trên thiết bị.", "err");
+      }
+      refresh({ quiet: true });
     }
     else if (action === "sug-feedback-reset") {
-      const n = hiddenSug.size;
-      hiddenSug = new Set();
-      persistHidden();
-      app.toast(`Đã xóa ${n} phản hồi — gợi ý được xếp lại từ đầu, không bài nào còn bị ẩn.`, "ok");
+      const track = app.state.filters.track === TRACKS.ALGORITHM_ENGINEERING ? TRACKS.ALGORITHM_ENGINEERING : TRACKS.COMPETITIVE;
+      try {
+        await api.recommendationFeedback(btn.dataset.id, { track, signal: "reset" });
+        lastFeedbackItem = null;
+        app.toast("Đã đặt lại phản hồi; xếp hạng trở về tín hiệu backend.", "ok");
+      } catch {
+        hiddenSug.delete(btn.dataset.id);
+        persistHidden();
+        useFeedbackCache = true;
+        app.toast("Chưa gửi được reset; đã xóa cache trên thiết bị.", "err");
+      }
       refresh({ quiet: true });
     }
     else if (action === "open-problem") app.selectProblem(btn.dataset.id);
+    else if (action === "open-module") app.openStandaloneModule?.(btn.dataset.id.replace(/^module:/, ""));
     else if (action === "open-quiz") { if (app.openFlashQuiz) app.openFlashQuiz(); }
     else if (action === "mystery-reroll") {
       e.stopPropagation();

@@ -15,6 +15,11 @@ data/boss.json
 data/arena-*.json
 data/student-model.json
 data/backups/
+
+# NCKH research telemetry (docs/NCKH.md §5 — A/B/C/D events). This IS the
+# research dataset, not source code — keep it local, back it up separately.
+data/events.jsonl
+data/participant.json
 # Applied Algorithms module state (per-user saves/runs, written by the app)
 data/algorithm-modules/
 

@@ -3,7 +3,7 @@
 const path = require("path");
 const { DATA_DIR } = require("./config");
 const fileStore = require("./fileStore");
-const { TRACKS, normalizeTrack } = require("./trackContract");
+const { TRACKS, canonicalTrackInput } = require("./trackContract");
 
 const FEEDBACK_FILE = path.join(DATA_DIR, "recommendation-feedback.json");
 const SIGNALS = Object.freeze(["too_easy", "too_hard", "not_relevant", "already_know", "reset"]);
@@ -16,7 +16,7 @@ async function readState() {
 }
 
 async function listFeedback(track) {
-  const canonicalTrack = track ? normalizeTrack(track) : null;
+  const canonicalTrack = track ? canonicalTrackInput(track) : null;
   const state = await readState();
   return state.entries
     .filter((entry) => !canonicalTrack || entry.track === canonicalTrack)

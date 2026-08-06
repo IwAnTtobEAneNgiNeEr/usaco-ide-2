@@ -63,6 +63,8 @@ test("recurring bugs become quiz seeds, most-frequent first, capped at MAX_QUIZZ
   assert.equal(quizzes.length, MAX_QUIZZES);
   assert.deepEqual(quizzes.map((q) => q.tag), ["bien-tran", "do-phuc-tap"]); // 7, then 4 — not the 2
   assert.ok(quizzes[0].reason.includes("7 lần"));
+  assert.match(quizzes[0].reason, /Tràn số \(overflow\)/);
+  assert.doesNotMatch(quizzes[0].reason, /bien-tran/);
 });
 
 test("frontier topics pick a matching unsolved problem each, cost varies by difficulty", () => {

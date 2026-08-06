@@ -209,6 +209,10 @@ export function initRush(app) {
     });
     try {
       const response = await api.rushState();
+      if (response.expired) {
+        const reveal = response.expiredReveal ? ` Lỗi của bài đó: ${response.expiredReveal}` : "";
+        app.toast && app.toast(`Bài trước hết giờ trong lúc em rời đi — tính là trượt, trừ 1 mạng.${reveal}`, "warn");
+      }
       if (response.run && response.run.state === "active" && response.run.drill) {
         await app.activityWorkspace.open(makeConfig(response.run));
       } else {

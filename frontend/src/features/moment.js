@@ -19,7 +19,7 @@
 
 import { api } from "../api.js";
 import { escapeHtml } from "../md.js";
-import { chipsFor } from "./verdict-rail.js?v=2.1";
+import { chipsFor } from "./verdict-rail.js?v=2.2";
 import { tierOf, tierMeter, derivePositives, fmtDuration } from "./game-review.js?v=3.1";
 import { friendlyReasons } from "./arena.js?v=1.5"; // pure helper — safe across module instances
 
@@ -106,25 +106,23 @@ function chipListFor(app, payload) {
   );
   const list = [];
   const evidenceRef = app.state.lastJudge && app.state.lastJudge.evidence;
-  // "Phân tích code này" — mổ xẻ dựa trên evidence THẬT của lần chấm này
-  // (features/analysis.js, evidenceId → server). Chỉ trên judge — run nháp
-  // không phải trận. Cần evidenceRef thật (mọi full Judge không-hủy đều có).
+
+  // AC: Xưởng phải là chip 0 — NCKH §7: kích hoạt tự động sau AC, không để
+  // user tự tìm. Lấy chip từ base (verdict-rail đã guard app.openXuongPathways).
+  if (v === "AC" && payload.kind === "judge") {
+    const xuong = base.find((c) => c.label === "Phát triển lời giải");
+    if (xuong) list.push(xuong);
+  }
   if (payload.kind === "judge" && ["AC", "WA", "RE", "TLE"].includes(v) && app.openCodeAnalysis && evidenceRef) {
     list.push({ g: "◎", label: "Phân tích code này", run: () => app.openCodeAnalysis(evidenceRef) });
   }
-  // "Phát triển thành module" — chỉ trên AC judge (README-VERIFIED-ARTIFACT-LOOP
-  // §7: cùng cấp secondary với "Phân tích code này", không ngang hàng CTA chính).
-  // Backend chỉ nhận full Judge AC evidence (derivedArtifactStore.createGridPathfinder).
   if (payload.kind === "judge" && v === "AC" && app.openDerivedModule && evidenceRef) {
-    // Label names the concept's own module (GridPathfinder / WeightedGraphRouter
-    // / RangeSum) so the secondary action says exactly what it grows into.
     const dmLabel = app.derivedModuleLabelFor ? app.derivedModuleLabelFor(app.state.meta) : "Phát triển thành module";
     list.push({ g: "⑂", label: dmLabel, run: () => app.openDerivedModule(evidenceRef) });
   }
   for (const c of base) {
-    // CE: khi primary của card đã là "Giải thích lỗi" thì chip trùng bị bỏ
-    // (nó chỉ quay lại khi primary là jump-to-line, để AI-explain vẫn với tới).
     if (v === "CE" && c.label === "Giải thích lỗi" && ceErrorLine(app) == null) continue;
+    if (v === "AC" && c.label === "Phát triển lời giải") continue; // đã ở vị trí 0
     list.push(c);
   }
   return list;
@@ -505,7 +503,7 @@ function arenaMomentLine(entry, match) {
   }
   if (match && match.rated === false) {
     const why = friendlyReasons(match.ratedEligible).join(" · ");
-    return `<div class="ar-moment-line">Giao hữu${why ? ` — ${escapeHtml(why)}` : ""}. AC vẫn thật, điểm thì chưa.</div>`;
+    return `<div class="ar-moment-line">Bài luyện tự do${why ? ` — ${escapeHtml(why)}` : ""}. AC vẫn thật, điểm thì chưa.</div>`;
   }
   return "";
 }
@@ -826,9 +824,7 @@ function renderAcCard(app, review, planItem, progress, arena = {}) {
   // the ghost race, and the gauntlet zone. Every piece is "" when absent.
   const entry = arena.entry || null;                 // rating history entry (rated AC only)
   const match = arena.match || null;                 // closed match state from the judge response
-  const badge = entry
-    ? `<span class="ar-badge ar-rated">RATED</span>`
-    : (match && match.rated === false ? `<span class="ar-badge ar-friendly">GIAO HỮU</span>` : "");
+  const badge = "";                                  // NCKH §9: Arena đóng băng — badge ẩn
   const ghost = arena.ghost && arena.ghost.ok && arena.ghost.available && arena.ghost.faster
     ? `<div class="ar-ghost-line">Nhanh hơn chính em ở các bài cùng tầm: ×${arena.ghost.ratio} (so với ${arena.ghost.sampleCount} trận cũ).</div>`
     : "";

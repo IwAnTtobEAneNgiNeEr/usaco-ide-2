@@ -31,7 +31,7 @@ export function normalizeModules(raw) {
       title: m.title.trim(),
       itemType: "module",
       activityKind: "algorithm-module",
-      track: "build",
+      track: "algorithm-engineering",
       concept: typeof m.concept === "string" ? m.concept : null,
       provider: typeof m.provider === "string" ? m.provider : null,
       collection: typeof m.collection === "string" ? m.collection : null,
@@ -82,7 +82,7 @@ function moduleMatchesStatus(m, status) {
 }
 
 export function moduleMatchesFilters(m, f) {
-  if (f.track && f.track !== "build") return false;
+  if (f.track && f.track !== "algorithm-engineering") return false;
   if (f.source) return false;             // modules carry no legacy source field
   if (f.difficulty) return false;         // modules are not Elo/difficulty-rated
   if (f.topics && f.topics.length) {

@@ -131,6 +131,42 @@ router.post("/illustration/suggest", asyncHandler(async (req, res) => {
   res.json({ ...decision, cached: false, imageUrl: hasProxyKey ? `/api/ai/illustration/image/${identity.key}` : providerUrl });
 }));
 
+// POST /api/ai/translate-statement { statement, targetLanguage: "en" | "vi" }
+router.post("/translate-statement", asyncHandler(async (req, res) => {
+  const settings = await settingsStore.getAiSettings();
+  if (!settings.apiKey) return noKey(res);
+  const body = req.body || {};
+  const targetLanguage = body.targetLanguage === "vi" ? "vi" : "en";
+  try {
+    const statement = await ai.translateStatement({
+      settings,
+      statement: String(body.statement || ""),
+      targetLanguage
+    });
+    res.json({ ok: true, statement, targetLanguage });
+  } catch (error) {
+    const status = error.code === "NO_KEY" ? 400 : 502;
+    res.status(status).json({ ok: false, error: error.message });
+  }
+}));
+
+// POST /api/ai/translate-ui { fragments: string[], targetLanguage: "en" | "vi" }
+router.post("/translate-ui", asyncHandler(async (req, res) => {
+  const settings = await settingsStore.getAiSettings();
+  if (!settings.apiKey) return noKey(res);
+  const body = req.body || {};
+  try {
+    const translations = await ai.translateUiFragments({
+      settings,
+      fragments: body.fragments,
+      targetLanguage: body.targetLanguage === "vi" ? "vi" : "en"
+    });
+    res.json({ ok: true, translations });
+  } catch (error) {
+    res.status(error.code === "NO_KEY" ? 400 : 502).json({ ok: false, error: error.message });
+  }
+}));
+
 router.get("/illustration/image/:key", asyncHandler(async (req, res) => {
   const cache = await fileStore.readJson(ILLUSTRATION_CACHE_FILE, { entries: {} });
   const entry = cache.entries && cache.entries[req.params.key];

@@ -52,13 +52,51 @@ function opt(value, label, selected) {
   return `<option value="${value}" ${selected ? "selected" : ""}>${label}</option>`;
 }
 
+function localizeSettingsToEnglish(host) {
+  const copy = new Map([
+    ["Trình biên dịch", "Compiler"], ["Đường dẫn / lệnh g++", "Compiler path / command"],
+    ["Giữ g++ nếu lệnh đã có trong PATH. Trên Windows, cài MinGW-w64.", "Keep g++ when it is on PATH. On Windows, install MinGW-w64."],
+    ["Chuẩn C++", "C++ standard"], ["Tối ưu hóa", "Optimization"], ["Kiểm tra trình biên dịch", "Check compiler"],
+    ["Chấm bài", "Judge"], ["Giới hạn thời gian (ms)", "Time limit (ms)"], ["Chế độ so sánh", "Comparison mode"],
+    ["Thoáng (bỏ khoảng trắng cuối / dòng cuối)", "Loose (ignore trailing spaces / final newline)"], ["Chính xác tuyệt đối", "Exact"],
+    ["Theo token (bỏ mọi khoảng trắng)", "Tokens (ignore all whitespace)"], ["Số thực (sai số ε)", "Floating point (ε tolerance)"],
+    ["Sai số tuyệt đối hoặc tương đối cho token số, ví dụ", "Absolute or relative tolerance for numeric tokens, for example"],
+    ["Trình soạn thảo", "Editor"], ["Tự động lưu code khi gõ", "Autosave code while typing"], ["Bật hiệu ứng hạt nền", "Enable background particles"],
+    ["Bật minh họa trực quan đề bài", "Enable statement visualizer"], ["Khoảnh Khắc: Coach tự chẩn đoán khi WA/RE/TLE (không cần bấm)", "Moment: Coach automatically diagnoses WA/RE/TLE"],
+    ["Kích thước Tab", "Tab size"], ["Giao diện", "Interface"], ["Màu nhấn", "Accent color"], ["Phông chữ giao diện", "Interface font"],
+    ["Đề bài nổi bật", "Focused problem statement"], ["Đọc rõ hơn · tập trung lâu hơn · giải bài tốt hơn", "Read clearly · focus longer · solve better"],
+    ["Lưu cài đặt", "Save settings"], ["Mẫu code", "Code template"], ["Tạo test bằng AI", "AI test generation"], ["Nhập từ DSA Tracker cũ", "Import from legacy DSA Tracker"]
+  ]);
+  const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const key = node.nodeValue.trim();
+    if (copy.has(key)) node.nodeValue = node.nodeValue.replace(key, copy.get(key));
+  }
+}
+
 export function renderSettings(app) {
   const s = app.state.settings;
+  const en = app.state.uiLanguage === "en";
+  const label = (english, vietnamese) => en ? english : vietnamese;
   const appFont = getAppFont();
   const ai = app.state.aiSettings || { baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", fallbackModels: "", hasKey: false };
   const tpl = app.state.codeTemplate || { template: "", custom: false };
 
   app.el.settingsForm.innerHTML = `
+    <div class="settings-card">
+      <div class="settings-section-title">${label("Language & region", "Ngôn ngữ & khu vực")}</div>
+      <div class="settings-group">
+        <label for="set-ui-language">${label("Display language", "Ngôn ngữ hiển thị")}</label>
+        <select id="set-ui-language" class="select">
+          ${opt("vi", "Tiếng Việt", app.state.uiLanguage !== "en")}
+          ${opt("en", "English", app.state.uiLanguage === "en")}
+        </select>
+        <span class="hint">${label("Changes the interface immediately. Problem statements follow this setting unless you select", "Thay đổi giao diện ngay lập tức. Đề bài sẽ theo ngôn ngữ này trừ khi chọn")} <b>${label("Keep original statement", "Giữ nguyên đề gốc")}</b> ${label("in the statement toolbar.", "trên thanh công cụ đề bài.")}</span>
+      </div>
+    </div>
+
     <div class="settings-card">
       <div class="settings-section-title">Trình biên dịch</div>
       <div class="settings-group">
@@ -227,10 +265,13 @@ export function renderSettings(app) {
   // Editor Appearance owns its own host inside the form; re-render it after every
   // settings re-render (renderSettings rebuilds the whole innerHTML).
   if (app.renderEditorAppearance) app.renderEditorAppearance();
+  if (en) localizeSettingsToEnglish(app.el.settingsForm);
 }
 
 function wire(app) {
   const $ = (id) => document.getElementById(id);
+
+  $("set-ui-language").addEventListener("change", (event) => app.setUiLanguage(event.target.value));
 
   // Show the epsilon field only for the "float" compare mode.
   $("set-compare").addEventListener("change", () => {
@@ -417,4 +458,8 @@ export async function initSettings(app) {
     app.state.codeTemplate = await api.getTemplate();
   } catch { /* section shows empty; saving still works */ }
   renderSettings(app);
+  document.addEventListener("localechange", () => renderSettings(app));
+  // Settings loading tells us whether translation is configured. Resume the
+  // shared dynamic-copy pass for either persisted locale after this point.
+  app.refreshUiTranslations?.();
 }

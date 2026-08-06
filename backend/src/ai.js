@@ -635,6 +635,71 @@ async function analyzeStatement({ settings, statement }) {
   return result;
 }
 
+// Translation is intentionally separate from normalization: it must preserve
+// every constraint, sample I/O block, variable name and mathematical token.
+// The original is retained by the caller, so a translation can always be
+// replaced or inspected without re-importing a problem.
+async function translateStatement({ settings, statement, targetLanguage }) {
+  if (!statement || !statement.trim()) throw new Error("Statement is empty.");
+  const target = targetLanguage === "vi" ? "Vietnamese" : "English";
+  const key = cacheKey("translate-statement", settings.model, `${targetLanguage}\0${statement.trim()}`);
+  const hit = cacheGet(key);
+  if (hit) return hit;
+  const content = await chat({
+    settings,
+    maxTokens: 5000,
+    timeoutMs: 90000,
+    messages: [
+      {
+        role: "system",
+        content: [
+          `Translate this competitive-programming problem statement into natural, precise ${target}.`,
+          "Preserve Markdown structure, fenced code blocks, formulas, constraints, identifiers, URLs, and all sample input/output byte-for-byte.",
+          "Do not solve the problem, add examples, omit caveats, or change the meaning of any requirement.",
+          "Translate prose headings and explanatory text only. Return only the translated statement."
+        ].join(" ")
+      },
+      { role: "user", content: statement }
+    ]
+  });
+  const translated = String(content || "").trim();
+  if (!translated) throw new Error("AI returned an empty translation.");
+  cacheSet(key, translated);
+  return translated;
+}
+
+// UI renderers are intentionally decentralised across feature modules.  This
+// batched translator is the safety net for a label added by a future renderer
+// before its curated i18n key exists.  It translates only short display
+// fragments; code and sample I/O are excluded by the frontend before a call.
+async function translateUiFragments({ settings, fragments, targetLanguage }) {
+  const source = Array.isArray(fragments) ? fragments.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 80) : [];
+  if (!source.length) return [];
+  const target = targetLanguage === "vi" ? "Vietnamese" : "English";
+  const key = cacheKey("translate-ui", settings.model, `${targetLanguage}\0${source.join("\u001f")}`);
+  const hit = cacheGet(key);
+  if (hit) return hit;
+  const content = await chat({
+    settings,
+    jsonMode: true,
+    maxTokens: 3200,
+    timeoutMs: 90000,
+    messages: [
+      {
+        role: "system",
+        content: `Translate each UI display fragment into ${target}. Return JSON only: {"translations":[...]}. Keep the array length and order exactly. Preserve placeholders, keyboard shortcuts, code tokens, product names, numbers, verdicts such as AC/WA/TLE, URLs, and punctuation. Do not explain or add markdown.`
+      },
+      { role: "user", content: JSON.stringify(source) }
+    ]
+  });
+  let parsed;
+  try { parsed = safeParseJson(content); } catch { throw new Error("AI UI translation did not return valid JSON."); }
+  const translations = Array.isArray(parsed.translations) ? parsed.translations.map((item) => String(item || "").trim()) : [];
+  if (translations.length !== source.length || translations.some((item) => !item)) throw new Error("AI UI translation returned an incomplete result.");
+  cacheSet(key, translations);
+  return translations;
+}
+
 const NORMALIZE_STATEMENT_SYSTEM = [
   "Bạn là trợ lý chuẩn hóa đề bài lập trình thi đấu tiếng Việt.",
   "Nhiệm vụ của bạn là nhận vào một đề bài (có thể bị lỗi định dạng, thiếu phần, hoặc lấy từ OCR) và viết lại đề bài đó theo đúng cấu trúc chuẩn sau đây.",
@@ -1773,6 +1838,71 @@ async function generateContest({ settings, topic, solvedProblems, problemCount, 
   return normalized;
 }
 
+// Generate exactly ONE fresh practice problem tailored to the student's recent
+// topics + current Elo ("Bài phù hợp"). Reuses the contest problem schema +
+// normalizer so tests/statement flow through the same verified pipeline the
+// route already expects. Returns { topic, problem } where problem is one
+// normalizeContestProblem shape.
+async function generatePersonalizedProblem({ settings, topic, recentProblems, targetRating, minRating, maxRating }) {
+  const t = String(topic || "").trim() || "tổng hợp";
+  const target = Math.round(Number(targetRating) || 1000);
+  const minR = Math.max(Number(minRating) || 800, 1);
+  const maxR = Math.min(Number(maxRating) || 1600, CONTEST.maxRatingCeil);
+  const avoidTitles = (Array.isArray(recentProblems) ? recentProblems : []).map((p) => p && p.title).filter(Boolean);
+
+  async function attempt(repairNote) {
+    const user = [
+      `TOPIC: ${t}`,
+      `TARGET RATING: about ${target} (strictly between ${minR} and ${maxR}, always < 2000).`,
+      "Generate EXACTLY ONE problem — put it as the single element of the \"problems\" array.",
+      "It must be solvable in one sitting and squarely on this topic, matched to the student's level below.",
+      "",
+      "RECENTLY WORKED problems by this student — use ONLY to gauge level and to AVOID overlap.",
+      "Do NOT reuse, rename, translate, or lightly mutate any of these:",
+      buildSolvedContext(recentProblems),
+      avoidTitles.length
+        ? "\nAVOID these exact titles and their underlying tasks (not a re-skin):\n" + avoidTitles.slice(0, 40).map((x) => `- ${x}`).join("\n")
+        : "",
+      repairNote ? `\nPREVIOUS ATTEMPT WAS REJECTED. Fix these issues and return corrected JSON only:\n${repairNote}` : ""
+    ].join("\n");
+    const content = await chat({
+      settings,
+      messages: [{ role: "system", content: CONTEST_SYSTEM }, { role: "user", content: user }],
+      jsonMode: true,
+      maxTokens: 8000,
+      timeoutMs: 120000
+    });
+    let parsed;
+    try { parsed = safeParseJson(content); }
+    catch { throw new Error("AI không trả về JSON hợp lệ cho bài phù hợp."); }
+    const normalized = normalizeContest(parsed);
+    const problem = normalized.problems[0];
+    const errors = [];
+    if (!problem) errors.push("Không có bài nào trong kết quả.");
+    else {
+      if (!problem.title) errors.push("Bài thiếu tiêu đề.");
+      if (!problem.statement) errors.push("Bài thiếu đề bài.");
+      if (!problem.verifiedTests.length) errors.push("Bài không có test nào có đáp án chắc chắn.");
+    }
+    return { topic: normalized.topic || t, problem, errors };
+  }
+
+  log("Generate personalized start", `${t} ~${target} (${minR}-${maxR})`);
+  let { topic: outTopic, problem, errors } = await attempt(null);
+  if (errors.length) {
+    log("Generate personalized invalid", `${errors.length} issue(s) — repairing`);
+    const retry = await attempt(errors.map((e, i) => `${i + 1}. ${e}`).join("\n"));
+    outTopic = retry.topic; problem = retry.problem; errors = retry.errors;
+  }
+  if (errors.length) {
+    const e = new Error("Bài phù hợp do AI tạo không đạt yêu cầu:\n• " + errors.slice(0, 6).join("\n• "));
+    e.code = "GENERATION_FAILED";
+    throw e;
+  }
+  log("Generate personalized success", problem.title);
+  return { topic: outTopic, problem };
+}
+
 // ---------------------------------------------------------------------------
 // API key / provider detection. From the key shape we guess the provider,
 // the right OpenAI-compatible base URL, and (best-effort) the live model list,
@@ -2366,6 +2496,8 @@ module.exports = {
   ocrImage,
   cleanupOcr,
   analyzeStatement,
+  translateStatement,
+  translateUiFragments,
   extractSamples,
   normalizeStatementText,
   getHint,
@@ -2386,6 +2518,7 @@ module.exports = {
   chat,
   formatRunHistory,
   generateContest,
+  generatePersonalizedProblem,
   generateBoss,
   defenseQuestions,
   defenseGrade,

@@ -1,19 +1,14 @@
 // entry-model.js — pure policy for the Home entry surface (B2).
 //
 // Real contract (backend/src/routes/recommendations.js + smartContent.js):
-//   GET /api/recommendations/entry?dismissed=a,b&liked=c
+//   GET /api/recommendations/entry?track=competitive|algorithm-engineering
 //   → { items: [ { id, title, track, concept, provider, collection, status,
 //        derivedStatus, rating, ratingEvidence, reason: [string], score,
 //        scoreBreakdown, action: { type, autoOpen, href } } ],
 //       count, maxItems: 3, autoOpen: false, difficultyContext, policy }
 //
-// Home policy (locked): ONE continue CTA, a search affordance, and AT MOST
-// three suggestions — each carrying its real server `reason`. The server ranks
-// unfinished work (WA/RE evidence, open derived Work loops) highest via
-// scoreBreakdown.workInProgress — that item IS the "Tiếp tục" CTA; the rest
-// render as quiet suggestions. Dismissals (quá dễ / quá khó / không phù hợp)
-// go back as the `dismissed` query param the endpoint already accepts, plus a
-// note through the EXISTING per-problem event route — no invented endpoints.
+// Home keeps one continue CTA and at most three reasoned suggestions. Feedback
+// writes to PUT /api/recommendations/feedback/:itemId; it never writes mastery.
 
 export const FEEDBACK_STORE_KEY = "usaco2.entryFeedback.v1";
 
@@ -21,10 +16,10 @@ export const FEEDBACK_STORE_KEY = "usaco2.entryFeedback.v1";
 // rides to the server as `dismissed=` and the kind is recorded via the
 // per-problem event route. No mastery/rating is ever written from here.
 export const FEEDBACK_KINDS = [
-  { id: "too-easy", label: "Quá dễ", effect: "bài này bị ẩn; gợi ý sau ưu tiên mức khó hơn từ dữ liệu chấm" },
-  { id: "too-hard", label: "Quá khó", effect: "bài này bị ẩn; gợi ý sau lùi về mức đang vững" },
-  { id: "not-relevant", label: "Không đúng mục tiêu", effect: "bài này bị ẩn khỏi gợi ý; không ảnh hưởng độ khó" },
-  { id: "already-known", label: "Đã biết", effect: "bài này bị ẩn; KHÔNG tính là đã giải — chỉ Judge AC mới tạo mastery" },
+  { id: "too_easy", label: "Quá dễ", effect: "gợi ý sau ưu tiên mức phù hợp hơn; không ghi mastery" },
+  { id: "too_hard", label: "Quá khó", effect: "gợi ý sau giảm độ khó tương đối; không ghi mastery" },
+  { id: "not_relevant", label: "Không đúng mục tiêu", effect: "giảm ưu tiên riêng mục này; không ảnh hưởng track khác" },
+  { id: "already_know", label: "Đã biết", effect: "giảm ưu tiên; KHÔNG tính là đã giải" },
 ];
 
 const MAX_SUGGESTIONS = 3;
@@ -48,6 +43,8 @@ function cleanItem(raw) {
     rating: Number.isFinite(Number(raw.rating)) && Number(raw.rating) > 0 ? Number(raw.rating) : null,
     concept: typeof raw.concept === "string" ? raw.concept : null,
     derivedStatus: typeof raw.derivedStatus === "string" ? raw.derivedStatus : null,
+    track: typeof raw.track === "string" ? raw.track : null,
+    open: raw.action && raw.action.open ? raw.action.open : (raw.open && typeof raw.open === "object" ? raw.open : null),
   };
 }
 
@@ -61,8 +58,8 @@ export function normalizeEntry(raw) {
   return { continueItem, suggestions };
 }
 
-// hidden: array/Set of problem ids the user dismissed. The server already got
-// them via `dismissed=`, but a stale cache/refresh must not resurface one.
+// Hidden ids are used only while the feedback API is unavailable. On a normal
+// request the backend local-first feedback store is the sole source of truth.
 export function visibleSuggestions(suggestions, hidden) {
   const hide = hidden instanceof Set ? hidden : new Set(Array.isArray(hidden) ? hidden : []);
   return (Array.isArray(suggestions) ? suggestions : [])
@@ -70,22 +67,14 @@ export function visibleSuggestions(suggestions, hidden) {
     .slice(0, MAX_SUGGESTIONS);
 }
 
-// Query string for the entry endpoint — the dismissal list rides along so the
-// server-side ranking respects it.
-export function entryQueryString(hiddenSet) {
-  const ids = [...(hiddenSet instanceof Set ? hiddenSet : new Set())].filter(Boolean);
-  if (!ids.length) return "";
+// Query string for the entry endpoint. New requests write canonical tracks.
+export function entryQueryString(track) {
   const usp = new URLSearchParams();
-  usp.set("dismissed", ids.join(","));
+  if (track) usp.set("track", track);
   return usp.toString();
 }
 
 // The payload recorded via the existing per-problem event route.
-export function feedbackEvent(suggestionId, kindId) {
-  const kind = FEEDBACK_KINDS.find((k) => k.id === kindId);
-  if (!suggestionId || !kind) return null;
-  return { type: "recommendation-feedback", data: { suggestionId, feedback: kind.id } };
-}
 
 // (De)serialize the local dismissal list — bounded so localStorage never grows
 // without limit.

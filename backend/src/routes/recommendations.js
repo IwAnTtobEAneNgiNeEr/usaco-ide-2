@@ -8,13 +8,14 @@ const ratingStore = require("../arena/ratingStore");
 const smartContent = require("../smartContent");
 const catalogStore = require("../catalogStore");
 const feedbackStore = require("../recommendationFeedbackStore");
+const { TRACKS, canonicalTrackInput } = require("../trackContract");
 const { asyncHandler } = require("./_util");
 
 const router = express.Router();
 const RATING_FILE = path.join(config.DATA_DIR, "arena-rating.json");
 
 router.get("/entry", asyncHandler(async (req, res) => {
-  const canonicalTrack = ["competitive", "algorithm-engineering"].includes(req.query.track) ? req.query.track : null;
+  const canonicalTrack = canonicalTrackInput(req.query.track);
   const [problems, ratingState, catalog, feedback] = await Promise.all([
     problemStore.listProblems(),
     ratingStore.load(RATING_FILE),
@@ -25,7 +26,7 @@ router.get("/entry", asyncHandler(async (req, res) => {
   const historyTarget = ratingState && ratingState.gamesPlayed > 0 ? ratingState.rating : null;
   const targetRating = Number.isFinite(requestedTarget) && requestedTarget > 0 ? requestedTarget : historyTarget;
   const recommendationOptions = {
-    track: req.query.track,
+    track: canonicalTrack || req.query.track,
     concept: req.query.concept,
     minRating: req.query.minRating,
     maxRating: req.query.maxRating,
@@ -33,8 +34,13 @@ router.get("/entry", asyncHandler(async (req, res) => {
     liked: smartContent.csv(req.query.liked),
     dismissed: smartContent.csv(req.query.dismissed),
   };
+  // Route Planner remains a contextual WeightedGraphRouter capability. It has
+  // no independent Brief → Work → Verify loop, so Home never recommends it.
+  const recommendationCatalog = canonicalTrack === TRACKS.ALGORITHM_ENGINEERING
+    ? catalog.filter((item) => item.activityKind === "algorithm-module" && item.open?.scope === "standalone" && !item.requirementId)
+    : catalog;
   const items = canonicalTrack
-    ? smartContent.recommendCatalogEntries(catalog, { ...recommendationOptions, feedback })
+    ? smartContent.recommendCatalogEntries(recommendationCatalog, { ...recommendationOptions, feedback })
     : smartContent.recommendEntries(problems, recommendationOptions);
   res.json({
     items,

@@ -46,7 +46,8 @@ const arenaCoreFillRouter = require("./src/routes/arena-corefill");
 const arenaRushRouter = require("./src/routes/arena-rush");
 const recommendationsRouter = require("./src/routes/recommendations");
 const catalogRouter = require("./src/routes/catalog");
-const modulesRouter = require("./src/routes/modules");
+const xuongRouter = require("./src/routes/xuong");
+const telemetryRouter = require("./src/routes/telemetry");
 
 const VERSION = "2.0.0";
 
@@ -97,7 +98,8 @@ function buildApp() {
   app.use("/api/problems", verifiedArtifactsRouter);
   app.use("/api/recommendations", recommendationsRouter);
   app.use("/api/catalog", catalogRouter);
-  app.use("/api/modules", modulesRouter);
+  app.use("/api/xuong", xuongRouter);
+  app.use("/api/telemetry", telemetryRouter);
   app.use("/api/problems", arenaReferenceRouter);
   app.use("/api/problems", arenaMatchRouter);
   app.use("/api/problems", arenaGhostRouter);
@@ -162,6 +164,8 @@ function buildApp() {
 async function ensureWorkspace() {
   await fileStore.ensureDir(config.PROBLEMS_DIR);
   await fileStore.ensureDir(config.CONTESTS_DIR);
+  await fileStore.ensureDir(config.APPLICATION_PROJECTS_DIR);
+  await fileStore.ensureDir(config.APPLICATION_SESSIONS_DIR);
   await fileStore.ensureDir(config.DATA_DIR);
   // Persist defaults on first run so the file is visible/editable.
   if (!(await fileStore.pathExists(config.SETTINGS_FILE))) {

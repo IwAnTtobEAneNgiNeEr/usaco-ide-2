@@ -1,0 +1,1599 @@
+/* xuong.css — Xưởng v2 (Preview Runtime): S6 list, S4 decision sheet + inert
+   reference, S5 workbench rail, and the shared Preview Surface (.xp-*).
+
+   Everything rides the app tokens (tokens.css loads LAST). Two colour rules
+   carry product meaning and must not drift:
+     · provenance — reference (violet, dashed, inert) vs user run (accent, solid)
+     · severity   — error anchors and failing checks use --error; nothing else
+                    in this file speaks in verdict colours, because the verdict
+                    lives in exactly one panel (Checks). */
+
+/* ---- S6 · project list ------------------------------------------------- */
+
+.xg-list { display: grid; gap: 16px; }
+
+.xg-intro {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md, 10px);
+  background: var(--panel);
+}
+.xg-intro-copy { margin: 6px 0 0; max-width: 64ch; line-height: 1.55; color: var(--text-muted); font-size: 13px; }
+.xg-intro > .btn { flex: none; }
+
+.xg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+
+/* .xg-card rides the shared .jh-practice-card grammar (journey.css Home v2.1);
+   the box model is deliberately NOT redeclared here. */
+.xg-card .jh-practice-meta,
+.xg-card .jh-practice-go { grid-column: 1 / -1; }
+.xg-card .jh-practice-meta { color: var(--text-dim); }
+
+.xg-empty {
+  display: grid; gap: 6px; justify-items: center; text-align: center;
+  padding: 40px 20px;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-dim); font-size: 13px;
+}
+.xg-empty b { color: var(--text); font-size: 14px; }
+.xg-empty span { max-width: 52ch; line-height: 1.55; }
+
+/* ---- S4 · sheet -------------------------------------------------------- */
+
+.xg-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, .58);
+}
+.xg-overlay.hidden { display: none; }
+
+.xg-sheet {
+  display: flex; flex-direction: column;
+  width: min(980px, 100%); max-height: min(86vh, 900px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 14px);
+  background: var(--panel);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  overflow: hidden;
+}
+.xg-sheet-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.xg-sheet-head h2 { margin: 4px 0 0; font-size: 19px; }
+.xg-sheet-sub { margin: 6px 0 0; max-width: 72ch; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.xg-sheet-body { padding: 16px 20px; overflow: auto; }
+.xg-sheet-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+}
+.xg-cta-reason { color: var(--text-dim); font-size: 12px; }
+
+.xg-analysis-summary {
+  margin: 0 0 14px; padding: 12px 14px;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-surface);
+  color: var(--text-muted); font-size: 13px; line-height: 1.6;
+}
+
+.xg-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.xg-pick {
+  display: grid; gap: 3px; justify-items: start; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md, 10px);
+  background: var(--panel-2); color: var(--text); cursor: pointer;
+}
+.xg-pick:hover { border-color: var(--accent); background: var(--panel-3); }
+.xg-pick span { color: var(--text-dim); font-size: 12px; }
+
+.xg-analyzing { padding: 22px 4px; color: var(--text-muted); font-size: 13.5px; line-height: 1.6; }
+.xg-retry-row { margin-top: 14px; }
+
+/* Decision rows: one comparison table, not a card gallery. */
+.xg-rows { display: grid; gap: 10px; }
+
+.xg-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
+  padding: 14px 16px;
+  border: 1px solid var(--border); border-radius: var(--radius-md, 10px);
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.xg-row:hover { background: var(--panel-3); }
+.xg-row.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+.xg-row.is-inert { opacity: .55; cursor: not-allowed; }
+.xg-row input { margin-top: 3px; accent-color: var(--accent); }
+
+.xg-row-head { display: grid; gap: 2px; margin-bottom: 10px; }
+.xg-row-head b { font-size: 14.5px; }
+.xg-row-head span { color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+
+.xg-row-axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 16px; margin: 0; }
+.xg-row-axes > div { display: grid; gap: 2px; }
+.xg-row-axes dt { color: var(--text-dim); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+.xg-row-axes dd { margin: 0; color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+/* The breaking event is what separates development from a re-skin. */
+.xg-row-axes .is-break dt { color: var(--accent); }
+.xg-row-axes .is-break dd { color: var(--text); }
+
+.xg-row-note { margin: 10px 0 0; color: var(--text-dim); font-size: 12px; }
+
+/* ---- Provenance: reference vs user run --------------------------------- */
+
+.xg-prov-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 10px; padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px; letter-spacing: .03em;
+}
+.xg-prov-badge[data-provenance="reference"] {
+  border: 1px dashed var(--purple);
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+.xg-prov-badge[data-provenance="user"] {
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.xg-reference-title { margin: 4px 0 2px; font-size: 16px; }
+.xg-reference-sub { margin: 0 0 12px; color: var(--text-muted); font-size: 12.5px; }
+
+.xg-frame { margin: 0 0 14px; }
+.xg-frame figcaption { margin-top: 8px; color: var(--text-muted); font-size: 12.5px; line-height: 1.55; }
+/* A reference frame is inert: dashed edge, cooler ink, no live affordances. */
+.xg-reference .xp-surface,
+.xg-frame .xp-surface {
+  border-style: dashed;
+  border-color: var(--purple);
+  background: color-mix(in srgb, var(--purple) 5%, var(--panel));
+}
+
+.xg-prov-switch { display: flex; gap: 6px; margin-bottom: 10px; }
+.xg-prov-btn {
+  flex: 1; padding: 6px 10px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel-2); color: var(--text-dim);
+  font-size: 12px; cursor: pointer;
+}
+.xg-prov-btn.is-active { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+
+/* ---- S5 · left focus rail ---------------------------------------------- */
+
+.xg-focus { display: grid; gap: 16px; }
+.xg-focus-list { display: grid; gap: 12px; margin: 0; }
+.xg-focus-row { display: grid; gap: 3px; padding-left: 10px; border-left: 2px solid var(--border); }
+.xg-focus-row dt { color: var(--text-dim); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; }
+.xg-focus-row dd { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.xg-focus-row.is-outcome { border-left-color: var(--accent); }
+.xg-focus-row.is-outcome dd { color: var(--text); }
+.xg-focus-row.is-change { border-left-color: var(--purple); }
+
+/* Growth spine: đã có → đang build → có thể mở rộng. No score, no lock icon. */
+.xg-growth { display: flex; flex-wrap: wrap; gap: 6px; }
+.xg-growth-item {
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  font-size: 11.5px; color: var(--text-dim);
+}
+.xg-growth-item[data-state="present"] { color: var(--text-muted); }
+.xg-growth-item[data-state="current"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+.xg-growth-item[data-state="next"] { opacity: .7; }
+
+/* ---- S5 · mapping ribbon (centre column, above the editor) -------------- */
+
+.xg-ribbon-host { border-bottom: 1px solid var(--border-soft); background: var(--bg-soft); }
+.xg-ribbon { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 7px 12px; }
+.xg-ribbon-lead { color: var(--text-dim); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+.xg-chip {
+  padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--panel-2);
+  color: var(--text-muted); font-size: 11.5px; cursor: pointer;
+}
+.xg-chip:hover { border-color: var(--accent); color: var(--text); }
+.xg-chip.is-editable { border-color: var(--purple); color: var(--text); }
+.xg-chip.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+.xg-ribbon-claim { color: var(--text-dim); font-size: 11.5px; font-style: italic; }
+
+/* ---- S5 · right rail (Preview default, Checks secondary) --------------- */
+
+.xg-rail { display: grid; gap: 10px; }
+.xg-tabs { display: flex; gap: 4px; }
+.xg-tab {
+  padding: 6px 12px; border: 1px solid transparent; border-radius: 8px 8px 0 0;
+  background: none; color: var(--text-dim); font-size: 12.5px; cursor: pointer;
+}
+.xg-tab.is-active { border-color: var(--border); border-bottom-color: transparent; background: var(--panel-2); color: var(--text); }
+.xg-panel { display: grid; gap: 10px; }
+
+/* ---- Checks — the ONLY verdict surface --------------------------------- */
+
+.xg-checks { display: grid; gap: 10px; }
+.xg-checks-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.xg-checks-head b { font-size: 12.5px; color: var(--text-muted); }
+.xg-checks-empty { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.55; }
+
+.xg-check { padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 8px; background: var(--panel-2); }
+.xg-check-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.xg-check-head span { font-size: 12.5px; line-height: 1.5; }
+.xg-check-head b { flex: none; font-size: 10.5px; letter-spacing: .05em; color: var(--text-dim); }
+.xg-check[data-state="failing"] { border-left: 2px solid var(--error); }
+.xg-check[data-state="failing"] .xg-check-head b { color: var(--error); }
+.xg-check[data-state="met"] { border-left: 2px solid var(--success); }
+.xg-check[data-state="met"] .xg-check-head b { color: var(--success); }
+
+.xg-ev { margin-top: 8px; font-size: 12px; }
+.xg-ev summary { cursor: pointer; color: var(--text-dim); }
+.xg-ev pre {
+  margin: 6px 0 0; padding: 8px 10px; border-radius: 6px;
+  background: var(--bg-soft); color: var(--text-muted);
+  font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.xg-ev-empty { margin: 6px 0 0; color: var(--error); font-size: 11.5px; }
+
+/* ======================================================================== */
+/* Preview Surface (.xp-*) — one surface for every base projection          */
+/* ======================================================================== */
+
+.xp-surface {
+  display: grid; gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-md, 10px);
+  background: var(--panel-2);
+}
+/* Layout packs. Three genuinely different readings of the same recipe, not a
+   label: focus centres one small subject and lets the numbers breathe; balanced
+   is the default two-column reading; wide gives the stage the full width and
+   pushes metrics/outputs into a single scanning row underneath. A layout that
+   changed nothing on screen would make the recipe grammar dishonest. */
+.xp-surface[data-xp-layout="focus"] .xp-stage { justify-items: center; }
+.xp-surface[data-xp-layout="focus"] { gap: 14px; }
+.xp-surface[data-xp-layout="focus"] .xp-outputs,
+.xp-surface[data-xp-layout="focus"] .xp-metrics { justify-content: center; }
+
+.xp-surface[data-xp-layout="balanced"] .xp-stage { justify-items: start; }
+
+.xp-surface[data-xp-layout="wide"] { gap: 8px; padding: 12px 10px; }
+.xp-surface[data-xp-layout="wide"] .xp-stage { justify-items: stretch; max-height: 420px; }
+.xp-surface[data-xp-layout="wide"] .xp-outputs,
+.xp-surface[data-xp-layout="wide"] .xp-metrics {
+  display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px;
+}
+.xp-surface[data-xp-layout="wide"] .xp-output,
+.xp-surface[data-xp-layout="wide"] .xp-metric { flex: 0 0 auto; }
+
+.xp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.xp-title { font-size: 13px; }
+.xp-scenario { display: block; margin-top: 2px; color: var(--text-dim); font-size: 11.5px; line-height: 1.5; }
+
+.xp-control { display: flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap; }
+.xp-control-label { color: var(--text-dim); font-size: 11px; }
+.xp-step {
+  width: 26px; height: 24px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--panel-3); color: var(--text-muted); cursor: pointer;
+}
+.xp-step:hover { border-color: var(--accent); color: var(--text); }
+.xp-cursor { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text); }
+.xp-input { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); }
+.xp-input input[type="number"], .xp-input input[type="text"] {
+  width: 74px; padding: 2px 6px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-soft); color: var(--text); font-size: 11.5px;
+}
+
+.xp-legend { display: flex; flex-wrap: wrap; gap: 10px; }
+.xp-legend-item { display: inline-flex; align-items: center; gap: 5px; color: var(--text-dim); font-size: 11px; }
+.xp-legend-item i { width: 9px; height: 9px; border-radius: 2px; background: var(--text-dim); }
+.xp-legend-item[data-xp-overlay="error-anchor"] i { background: var(--error); }
+.xp-legend-item[data-xp-overlay="path"] i { background: var(--accent); }
+.xp-legend-item[data-xp-overlay="target"] i { background: var(--success); }
+
+.xp-stage { display: grid; overflow: auto; }
+.xp-canvas { max-width: 100%; height: auto; }
+
+.xp-cell { fill: var(--panel-3); stroke: var(--border-soft); }
+.xp-cell.is-empty { fill: var(--bg-soft); }
+.xp-node .xp-cell, .xp-node circle { fill: var(--panel-3); stroke: var(--border); }
+.xp-node.is-touched .xp-cell, .xp-node.is-touched circle { fill: var(--accent-soft); stroke: var(--accent); }
+.xp-node.is-anchored .xp-cell, .xp-node.is-anchored circle {
+  fill: color-mix(in srgb, var(--error) 22%, transparent);
+  stroke: var(--error); stroke-width: 2;
+}
+.xp-edge line { stroke: var(--border); stroke-width: 2; }
+.xp-tree-link { stroke: var(--border); stroke-width: 2; }
+.xp-tree-node .xp-cell { fill: var(--panel-3); }
+.xp-geometry-segment { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 4; }
+.xp-geometry-point circle { fill: var(--panel-3); stroke: var(--accent); stroke-width: 2; }
+.xp-state-arrow { stroke: var(--border); stroke-width: 2; }
+.xp-state-canvas marker path { fill: var(--border); }
+.xp-state-node circle { fill: var(--panel-3); stroke: var(--accent); stroke-width: 2; }
+
+/* Generic data projections. These are intentionally calm, readable views of
+   ObservableModel state. They are not tied to BFS, sorting or any other
+   algorithm, so new scenarios can reuse them without adding a renderer. */
+/* Sequence is drawn, not listed: ordered slots read as positions, which a
+   vertical list cannot express. Slot fill/stroke comes from .xp-node above. */
+.xp-slot-index { fill: var(--text-dim); font-size: 10px; }
+
+/* Timeline: a rail of ticks in trace order. Clicking a tick replays to it. */
+.xp-timeline { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.xp-tick {
+  display: grid; grid-template-columns: 16px 1fr; gap: 9px; align-items: start;
+  padding: 7px 0 9px; cursor: pointer;
+}
+.xp-tick-dot {
+  position: relative; justify-self: center; margin-top: 4px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--panel-3); border: 1px solid var(--border);
+}
+/* The connector belongs to the dot, so it never survives the last tick. */
+.xp-tick:not(:last-child) .xp-tick-dot::after {
+  content: ""; position: absolute; left: 50%; top: 100%;
+  width: 1px; height: 22px; transform: translateX(-50%);
+  background: var(--border-soft);
+}
+.xp-tick.is-done .xp-tick-dot { background: var(--accent); border-color: var(--accent); }
+.xp-tick.is-anchored .xp-tick-dot { background: var(--error); border-color: var(--error); }
+.xp-tick-body { display: grid; gap: 3px; }
+.xp-tick-body b { font-size: 12px; font-weight: 500; }
+.xp-tick:hover .xp-tick-body b { color: var(--accent); }
+
+.xp-table-wrap { overflow-x: auto; }
+.xp-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.xp-table th, .xp-table td { padding: 7px 9px; border-bottom: 1px solid var(--border-soft); text-align: left; white-space: nowrap; }
+.xp-table thead th { color: var(--text-dim); font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
+.xp-table tbody th { color: var(--text); font-weight: 600; }
+.xp-table tbody td { color: var(--text-muted); }
+
+.xp-chart { display: grid; gap: 10px; }
+.xp-bar-row { display: grid; grid-template-columns: minmax(90px, .8fr) minmax(80px, 1.7fr) auto; gap: 8px; align-items: center; font-size: 11.5px; }
+.xp-bar-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.xp-bar-row > b { color: var(--text); font-size: 11px; font-variant-numeric: tabular-nums; }
+.xp-bar-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-soft); }
+.xp-bar-track i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+
+/* Text projection: the run's own outputs, each under its contract label. */
+.xp-texts { display: grid; gap: 8px; }
+.xp-text-block { display: grid; gap: 4px; padding: 9px 11px; border-radius: 7px; background: var(--bg-surface); }
+.xp-text-block h4 { margin: 0; color: var(--text-dim); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.xp-text-block pre {
+  margin: 0; color: var(--text); font-size: 12px; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* Resource meters: "how much of what is in use", distinct from chart compare. */
+.xp-meters { display: grid; gap: 9px; }
+.xp-meter { display: grid; gap: 5px; }
+.xp-meter-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--text-muted); }
+.xp-meter-head b { color: var(--text); font-size: 11px; font-variant-numeric: tabular-nums; }
+.xp-meter-track { display: block; height: 6px; overflow: hidden; border-radius: 999px; background: var(--bg-soft); }
+.xp-meter-track i { display: block; height: 100%; border-radius: inherit; background: var(--text-dim); }
+
+/* Exchanges: who talks to whom, in the model's own words. */
+.xp-exchanges { display: grid; gap: 6px; }
+.xp-exchange {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 8px 11px; border-radius: 7px; background: var(--bg-surface);
+  font-size: 12px;
+}
+.xp-exchange-side { color: var(--text); }
+.xp-exchange-arrow { color: var(--text-dim); }
+.xp-exchange-note { color: var(--text-dim); font-size: 11.5px; }
+
+.xp-truncation { margin: 0; color: var(--text-dim); font-size: 11.5px; }
+.xp-windowed { display: grid; gap: 7px; min-width: 0; }
+.xp-window-note { margin: 0; color: var(--text-dim); font-size: 11px; line-height: 1.45; }
+
+.xp-anchors { display: grid; gap: 6px; }
+.xp-anchor {
+  display: grid; gap: 2px; justify-items: start; text-align: left;
+  padding: 9px 11px;
+  border: 1px solid var(--error); border-left-width: 2px; border-radius: 8px;
+  background: color-mix(in srgb, var(--error) 8%, transparent);
+  color: var(--text); cursor: pointer;
+}
+.xp-anchor[data-severity="warning"] { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 8%, transparent); }
+.xp-anchor[data-severity="info"] { border-color: var(--border); background: var(--bg-surface); }
+.xp-anchor b { font-size: 12.5px; }
+.xp-anchor span { color: var(--text-muted); font-size: 11.5px; line-height: 1.5; }
+.xp-anchor em { color: var(--accent); font-size: 11px; font-style: normal; }
+
+.xp-inspector-panel > summary { cursor: pointer; color: var(--text-dim); font-size: 12px; }
+.xp-inspector { display: grid; gap: 12px; margin-top: 8px; }
+.xp-sec { display: grid; gap: 6px; }
+.xp-sec h4 { margin: 0; color: var(--text-dim); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+
+.xp-kv { display: grid; gap: 4px; margin: 0; }
+.xp-kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.xp-kv dt { color: var(--text-dim); font-size: 11.5px; }
+.xp-kv dd { margin: 0; color: var(--text); font-size: 12px; text-align: right; }
+
+.xp-entities { display: grid; gap: 6px; }
+.xp-entity { padding: 8px 10px; border: 1px solid var(--border-soft); border-radius: 7px; background: var(--bg-surface); }
+.xp-entity > b { font-size: 12px; }
+
+.xp-events { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.xp-event {
+  display: grid; gap: 2px;
+  padding: 7px 10px; border-radius: 7px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+.xp-event:hover { background: var(--surface-hover); }
+.xp-event.is-done { border-left: 2px solid var(--accent); }
+.xp-event b { font-size: 12px; font-weight: 500; }
+.xp-changes { color: var(--text-dim); font-size: 11px; }
+
+.xp-empty {
+  display: grid; gap: 6px; justify-items: start;
+  padding: 20px; border: 1px dashed var(--border); border-radius: var(--radius-md, 10px);
+  background: var(--bg-surface);
+  color: var(--text-muted); font-size: 12.5px; line-height: 1.55;
+}
+.xp-empty b { color: var(--text); font-size: 13.5px; }
+.xp-empty p { margin: 0; }
+.xp-diags { display: grid; gap: 4px; margin: 4px 0 0; padding-left: 16px; }
+.xp-diags li { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.xp-diags li[data-severity="error"] { color: var(--error); }
+
+/* ---- Responsive: 1280×800 is the reference frame ----------------------- */
+
+@media (max-width: 1400px) {
+  .xg-row-axes { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+}
+@media (max-width: 900px) {
+  .xg-sheet { max-height: 94vh; }
+  .xg-row { grid-template-columns: 1fr; }
+  .xg-row input { margin-top: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xg-row, .xg-chip, .xp-step, .xp-event { transition: none; }
+}
+
+/* ---- F1 · scenario picker, growth CTA, replay scrub --------------------- */
+
+.xg-scenarios { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+.xg-scenario {
+  flex: 1 1 160px; min-width: 0; text-align: left;
+  padding: 7px 10px; border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--panel-2); color: var(--text-muted); cursor: pointer;
+}
+.xg-scenario b { display: block; color: var(--text); font-size: 12px; font-weight: 600; }
+.xg-scenario span {
+  display: block; margin-top: 2px; font-size: 11px; line-height: 1.4; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Selected state survives with colour off: the border weight carries it too. */
+.xg-scenario.is-active { border-color: var(--accent); border-left-width: 3px; background: var(--bg-surface); }
+
+.xg-evolve {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap;
+}
+.xg-evolve-reason { margin: 0; flex: 1 1 200px; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
+
+.xp-scrub { flex: 1 1 90px; min-width: 70px; max-width: 200px; accent-color: var(--accent); cursor: pointer; }
+
+@media (max-width: 1300px) {
+  .xg-scenario span { white-space: normal; }
+  .xp-scrub { flex-basis: 100%; max-width: none; }
+}
+
+/* ---- F2 · overlay marks -------------------------------------------------
+   Each mark must survive with colour off, so every one carries a second
+   signal (stroke weight, dash, or opacity) alongside its hue.            */
+
+.xp-node.is-changed .xp-cell,
+.xp-node.is-changed circle { stroke: var(--accent); stroke-width: 2; }
+.xp-node.is-target .xp-cell,
+.xp-node.is-target circle { stroke: var(--text); stroke-width: 2; stroke-dasharray: 3 2; }
+.xp-node.is-constraint .xp-cell,
+.xp-node.is-constraint circle { fill: var(--bg-soft); opacity: .55; }
+
+.xp-table tr.is-changed th[scope="row"] { border-left: 3px solid var(--accent); }
+.xp-table tr.is-target th[scope="row"] { border-left: 3px dashed var(--text-muted); }
+.xp-table tr.is-constraint { opacity: .6; }
+
+.xp-edge.is-emphasized line,
+.xp-tree-link.is-emphasized,
+.xp-geometry-segment.is-emphasized,
+.xp-state-arrow.is-emphasized { stroke-width: 2.5; }
+
+/* ========================================================================
+   F4 · workbench density pass (concept fidelity)
+   Scoped to the Xưởng activity so the shared shell keeps serving Luyện tập,
+   Điền Lõi and Contest unchanged.
+   ======================================================================== */
+
+/* Proportions from the visual contract: narrative 300–340, code largest,
+   preview 440–520. The code column is the only elastic one. */
+#activity-workspace[data-kind="xuong"] .aw-body {
+  grid-template-columns: minmax(300px, 328px) minmax(420px, 1fr) minmax(440px, 500px);
+}
+
+/* ---- growth spine: one horizontal rail, non-numeric ---- */
+.xg-spine-host { border-bottom: 1px solid var(--border-soft); background: var(--bg-soft); }
+.xg-spine {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 18px; overflow-x: auto; scrollbar-width: thin;
+}
+.xg-spine-step {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  font-size: 11.5px; line-height: 1.2; color: var(--text-dim); white-space: nowrap;
+}
+/* The connector is drawn between steps, not around them. */
+.xg-spine-step + .xg-spine-step::before {
+  content: ""; width: 46px; height: 1px; background: var(--border); margin-right: 4px;
+}
+.xg-spine-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid var(--border-strong, var(--border)); background: transparent;
+}
+.xg-spine-step[data-state="present"] { color: var(--text-muted); }
+.xg-spine-step[data-state="present"] .xg-spine-dot { border-color: var(--success); background: var(--success); }
+.xg-spine-step[data-state="current"] { color: var(--text); font-weight: 600; }
+.xg-spine-step[data-state="current"] .xg-spine-dot { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.xg-spine-step[data-state="next"] { opacity: .6; }
+
+/* ---- narrative column: one headline, then the bounds ---- */
+.xg-focus { gap: 14px; }
+.xg-focus-kicker {
+  margin: 0; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim);
+}
+.xg-focus-mission {
+  margin: 0; font-size: 19px; line-height: 1.35; font-weight: 600; color: var(--text);
+  letter-spacing: -.01em; max-width: 22ch;
+}
+.xg-focus-list { gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
+.xg-focus-row dd { font-size: 12.5px; line-height: 1.5; }
+.xg-focus-row.is-done { border-left-color: var(--success); }
+
+/* ---- preview rail: dense, no vertical word-wrap ---- */
+#activity-workspace[data-kind="xuong"] .xg-panel { padding: 10px 12px; }
+.xp-head { align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.xp-title { font-size: 12.5px; white-space: nowrap; }
+.xp-scenario {
+  font-size: 11px; color: var(--text-dim); min-width: 0; flex: 1 1 140px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* A 2×2 grid must not inflate to rail width; drawings keep their own scale. */
+.xp-stage { justify-items: center; max-height: 340px; }
+.xp-canvas { width: auto; height: auto; max-width: 100%; max-height: 300px; }
+
+/* Provenance + scenario pickers read as one compact control strip. */
+.xg-prov-switch { gap: 4px; margin-bottom: 8px; }
+.xg-prov-btn { padding: 4px 10px; font-size: 11.5px; }
+.xg-scenarios { gap: 4px; margin-bottom: 8px; }
+.xg-scenario { flex: 1 1 0; padding: 5px 9px; }
+.xg-scenario b { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xg-scenario span { font-size: 10.5px; }
+.xg-prov-badge { padding: 3px 9px; font-size: 10.5px; letter-spacing: .04em; }
+
+/* ---- error anchor card: red is reserved for this and for FAIL ---- */
+.xp-anchor-card {
+  display: grid; gap: 5px; padding: 9px 11px; margin-top: 8px;
+  border: 1px solid var(--error); border-left-width: 3px;
+  border-radius: var(--radius-sm, 8px);
+  background: color-mix(in srgb, var(--error) 9%, transparent);
+}
+.xp-anchor-card[data-severity="warning"] {
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 9%, transparent);
+}
+.xp-anchor-title {
+  margin: 0; display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 600; color: var(--text);
+}
+.xp-anchor-mark {
+  display: inline-grid; place-items: center; width: 15px; height: 15px; flex: 0 0 auto;
+  border-radius: 50%; background: var(--error); color: var(--bg);
+  font-size: 10px; font-weight: 700;
+}
+.xp-anchor-detail {
+  margin: 0; font-family: var(--font-mono, monospace); font-size: 11px;
+  line-height: 1.5; color: var(--text-muted);
+}
+.xp-anchor-actions { display: flex; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
+.xp-anchor, .xp-anchor-replay {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm, 6px);
+  background: var(--panel-2); color: var(--text-muted);
+  font-size: 11.5px; cursor: pointer; text-align: left;
+}
+.xp-anchor:hover, .xp-anchor-replay:hover { color: var(--text); border-color: var(--accent); }
+.xp-anchor-glyph { font-family: var(--font-mono, monospace); color: var(--accent); font-size: 11px; }
+
+/* ---- responsive: narrative collapses first, preview becomes a drawer ---- */
+@media (max-width: 1439px) {
+  #activity-workspace[data-kind="xuong"] .aw-body {
+    grid-template-columns: minmax(280px, 300px) minmax(380px, 1fr) minmax(400px, 440px);
+  }
+  .xg-focus-mission { font-size: 17px; }
+}
+@media (max-width: 1279px) {
+  /* Narrative goes first: the mission is short enough to carry as a strip. */
+  #activity-workspace[data-kind="xuong"] .aw-body {
+    grid-template-columns: minmax(360px, 1fr) minmax(400px, 460px);
+  }
+  #activity-workspace[data-kind="xuong"] .aw-brief-col {
+    grid-column: 1 / -1; max-height: 148px; overflow: auto;
+  }
+  .xg-focus-mission { font-size: 16px; max-width: none; }
+  .xg-spine { padding: 6px 12px; }
+  .xg-spine-step + .xg-spine-step::before { width: 22px; }
+}
+
+/* ========================================================================
+   F5 · Preview panel as the workbench centre of gravity
+   ------------------------------------------------------------------------
+   The panel is composed of bands with a fixed reading order:
+     base bar → legend → stage → outputs → anchors → replay → metrics
+   A band is silent when the run has nothing for it, but the ORDER never
+   changes, so the eye learns one path and keeps it across all twelve bases.
+   Colour keeps its existing contract: accent = live/active/path, error =
+   anchored failure, success = met. Nothing else earns a hue.
+   ======================================================================== */
+
+/* Preview is the reason this screen exists once a run lands, so it gets the
+   width the visual contract asks for and the editor column gives it up. */
+@media (min-width: 1440px) {
+  #activity-workspace[data-kind="xuong"] .aw-body {
+    grid-template-columns: minmax(300px, 336px) minmax(380px, 1fr) minmax(560px, 620px);
+  }
+}
+@media (min-width: 1800px) {
+  #activity-workspace[data-kind="xuong"] .aw-body {
+    grid-template-columns: minmax(320px, 340px) minmax(460px, 1fr) minmax(600px, 640px);
+  }
+}
+
+/* The build console lives in the Logs tab now. Leaving the shell result stack
+   visible underneath would report the same run a second time — the one thing
+   the tab split exists to prevent. Scoped to Xưởng so the shared activity
+   shell keeps serving Luyện tập, Điền Lõi and Contest unchanged. */
+#activity-workspace[data-kind="xuong"] .aw-result,
+#activity-workspace[data-kind="xuong"] .aw-io-stack { display: none; }
+#activity-workspace[data-kind="xuong"] .aw-result-col { min-height: 0; }
+#activity-workspace[data-kind="xuong"] .aw-controls { min-height: 0; overflow: auto; }
+
+/* With the console gone the rail is the whole column, so it should read as one
+   tall surface rather than a short card floating over a dark void. Content
+   stays top-aligned: the panel grows, the bands do not stretch. */
+#activity-workspace[data-kind="xuong"] .xg-rail {
+  min-height: 100%; grid-template-rows: auto minmax(0, 1fr);
+}
+#activity-workspace[data-kind="xuong"] .xg-panel {
+  align-content: start;
+  padding: 12px; border: 1px solid var(--border-soft);
+  border-top: 0; border-radius: 0 0 var(--radius-md, 10px) var(--radius-md, 10px);
+  background: var(--panel);
+}
+
+/* ---- tabs: three peers, one of them counts ---- */
+.xg-tabs { border-bottom: 1px solid var(--border-soft); gap: 2px; }
+.xg-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; }
+.xg-tab.is-active { border-color: var(--border-soft); border-bottom-color: transparent; }
+.xg-tab-count {
+  padding: 1px 6px; border-radius: 999px; background: var(--bg-soft);
+  color: var(--text-dim); font-size: 10.5px; font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.xg-tab.is-active .xg-tab-count { background: var(--accent-soft); color: var(--accent); }
+
+/* ---- band 1 · base bar: which frame, on which input ---- */
+.xp-head { display: grid; gap: 3px; align-items: start; }
+.xp-basebar { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.xp-basebar-lead {
+  flex: none; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.xp-basebar .xp-title { flex: none; font-size: 13px; font-weight: 600; color: var(--text); }
+.xp-basebar-input {
+  min-width: 0; flex: 1 1 auto; text-align: right;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px;
+  color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.xp-surface .xp-scenario {
+  display: block; margin: 0; font-size: 11px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---- band 3 · stage ----
+   Only a drawing gets centred. Text streams, tables and bar rows are reading
+   surfaces: centring them strands them in the middle of a 600px panel with a
+   ragged edge on both sides, which is what the F4 pass accidentally did. */
+.xp-stage { padding: 4px 0; justify-items: stretch; max-height: none; }
+.xp-stage > .xp-canvas, .xp-windowed > .xp-canvas { display: block; margin-inline: auto; }
+
+/* A drawing with few entities must still read as the subject of the panel, so
+   the geometric bases scale to a height band instead of sitting at their
+   natural pixel size. The viewBox does the scaling — no coordinate is
+   recomputed, so a 2×2 grid and a 20×20 grid stay the same drawing. */
+.xp-surface[data-xp-base="grid"] .xp-canvas,
+.xp-surface[data-xp-base="graph"] .xp-canvas,
+.xp-surface[data-xp-base="tree"] .xp-canvas,
+.xp-surface[data-xp-base="geometry"] .xp-canvas,
+.xp-surface[data-xp-base="state-machine"] .xp-canvas {
+  height: clamp(150px, 24vh, 248px); width: auto; max-width: 100%; max-height: none;
+}
+/* A sequence is wide and short: scaling it by height would blow it off-panel. */
+.xp-surface[data-xp-base="sequence"] .xp-canvas { max-height: 132px; }
+.xp-node-caption, .xp-edge-caption, .xp-slot-caption { font-size: 10px; fill: var(--text-muted); }
+.xp-node-caption { fill: var(--text-dim); }
+.xp-slot-caption { fill: var(--text); font-size: 10.5px; }
+.xp-edge-caption {
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; fill: var(--text-dim);
+}
+
+/* An edge the trace ran through reads as travelled; the one an anchor names
+   reads as broken. Both keep a non-colour signal (weight, dash). */
+.xp-edge.is-travelled line, .xp-tree-link.is-travelled,
+.xp-geometry-segment.is-travelled, .xp-state-arrow.is-travelled {
+  stroke: var(--accent); stroke-width: 2.5;
+}
+.xp-edge.is-anchored line, .xp-tree-link.is-anchored,
+.xp-geometry-segment.is-anchored, .xp-state-arrow.is-anchored {
+  stroke: var(--error); stroke-width: 3; stroke-dasharray: 5 3;
+}
+.xp-edge.is-anchored .xp-edge-caption { fill: var(--error); }
+
+/* A span overlay states that a run of slots is in scope right now. */
+.xp-span-band { fill: color-mix(in srgb, var(--accent) 11%, transparent); stroke: none; }
+.xp-span-rule { stroke: var(--accent); stroke-width: 1; }
+.xp-span-label {
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; fill: var(--accent);
+}
+
+/* ---- band 4 · output lane: what came out ---- */
+.xp-outputs {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px;
+  background: var(--border-soft);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm, 8px);
+  overflow: hidden;
+}
+.xp-output { display: grid; gap: 3px; padding: 8px 11px; background: var(--bg-surface); }
+.xp-output-label {
+  font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim);
+}
+.xp-output-value { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.45; }
+
+/* ---- band 6 · replay: a position control over a trace that already ran ---- */
+.xp-replay {
+  display: grid; gap: 7px; padding: 9px 11px;
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm, 8px);
+  background: var(--bg-surface);
+}
+.xp-replay-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.xp-replay-head .xp-control-label {
+  font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim);
+}
+.xp-replay .xp-cursor {
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px;
+  font-variant-numeric: tabular-nums; color: var(--accent);
+}
+.xp-replay-row { display: flex; align-items: center; gap: 8px; }
+.xp-replay .xp-scrub { flex: 1 1 auto; max-width: none; min-width: 0; }
+.xp-replay-at {
+  font-size: 11px; color: var(--text-muted); line-height: 1.4;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---- band 7 · metrics: measured values, never a verdict ---- */
+.xp-metrics {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 1px;
+  background: var(--border-soft);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm, 8px);
+  overflow: hidden;
+}
+.xp-metric { display: grid; gap: 4px; padding: 9px 11px; background: var(--panel-2); }
+.xp-metric-label {
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.xp-metric-value {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 18px; font-weight: 600; line-height: 1.1; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.xp-metric-value i { margin-left: 4px; font-size: 10.5px; font-style: normal; color: var(--text-dim); }
+
+/* ---- text base · the stream the run rewrote ---- */
+.xp-stream {
+  display: grid; gap: 1px; background: var(--border-soft);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm, 8px); overflow: hidden;
+}
+.xp-stream-row {
+  display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: baseline;
+  padding: 8px 11px; background: var(--bg-surface); cursor: pointer;
+}
+.xp-stream-row:hover { background: var(--panel-2); }
+.xp-stream-gutter {
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px;
+  color: var(--text-dim); text-align: right; font-variant-numeric: tabular-nums;
+}
+.xp-stream-body { display: grid; gap: 4px; min-width: 0; }
+.xp-stream-label { font-size: 12px; font-weight: 500; color: var(--text); }
+.xp-stream-state { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.xp-stream-state span { font-size: 11px; color: var(--text-muted); }
+.xp-stream-state i { margin-right: 5px; font-style: normal; color: var(--text-dim); font-size: 10px; }
+.xp-stream-diff {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px;
+}
+.xp-stream-diff i { font-style: normal; color: var(--text-dim); font-family: inherit; font-size: 10px; }
+.xp-stream-diff del { color: var(--text-dim); text-decoration-color: var(--error); }
+.xp-stream-diff ins { color: var(--success); text-decoration: none; }
+.xp-stream-arrow { color: var(--text-dim); }
+.xp-stream-row.is-changed { border-left: 2px solid var(--accent); }
+.xp-stream-row.is-anchored {
+  border-left: 2px solid var(--error);
+  background: color-mix(in srgb, var(--error) 7%, var(--bg-surface));
+}
+.xp-stream-flag {
+  align-self: center; flex: none; padding: 2px 7px; border-radius: 4px;
+  background: var(--error); color: var(--bg);
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+}
+
+/* ---- chart base · the value now, and the value before ---- */
+.xp-bar-track { position: relative; }
+.xp-bar-ghost {
+  position: absolute; inset: 0 auto 0 0; display: block; height: 100%;
+  border-radius: inherit; text-decoration: none;
+  background: repeating-linear-gradient(135deg, var(--border) 0 3px, transparent 3px 6px);
+}
+.xp-bar-track i { position: relative; }
+.xp-bar-value { display: inline-flex; align-items: baseline; gap: 6px; }
+.xp-bar-delta { font-size: 10px; font-style: normal; color: var(--text-dim); }
+.xp-bar-row.is-changed .xp-bar-track i { background: var(--accent); }
+.xp-bar-row.is-anchored .xp-bar-track i { background: var(--error); }
+.xp-chart-metrics { padding-top: 9px; border-top: 1px dashed var(--border-soft); }
+
+/* ---- empty state: same frame, held open, promising a shape ---- */
+.xp-surface.is-empty .xp-stage-idle {
+  display: grid; place-items: center; min-height: 132px;
+  border: 1px dashed var(--border-soft); border-radius: var(--radius-sm, 8px);
+  background: var(--bg-soft);
+}
+.xp-skeleton { display: flex; align-items: flex-end; gap: 7px; height: 58px; opacity: .5; }
+.xp-skeleton i { width: 20px; border-radius: 3px; background: var(--border); }
+.xp-skeleton i:nth-child(1) { height: 44%; }
+.xp-skeleton i:nth-child(2) { height: 72%; }
+.xp-skeleton i:nth-child(3) { height: 30%; }
+.xp-skeleton i:nth-child(4) { height: 58%; }
+.xp-surface.is-empty .xp-empty { border: 0; padding: 0; background: none; }
+
+/* ---- Logs: compile and runtime only ---- */
+.xg-logs { display: grid; gap: 9px; }
+.xg-logs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.xg-logs-head b { font-size: 12.5px; }
+.xg-logs-time {
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px;
+  color: var(--text-dim); font-variant-numeric: tabular-nums;
+}
+.xg-logs[data-state="compile-error"] .xg-logs-head b,
+.xg-logs[data-state="runtime-error"] .xg-logs-head b,
+.xg-logs[data-state="timed-out"] .xg-logs-head b { color: var(--error); }
+.xg-logs[data-state="ok"] .xg-logs-head b { color: var(--success); }
+.xg-logs-diags { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.xg-logs-diags li {
+  padding: 8px 10px; border-radius: var(--radius-sm, 6px); background: var(--bg-soft);
+  border-left: 2px solid var(--border);
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; line-height: 1.55;
+  color: var(--text-muted); white-space: pre-wrap; word-break: break-word;
+}
+.xg-logs-diags li[data-severity="error"] { border-left-color: var(--error); color: var(--text); }
+.xg-logs-empty { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.55; }
+
+/* ---- narrow: the rail becomes a full-width surface, not a squeezed one ---- */
+@media (max-width: 1279px) {
+  .xp-metrics { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+  .xp-metric-value { font-size: 16px; }
+  .xp-outputs { grid-template-columns: 1fr; }
+  .xp-stream-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
+  .xp-basebar { flex-wrap: wrap; }
+  .xp-basebar-input { flex-basis: 100%; text-align: left; }
+}
+
+/* ========================================================================
+   Xưởng workbench v3 — Code ↔ sản phẩm, không phải dashboard ba cột
+   ======================================================================== */
+
+#activity-workspace[data-kind="xuong"] .xg-workbench {
+  background: #07111f;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-topbar,
+#activity-workspace[data-kind="xuong"] .aw-head {
+  background: #0a1526;
+  box-shadow: none;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-head,
+#activity-workspace[data-kind="xuong"] .xg-spine-host,
+#activity-workspace[data-kind="xuong"] .aw-body,
+#activity-workspace[data-kind="xuong"] .xg-build-drawer {
+  margin-left: 54px;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-head {
+  min-height: 43px;
+  padding-block: 6px;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-heading h1 {
+  font-size: 14px;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-status-item {
+  border: 0;
+  background: transparent;
+  padding-inline: 3px;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-body {
+  grid-template-columns: 320px minmax(500px, 1fr) 540px;
+  background: #07111f;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-statement-col,
+#activity-workspace[data-kind="xuong"] .aw-code-col,
+#activity-workspace[data-kind="xuong"] .aw-result-col {
+  border-color: #1a3048;
+  background: #081526;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-code-col {
+  background: #071321;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-statement-col > .aw-col-head,
+#activity-workspace[data-kind="xuong"] .aw-result-col > .aw-col-head {
+  display: none;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-statement {
+  width: 100%;
+  height: 100%;
+  padding: 34px 28px;
+}
+
+.xg-toolrail {
+  position: absolute;
+  z-index: 8;
+  top: 52px;
+  bottom: 0;
+  left: 0;
+  width: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding-top: 15px;
+  border-right: 1px solid #1a3048;
+  background: #081423;
+}
+
+.xg-toolrail button {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #688198;
+  font: 650 11px/1 var(--font-mono, monospace);
+  cursor: pointer;
+}
+
+.xg-toolrail button:hover,
+.xg-toolrail button.is-active {
+  background: #10263a;
+  color: #31d7f5;
+}
+
+.xg-toolrail button.is-active::before {
+  content: "";
+  position: absolute;
+  inset: 7px auto 7px -8px;
+  width: 2px;
+  background: #31d7f5;
+}
+
+.xg-focus {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.xg-focus-kicker {
+  color: #7890a5;
+  font-size: 10px;
+}
+
+/* 18ch forced a normal sentence into six ragged lines, which is why the goal
+   read as a poster instead of an instruction. */
+.xg-focus-mission {
+  max-width: 30ch;
+  color: #f2f7fb;
+  font-size: 19px;
+  font-weight: 520;
+  line-height: 1.5;
+  letter-spacing: -.02em;
+}
+
+.xg-focus-why {
+  margin-top: -12px;
+  color: #9fb2c2;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.xg-focus-why b { color: #c5d2dd; font-weight: 560; }
+
+/* "Where do I type" — the question a student asks first and the workbench
+   used to answer last, inside a collapsible. */
+.xg-where {
+  display: grid;
+  gap: 8px;
+  padding: 13px 14px;
+  border: 1px solid #2b5f7a;
+  border-radius: 9px;
+  background: #0e2434;
+}
+.xg-where-lead {
+  color: #7fd4ee;
+  font-size: 9.5px;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.xg-where-target { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
+.xg-where-symbol {
+  color: #f2f7fb;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 14px;
+}
+.xg-where-file { color: #8aa2b5; font-size: 11.5px; }
+.xg-where-jump {
+  justify-self: start;
+  padding: 6px 11px;
+  border: 1px solid #2b5f7a;
+  border-radius: 7px;
+  background: #133247;
+  color: #9be3fb;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.xg-where-jump:hover { background: #17415c; color: #cdf3ff; }
+
+.xg-block-lead {
+  color: #6f879b;
+  font-size: 9.5px;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.xg-steps { display: grid; gap: 9px; }
+.xg-steps ol { display: grid; gap: 8px; margin: 0; padding-left: 20px; }
+.xg-steps li { color: #c5d2dd; font-size: 12.5px; line-height: 1.6; }
+.xg-steps li::marker { color: #7fd4ee; font-variant-numeric: tabular-nums; }
+.xg-steps-note { color: #6f879b; font-size: 11px; font-style: italic; }
+
+/* The file map. Three rows is the whole lesson of "one algorithm → a project",
+   so it is plain text in reading order, not a collapsible. */
+.xg-files { display: grid; gap: 9px; }
+.xg-files ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.xg-file {
+  display: grid;
+  gap: 3px;
+  padding-left: 11px;
+  border-left: 1px solid #274258;
+}
+.xg-file.is-mine { border-left-color: #7fd4ee; }
+.xg-file-role { color: #8aa2b5; font-size: 10.5px; letter-spacing: .04em; }
+.xg-file.is-mine .xg-file-role { color: #9be3fb; }
+.xg-file-path {
+  color: #c5d2dd;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11.5px;
+}
+.xg-file-what { color: #7f97aa; font-size: 11.5px; line-height: 1.55; }
+
+.xg-callsite { margin: 2px 0 0; display: grid; gap: 5px; }
+.xg-callsite figcaption { color: #6f879b; font-size: 10.5px; }
+.xg-callsite pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: 9px 11px;
+  border: 1px solid #1f3a51;
+  border-radius: 7px;
+  background: #0a1b28;
+  color: #b7cbd9;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.xg-focus-list {
+  display: grid;
+  gap: 17px;
+  padding-top: 4px;
+}
+
+.xg-focus-row {
+  position: relative;
+  padding-left: 18px;
+  border-left: 1px solid #274258;
+}
+
+.xg-focus-row::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #274258;
+}
+
+.xg-focus-row.is-change::before { background: #31d7f5; }
+.xg-focus-row.is-done::before { background: #55d99d; }
+.xg-focus-row dt { color: #6f879b; font-size: 9px; letter-spacing: .11em; }
+.xg-focus-row dd { margin-top: 5px; color: #c5d2dd; font-size: 12.5px; line-height: 1.6; }
+
+.xg-product-flow {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 22px 1fr 22px 1fr;
+  align-items: center;
+  gap: 5px;
+  padding-top: 22px;
+  border-top: 1px solid #1a3048;
+  color: #8298aa;
+  font-size: 10px;
+  text-align: center;
+}
+
+.xg-product-flow b { color: #d8e4ed; font-size: 11px; }
+.xg-product-flow i { height: 1px; background: #3a586e; }
+
+.xg-origin-link {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: #31d7f5;
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-code-toolbar {
+  min-height: 42px;
+  padding-inline: 14px;
+  border-color: #1a3048;
+  background: #091524;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-file-tab {
+  min-height: 36px;
+  max-width: 240px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #778da0;
+  font-size: 11px;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-file-tab.active {
+  border-color: #31d7f5;
+  background: #101d2e;
+  color: #edf5fa;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-file-tab-lock {
+  width: 8px;
+  height: 7px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-file-tab-lock::before {
+  content: "";
+  display: block;
+  width: 5px;
+  height: 4px;
+  margin: -5px auto 0;
+  border: 1px solid currentColor;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-task-note {
+  color: #31d7f5;
+  font-size: 10px;
+}
+
+.xg-ribbon-host {
+  border-bottom: 1px solid #1a3048;
+  background: #0b1a2a;
+}
+
+.xg-ribbon {
+  min-height: 35px;
+  padding: 6px 14px;
+}
+
+.xg-ribbon-lead { color: #71899d; }
+.xg-chip { border-color: #28465d; background: #0d2133; }
+.xg-ribbon-claim { color: #8fa4b5; }
+
+#activity-workspace[data-kind="xuong"] .aw-result-col {
+  overflow: hidden;
+  background: #081423;
+}
+
+#activity-workspace[data-kind="xuong"] .aw-controls {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 0;
+}
+
+#activity-workspace[data-kind="xuong"] .xg-rail {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 43px minmax(0, 1fr);
+}
+
+#activity-workspace[data-kind="xuong"] .xg-tabs {
+  padding: 0 14px;
+  border-bottom: 1px solid #1a3048;
+  background: #091524;
+}
+
+#activity-workspace[data-kind="xuong"] .xg-tab {
+  min-height: 43px;
+  padding-inline: 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+}
+
+#activity-workspace[data-kind="xuong"] .xg-tab.is-active {
+  border-bottom-color: #31d7f5;
+  color: #edf6fb;
+}
+
+#activity-workspace[data-kind="xuong"] .xg-panel {
+  min-height: 0;
+  padding: 14px 16px 20px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: #081423;
+}
+
+.xg-prov-switch {
+  display: inline-flex;
+  width: auto;
+  padding: 3px;
+  border: 1px solid #244158;
+  border-radius: 6px;
+  background: #0b1928;
+}
+
+.xg-prov-btn { min-width: 132px; border: 0; }
+.xg-prov-btn.is-active { background: #15304a; color: #eaf6fb; }
+
+.xg-prov-badge[data-provenance="user"] {
+  justify-self: start;
+  border: 1px solid #1f7485;
+  background: #0b3640;
+  color: #4ce2f7;
+}
+
+.xg-prov-badge[data-provenance="reference"] {
+  justify-self: start;
+  border: 1px dashed #8e7341;
+  background: #282316;
+  color: #e2bc69;
+}
+
+.xp-surface {
+  display: grid;
+  gap: 13px;
+}
+
+.xp-head {
+  padding: 2px 0 6px;
+  border-bottom: 1px solid #183047;
+}
+
+.xp-stage {
+  min-height: 290px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border: 1px solid #203c52;
+  border-radius: 8px;
+  background: #07111d;
+}
+
+.xp-surface[data-xp-base="sequence"] .xp-stage {
+  min-height: 218px;
+  padding: 14px;
+}
+
+.xp-surface[data-xp-base="sequence"] .xp-windowed {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.xp-surface[data-xp-base="sequence"] .xp-windowed:not(.is-wrapped) > .xp-canvas {
+  max-width: none;
+}
+
+.xp-surface[data-xp-base="sequence"] .xp-windowed.is-wrapped > .xp-canvas {
+  max-height: none;
+}
+
+.xp-surface[data-xp-base="grid"] .xp-canvas,
+.xp-surface[data-xp-base="graph"] .xp-canvas {
+  height: clamp(230px, 32vh, 350px);
+  max-height: 350px;
+}
+
+.xp-cell { fill: #122238; stroke: #37536a; stroke-width: 1; }
+.xp-cell.is-empty { fill: #0a1421; stroke: #1c2d3d; }
+.xp-node.is-start .xp-cell,
+.xp-node.is-start circle { stroke: #31d7f5; stroke-width: 2; }
+.xp-node.is-destination .xp-cell,
+.xp-node.is-destination circle { stroke: #55d99d; stroke-width: 2; }
+.xp-node.is-blocked .xp-cell { fill: #27303b; stroke: #647383; }
+.xp-cell-badge,
+.xp-node-name { fill: #edf6fb; font: 700 11px/1 var(--font-mono, monospace); }
+.xp-cell-value {
+  fill: #79b7ee;
+  font: 600 8.5px/1 var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.xp-grid-axis {
+  fill: #607c93;
+  font: 500 8px/1 var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-grid-route line,
+.xp-edge line { stroke: #4d6578; stroke-width: 2.2; }
+.xp-grid-route.is-travelled line,
+.xp-edge.is-travelled line { stroke: #31d7f5; stroke-width: 3; }
+.xp-grid-route.is-anchored line,
+.xp-edge.is-anchored line { stroke: #ff5b63; stroke-width: 3; stroke-dasharray: 5 3; }
+
+.xp-anchor-card {
+  border-radius: 6px;
+  background: #24151b;
+}
+
+.xp-anchor,
+.xp-anchor-replay {
+  background: transparent;
+}
+
+.xg-build-drawer {
+  flex: none;
+  border-top: 1px solid #1a3048;
+  background: #081423;
+}
+
+.xg-build-summary {
+  width: 100%;
+  min-height: 39px;
+  display: grid;
+  grid-template-columns: 16px auto 1fr auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: #9db0c0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.xg-build-summary b { color: #dce7ee; font-size: 11px; font-weight: 560; }
+.xg-build-summary i { height: 1px; background: #20394d; }
+.xg-build-summary strong { color: #849caf; font-size: 11px; font-weight: 520; }
+.xg-build-summary time { color: #60798e; font: 10px/1 var(--font-mono, monospace); }
+.xg-build-drawer[data-state="ok"] .xg-build-summary strong { color: #55d99d; }
+.xg-build-drawer[data-state="compile-error"] .xg-build-summary strong,
+.xg-build-drawer[data-state="runtime-error"] .xg-build-summary strong { color: #ff666e; }
+.xg-build-drawer > pre {
+  max-height: 120px;
+  margin: 0;
+  overflow: auto;
+  padding: 10px 40px;
+  border-top: 1px solid #192f42;
+  color: #efb1b4;
+  font: 11px/1.55 var(--font-mono, monospace);
+  white-space: pre-wrap;
+}
+
+@media (min-width: 1800px) {
+  #activity-workspace[data-kind="xuong"] .aw-body {
+    grid-template-columns: 320px minmax(580px, 1fr) 600px;
+  }
+}
+
+@media (max-width: 1439px) {
+  #activity-workspace[data-kind="xuong"] .aw-body {
+    grid-template-columns: 285px minmax(430px, 1fr) 460px;
+  }
+  .xg-focus-mission { font-size: 20px; }
+}
+.xg-code-bridge {
+  margin: 24px 0 18px;
+  border-block: 1px solid color-mix(in srgb, var(--line, #24364d) 82%, transparent);
+  padding: 14px 0 16px;
+}
+
+.xg-code-bridge summary {
+  color: #d9e8f7;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.xg-code-bridge summary code {
+  color: #5fd9ff;
+  font-family: var(--font-mono, monospace);
+  text-transform: none;
+}
+
+.xg-code-bridge > p {
+  color: #9fb0c2;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 12px 0;
+}
+
+.xg-edit-target {
+  align-items: start;
+  background: #071522;
+  border: 1px solid #23506a;
+  border-radius: 5px;
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 10px 11px;
+}
+
+.xg-edit-target > span {
+  color: #65def6;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.xg-edit-target > code {
+  color: #f1f7fb;
+  font: 700 11px/1.45 var(--font-mono, monospace);
+  overflow-wrap: anywhere;
+}
+
+.xg-edit-target > small {
+  color: #788da1;
+  font: 10px/1.4 var(--font-mono, monospace);
+}
+
+.xg-edit-target > button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #63ddf6;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  justify-self: start;
+  margin-top: 3px;
+  padding: 0;
+}
+
+.xg-edit-target > button:hover {
+  color: #b7f3ff;
+}
+
+.xg-code-bridge > pre {
+  background: #071320;
+  border-left: 2px solid #23c9ee;
+  color: #d8e9f6;
+  font: 11px/1.6 var(--font-mono, monospace);
+  margin: 12px 0;
+  overflow: auto;
+  padding: 11px 12px;
+  white-space: pre-wrap;
+}
+
+.xg-edit-guide {
+  margin: 14px 0;
+  border: 1px solid #21445d;
+  border-left: 3px solid #31d7f5;
+  border-radius: 5px;
+  background: #0a1a29;
+  padding: 11px 12px 10px;
+}
+
+.xg-edit-guide > span {
+  color: #67ddf5;
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.xg-edit-guide ol {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.xg-edit-guide li {
+  color: #d4e1eb;
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding-left: 2px;
+}
+
+.xg-edit-guide li::marker {
+  color: #31d7f5;
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+}
+
+.xg-file-roles {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+}
+
+.xg-file-roles > div {
+  border-top: 1px solid rgba(130, 158, 187, .14);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 88px 1fr;
+  padding: 9px 0;
+}
+
+.xg-file-roles dt {
+  color: #66dcf5;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.xg-file-roles dd {
+  color: #91a4b7;
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+}

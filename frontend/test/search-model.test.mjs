@@ -26,7 +26,7 @@ test("normalizeSearchResults rejects absent/malformed payloads (→ local fallba
   assert.deepEqual(items[0].reasons.map((r) => r.length <= 120), [true, true]);
 });
 
-test("all backend search filters serialize while the Library direction stays local", () => {
+test("catalog search serializes canonical tracks", () => {
   assert.deepEqual(buildSearchParams({
     search: "dijkstra", status: "learning", track: "verified-artifact",
     concept: "dijkstra", provider: "local", collection: "speedrun",
@@ -36,7 +36,7 @@ test("all backend search filters serialize while the Library direction stays loc
     concept: "dijkstra", provider: "local", collection: "speedrun",
     minRating: 1200, maxRating: 1600,
   });
-  assert.deepEqual(buildSearchParams({ search: "dijkstra", track: "build" }), { q: "dijkstra" });
+  assert.deepEqual(buildSearchParams({ search: "dijkstra", track: "algorithm-engineering" }), { q: "dijkstra", track: "algorithm-engineering" });
   assert.equal(searchQueryString({ search: "a b" }), "q=a+b");
 });
 
@@ -45,15 +45,15 @@ test("applyLocalFilters applies hướng/source/topics over server rows", () => 
     { id: "m1", activityKind: "algorithm-module", title: "RangeSum" },
     { id: "p1", title: "Bài thường", source: "cses" },
   ];
-  assert.deepEqual(applyLocalFilters(rows, { track: "build" }).map((r) => r.id), ["m1"]);
+  assert.deepEqual(applyLocalFilters(rows, { track: "algorithm-engineering" }).map((r) => r.id), ["m1"]);
   assert.deepEqual(applyLocalFilters(rows, { source: "cses" }).map((r) => r.id), ["p1"]);
   assert.equal(applyLocalFilters(rows, {}).length, 2);
 });
 
 test("trackOf: only algorithm-module rows belong to hướng Thuật toán & ứng dụng", () => {
-  assert.equal(trackOf({ activityKind: "algorithm-module" }), "build");
-  assert.equal(trackOf({ activityKind: "competitive-problem" }), "compete");
-  assert.equal(trackOf({}), "compete");
+  assert.equal(trackOf({ activityKind: "algorithm-module" }), "algorithm-engineering");
+  assert.equal(trackOf({ activityKind: "competitive-problem" }), "competitive");
+  assert.equal(trackOf({}), "competitive");
 });
 
 test("localReasons names the actual matched field, honestly, max 2", () => {

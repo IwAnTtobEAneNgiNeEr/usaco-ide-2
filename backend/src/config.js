@@ -5,6 +5,20 @@ const path = require("path");
 // backend/src/config.js  ->  project root is two levels up.
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
 
+// Test-safety guard (belt-and-suspenders with test/_isolate-workspace.js):
+// the node test runner sets NODE_TEST_CONTEXT in every worker. If a test is
+// running and nobody pinned USACO_IDE_USER_DATA_DIR, redirect the whole
+// user-data root to a throwaway temp dir so no test — however it's launched
+// (`npm test`, `node --test file`, an IDE runner) — can ever create garbage
+// problems/projects in the real workspace. This class of leak has recurred
+// three times; making it structurally impossible ends it.
+if (process.env.NODE_TEST_CONTEXT && !process.env.USACO_IDE_USER_DATA_DIR) {
+  const os = require("os");
+  const dir = path.join(os.tmpdir(), "usaco-ide-2-test", `auto-${process.pid}`);
+  require("fs").mkdirSync(dir, { recursive: true });
+  process.env.USACO_IDE_USER_DATA_DIR = dir;
+}
+
 const USER_DATA_ROOT = process.env.USACO_IDE_USER_DATA_DIR
   ? path.resolve(process.env.USACO_IDE_USER_DATA_DIR)
   : PROJECT_ROOT;
@@ -13,10 +27,14 @@ const FRONTEND_DIR = path.join(PROJECT_ROOT, "frontend");
 const WORKSPACE_DIR = path.join(USER_DATA_ROOT, "workspace");
 const PROBLEMS_DIR = path.join(WORKSPACE_DIR, "problems");
 const CONTESTS_DIR = path.join(WORKSPACE_DIR, "contests");
+const XUONG_DIR = path.join(WORKSPACE_DIR, "xuong");
+const APPLICATION_PROJECTS_DIR = path.join(XUONG_DIR, "projects");
+const APPLICATION_SESSIONS_DIR = path.join(XUONG_DIR, "sessions");
 const DATA_DIR = path.join(USER_DATA_ROOT, "data");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const AI_SETTINGS_FILE = path.join(DATA_DIR, "ai-settings.json");
 const ILLUSTRATION_CACHE_FILE = path.join(DATA_DIR, "illustration-cache.json");
+const XUONG_ANALYSIS_CACHE_FILE = path.join(DATA_DIR, "xuong-analysis-cache.json");
 // The user's personal C++ starter for new problems (Settings → Code template).
 // A plain file (not JSON) so it can also be edited in any editor; when absent
 // or blank, DEFAULT_TEMPLATE below applies.
@@ -115,6 +133,11 @@ const FILE_KINDS = Object.freeze({
   expected: "expected.txt",
   notes: "notes.md",
   statement: "statement.md",
+  // Language variants deliberately live beside the canonical statement.  The
+  // canonical file stays the input to the existing judge/AI pipeline while the
+  // variants let a learner switch language without losing the imported source.
+  statementEn: "statement.en.md",
+  statementVi: "statement.vi.md",
   mistakes: "mistakes.md",
   checker: "checker.cpp", // per-problem special judge (SPJ); used when meta.usesChecker is on
   chat: "chat.json",   // per-problem AI Coach conversation (post-timer mini-chat)
@@ -196,9 +219,13 @@ module.exports = {
   WORKSPACE_DIR,
   PROBLEMS_DIR,
   CONTESTS_DIR,
+  XUONG_DIR,
+  APPLICATION_PROJECTS_DIR,
+  APPLICATION_SESSIONS_DIR,
   DATA_DIR,
   SETTINGS_FILE,
   AI_SETTINGS_FILE,
+  XUONG_ANALYSIS_CACHE_FILE,
   ILLUSTRATION_CACHE_FILE,
   TEMPLATE_FILE,
   HOST,

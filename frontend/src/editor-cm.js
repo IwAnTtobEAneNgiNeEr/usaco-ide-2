@@ -770,6 +770,10 @@ function createSemanticTokenHighlighter(CM) {
   const constantMark = CM.Decoration.mark({ class: "cm-syntax-constant" });
   const macroMark = CM.Decoration.mark({ class: "cm-syntax-macro" });
   const headerMark = CM.Decoration.mark({ class: "cm-syntax-header" });
+  // Keep built-in C++ types stable even when the parser tags them as a
+  // generic identifier/typeName. This prevents `int` from inheriting the
+  // colour of stdlib symbols or semantic variable decorations.
+  const typeMark = CM.Decoration.mark({ class: "cm-syntax-type" });
 
   const ALL_CAPS_RE = /^(?:[A-Z][A-Z0-9_]*|_[A-Z0-9_]+)$/;
   const NON_FUNCTION = new Set([
@@ -937,6 +941,13 @@ function createSemanticTokenHighlighter(CM) {
           }
 
           markFunctionCalls(collector, text, lineFrom);
+          const typeRe = /\b[A-Za-z_]\w*\b/g;
+          let typeMatch;
+          while ((typeMatch = typeRe.exec(text))) {
+            if (TYPE_WORDS.has(typeMatch[0])) {
+              collector.add(lineFrom + typeMatch.index, lineFrom + typeMatch.index + typeMatch[0].length, typeMark);
+            }
+          }
           const activeLocals = scopeStack.length ? scopeStack[scopeStack.length - 1].locals : new Set();
           const declaration = markDeclarations(collector, text, lineFrom, braceDepth, paramsInScope, globals, activeLocals, arrays);
           markSymbolUsages(collector, text, lineFrom, paramsInScope, globals, localsInScope, arrays);

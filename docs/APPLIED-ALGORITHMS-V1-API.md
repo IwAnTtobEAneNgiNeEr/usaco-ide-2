@@ -319,6 +319,10 @@ Unreachable response uses `{ "reachable": false, "distance": null, "path": [] }`
 
 Each call compiles/runs the current saved WeightedGraphRouter module with the supplied input. Repeated calls are isolated and deterministic; changing graph weights or endpoints executes the module again. The backend does not hard-code route results and does not use AI-generated output.
 
+### Route Planner placement (V1)
+
+Route Planner is a contextual capability of `WeightedGraphRouter`, not an independent Library destination. The catalog may retain its `activityKind: "applied-simulation"` record for internal linking, but Library does not render it as a row and Home does not recommend it. The WeightedGraphRouter workspace exposes the planner and keeps source, tests, and verify reachable. A future standalone simulation needs its own Brief → Work → Verify → Feedback → Evolve lifecycle.
+
 ## Error envelope and compatibility
 
 All errors use the existing envelope:

@@ -8,7 +8,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --require ./test/_isolate-workspace.js --test --test-concurrency=2 \"test/**/*.test.js\"",
+    "analyze-events": "node ../scripts/analyze-events.js"
   },
   "engines": {
     "node": ">=18"

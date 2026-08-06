@@ -2070,3 +2070,22 @@ body,
     letter-spacing: 0 !important;
   }
 }
+
+/* Compact native controls: reliable for keyboard and desktop-app users. */
+.language-select,
+.statement-language-mode {
+  min-height: 30px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: 500 var(--text-caption)/1 var(--sans);
+  padding: 0 8px;
+}
+.language-select:focus-visible,
+.statement-language-mode:focus-visible { outline: none; box-shadow: var(--ring); }
+.statement-language-mode { max-width: 176px; }
+@media (max-width: 1100px) {
+  .language-select { max-width: 76px; }
+  .statement-language-mode { max-width: 138px; }
+}

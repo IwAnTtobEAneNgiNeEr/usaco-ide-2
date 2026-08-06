@@ -20,9 +20,9 @@
        The order is intentional. Consolidating these into tokens/layout/components is a
        tracked roadmap item; see README "Frontend styling". -->
   <link rel="stylesheet" href="./styles/main.css?v=3.3" />
-  <link rel="stylesheet" href="./styles/features.css?v=2.8" />
+  <link rel="stylesheet" href="./styles/features.css?v=2.9" />
   <link rel="stylesheet" href="./styles/theme.css?v=2.3" />
-  <link rel="stylesheet" href="./styles/journey.css?v=3.5" />
+  <link rel="stylesheet" href="./styles/journey.css?v=3.6" />
   <link rel="stylesheet" href="./styles/polish.css?v=2.3" />
   <link rel="stylesheet" href="./styles/refine.css?v=3.1" />
   <link rel="stylesheet" href="./styles/lux.css?v=2.4" />
@@ -38,7 +38,8 @@
        token-driven, loaded BEFORE tokens.css so tokens stay authoritative. -->
   <link rel="stylesheet" href="./styles/arena.css?v=1.4" />
   <!-- Canonical coding surface shared by Core Fill, Debug tốc độ, Contest and Stress. -->
-  <link rel="stylesheet" href="./styles/activity-workspace.css?v=1.7" />
+  <link rel="stylesheet" href="./styles/activity-workspace.css?v=2.4" />
+  <link rel="stylesheet" href="./styles/xuong.css?v=3.0" />
   <!-- tokens.css — THE design system. Loaded LAST so it is the authoritative
        source of truth for every global --token. See docs/DESIGN-SYSTEM.md. -->
   <link rel="stylesheet" href="./styles/modules.css?v=1.0" />
@@ -94,16 +95,16 @@
       </div>
       <span class="topbar-sep"></span>
       <span id="compiler-pill" class="pill pill-muted" title="Compiler status">g++ …</span>
-      <button id="btn-run" class="btn btn-run" disabled>Run <kbd>Ctrl·↵</kbd></button>
-      <button id="btn-judge" class="btn btn-judge" disabled>Judge <kbd>Ctrl·⇧·↵</kbd></button>
-      <button id="btn-zen" class="btn btn-ghost btn-sm" title="Chế độ tập trung (Alt+Z)">Zen</button>
+      <button id="btn-run" class="btn btn-run" disabled><span data-i18n="run">Chạy</span> <kbd>Ctrl·↵</kbd></button>
+      <button id="btn-judge" class="btn btn-judge" disabled><span data-i18n="judge">Chấm</span> <kbd>Ctrl·⇧·↵</kbd></button>
+      <button id="btn-zen" class="btn btn-ghost btn-sm" title="Chế độ tập trung (Alt+Z)" data-i18n="zen">Tập trung</button>
       <!-- Secondary tools tucked behind a single "More" menu -->
       <div class="ov-menu" id="more-menu">
         <button class="btn btn-ghost btn-icon btn-sm ov-trigger" title="Thêm" aria-haspopup="true">⋯</button>
         <div class="ov-panel">
           <button id="btn-dashboard" class="btn btn-ghost btn-sm" title="Tiến độ &amp; thống kê">Thống kê</button>
           <button id="btn-corefill" class="btn btn-ghost btn-sm" title="Điền Lõi — AI viết sẵn lời giải, em điền đúng đoạn tư duy cốt lõi">🧩 Điền Lõi</button>
-          <button id="btn-rush" class="btn btn-ghost btn-sm" title="Luyện debug tốc độ — sửa bug tính giờ, riêng biệt với bài đang làm">⚡ Luyện debug tốc độ</button>
+          <button id="btn-rush" class="btn btn-ghost btn-sm hidden" title="Luyện debug tốc độ — sửa bug tính giờ, riêng biệt với bài đang làm">⚡ Luyện debug tốc độ</button>
           <button id="btn-guide" class="btn btn-ghost btn-sm" title="Hướng dẫn sử dụng IDE">Hướng dẫn</button>
           <button id="btn-shortcuts-help" class="btn btn-ghost btn-sm" title="Bảng phím tắt (?)">Phím tắt</button>
         </div>
@@ -117,27 +118,22 @@
     <!-- ---------- Left: Problem Explorer ---------- -->
     <aside class="col col-problems">
       <div class="col-head">
-        <span class="col-title">Bài tập</span>
-        <button id="btn-new" class="btn btn-ghost btn-sm" title="Tạo bài mới (Ctrl+N)">+ Bài mới</button>
+        <span class="col-title" data-i18n="problems">Bài tập</span>
+        <button id="btn-new" class="btn btn-ghost btn-sm" title="Tạo bài mới (Ctrl+N)" data-i18n="newProblem">+ Bài mới</button>
       </div>
 
       <div class="explorer-filters">
-        <input id="search" class="input" type="search" placeholder="Tìm theo tên / chủ đề…" autocomplete="off" />
-        <div id="track-row" class="track-row" role="group" aria-label="Hướng công việc">
-          <button type="button" class="track-btn active" data-track="" title="Cả hai hướng công việc">Tất cả</button>
-          <button type="button" class="track-btn" data-track="competitive" title="Luyện thi — giải đề trong giới hạn, Judge xác minh">Luyện thi</button>
-          <button type="button" class="track-btn" data-track="algorithm-engineering" title="Thuật toán &amp; ứng dụng — module phát triển từ bài đã AC">Thuật toán &amp; ứng dụng</button>
-        </div>
+        <input id="search" class="input" type="search" placeholder="Tìm theo tên / chủ đề…" data-i18n-placeholder="search" autocomplete="off" />
         <div class="filter-row">
-          <select id="filter-source" class="select"><option value="">Tất cả nguồn</option></select>
+          <select id="filter-source" class="select"><option value="" data-i18n="allSources">Tất cả nguồn</option></select>
           <select id="filter-status" class="select">
-            <option value="">Mọi trạng thái</option>
+            <option value="" data-i18n="allStatuses">Mọi trạng thái</option>
             <option value="learning">Đang học</option>
             <option value="review">Cần ôn</option>
             <option value="solved">Đã giải</option>
           </select>
           <select id="filter-difficulty" class="select">
-            <option value="">Mọi độ khó</option>
+            <option value="" data-i18n="allDifficulties">Mọi độ khó</option>
             <option value="easy">Dễ</option>
             <option value="medium">Vừa</option>
             <option value="hard">Khó</option>
@@ -151,7 +147,7 @@
         <span id="problem-count">0 problems</span>
         <div style="display: flex; gap: 6px;">
           <button id="btn-random" class="btn btn-ghost btn-sm" title="Tạo bài từ chủ đề 5–10 bài gần nhất và Elo hiện tại">Bài phù hợp</button>
-          <button id="btn-contests" class="btn btn-ghost btn-sm" title="Trình tạo cuộc thi bằng AI">Cuộc thi</button>
+          <button id="btn-contests" class="btn btn-ghost btn-sm hidden" title="Trình tạo cuộc thi bằng AI">Cuộc thi</button>
         </div>
       </div>
     </aside>
@@ -172,11 +168,11 @@
           </div>
           <div class="editor-meta-actions">
             <div class="mode-toggle" id="layout-mode-toggle" title="Chế độ bố cục — Code / Đề + Code / Đề bài (Ctrl+Shift+M để chuyển vòng)">
-              <button class="mode-btn active" data-mode="coding" type="button">Code</button>
-              <button class="mode-btn" data-mode="split" type="button" title="Đề bài và code cạnh nhau — không phải mở đi mở lại đề">⊟ Đề + Code</button>
-              <button class="mode-btn" data-mode="reading" type="button">Đề bài</button>
+              <button class="mode-btn active" data-mode="coding" type="button" data-i18n="coding">Code</button>
+              <button class="mode-btn" data-mode="split" type="button" title="Đề bài và code cạnh nhau" data-i18n="split">⊟ Đề + Code</button>
+              <button class="mode-btn" data-mode="reading" type="button" data-i18n="reading">Đề bài</button>
             </div>
-            <button id="btn-edit-meta" class="btn btn-ghost btn-sm">Sửa thông tin</button>
+            <button id="btn-edit-meta" class="btn btn-ghost btn-sm" data-i18n="editInfo">Sửa thông tin</button>
           </div>
         </div>
 
@@ -224,23 +220,27 @@
           <div class="problem-scroll">
             <section class="prob-block">
               <div class="prob-head">
-                <span class="prob-label">Statement</span>
+                <span class="prob-label" data-i18n="statement">Đề bài</span>
                 <div class="stmt-mode-toggle" id="stmt-mode-toggle">
-                  <button class="stmt-mode-btn active" data-mode="read" type="button" title="Đọc đề (Read)">Read</button>
-                  <button class="stmt-mode-btn" data-mode="edit" type="button" title="Sửa đề (Edit / Markdown)">Edit</button>
+                  <button class="stmt-mode-btn active" data-mode="read" type="button" title="Đọc đề" data-i18n="read">Đọc</button>
+                  <button class="stmt-mode-btn" data-mode="edit" type="button" title="Sửa đề (Markdown)" data-i18n="edit">Sửa</button>
                 </div>
+                <select id="statement-language-mode" class="statement-language-mode" aria-label="Statement language">
+                  <option value="follow" data-i18n="followInterface">Theo ngôn ngữ giao diện</option>
+                  <option value="source" data-i18n="sourceStatement">Giữ nguyên đề gốc</option>
+                </select>
                 <div class="prob-actions">
-                  <button id="btn-upload-image" class="btn btn-ghost btn-sm" title="Tải ảnh hoặc PDF">⤴ Image / PDF</button>
-                  <button id="btn-paste-image" class="btn btn-ghost btn-sm" title="Dán ảnh chụp màn hình">Dán ảnh</button>
-                  <button id="btn-save-statement" class="btn btn-ghost btn-sm">Save</button>
-                  <button id="btn-clear-statement" class="btn btn-ghost btn-sm">Clear</button>
+                  <button id="btn-upload-image" class="btn btn-ghost btn-sm" title="Tải ảnh hoặc PDF" data-i18n="imagePdf">Ảnh / PDF</button>
+                  <button id="btn-paste-image" class="btn btn-ghost btn-sm" title="Dán ảnh chụp màn hình" data-i18n="pasteImage">Dán ảnh</button>
+                  <button id="btn-save-statement" class="btn btn-ghost btn-sm" data-i18n="save">Lưu</button>
+                  <button id="btn-clear-statement" class="btn btn-ghost btn-sm" data-i18n="clear">Xóa</button>
                 </div>
               </div>
               <input type="file" id="image-file" accept="image/png,image/jpeg,image/webp,application/pdf" hidden />
               <div id="statement-status" class="prob-status">Dán ảnh (Ctrl+V), tải ảnh/PDF, hoặc gõ đề bài — AI sẽ tự phân tích &amp; tạo test.</div>
               <article id="statement-rendered" class="statement-page"></article>
               <textarea id="io-statement" class="prob-statement-edit hidden" spellcheck="false"
-                placeholder="Dán đề bài ở đây (Markdown được hỗ trợ), hoặc dán ảnh chụp màn hình (Ctrl+V)…"></textarea>
+                placeholder="Dán đề bài ở đây (Markdown được hỗ trợ), hoặc dán ảnh chụp màn hình (Ctrl+V)…" data-i18n-placeholder="inputStatement"></textarea>
               <div class="prob-actions prob-actions-run">
                 <button id="btn-ai-template" class="btn btn-ai btn-sm" type="button">＋ Sinh Template</button>
                 <button id="btn-analyze" class="btn btn-ai btn-sm" type="button">⌕ Phân tích lại</button>
@@ -265,11 +265,11 @@
       <div class="panel-resizer" id="panel-resizer" title="Kéo để đổi độ rộng · nhấp đúp để về mặc định" aria-hidden="true"></div>
       <nav class="panel-tabs" id="panel-tabs">
         <button class="tab" data-tab="run">Run</button>
-        <button class="tab" data-tab="tests">Tests</button>
-        <button class="tab" data-tab="notes">Notes</button>
-        <button class="tab" data-tab="coach">Coach</button>
-        <button class="tab" data-tab="history">History</button>
-        <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="tests" data-i18n="tests">Test</button>
+        <button class="tab" data-tab="notes" data-i18n="notes">Ghi chú</button>
+        <button class="tab" data-tab="coach" data-i18n="coach">Trợ giảng</button>
+        <button class="tab" data-tab="history" data-i18n="history">Lịch sử</button>
+        <button class="tab" data-tab="settings" data-i18n="settings">Cài đặt</button>
       </nav>
 
       <div class="panel-bodies">
@@ -319,9 +319,6 @@
                 <button id="btn-coach-ask" class="btn btn-ai btn-sm rc-coach-ask hidden" type="button" title="Hỏi AI Coach về kết quả này">Hỏi Coach</button>
               </div>
 
-              <!-- Post-verdict rail: contextual next moves (Game Review / Pháp y / Coach / Lab…). -->
-              <div id="verdict-rail" class="verdict-rail hidden"></div>
-
               <div class="term-section term-grow">
                 <div class="term-section-head" style="display:flex; justify-content:space-between; align-items:center;">
                   <span>STDOUT</span>
@@ -348,6 +345,10 @@
               </div>
             </div>
           </div>
+
+          <!-- Post-verdict rail: contextual next moves (Game Review / Pháp y / Coach / Lab…).
+               Lives outside .term so overflow: hidden on .term does not clip tall cards. -->
+          <div id="verdict-rail" class="verdict-rail hidden"></div>
         </section>
 
         <!-- ===== TEST SUITE ===== -->
@@ -684,6 +685,6 @@
   <!-- Toast host -->
   <div id="toast-host" class="toast-host"></div>
 
-  <script type="module" src="./src/main.js?v=6.8"></script>
+  <script type="module" src="./src/main.js?v=8.3"></script>
 </body>
 </html>

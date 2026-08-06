@@ -1,16 +1,12 @@
 // search-model.js — pure logic for the Smart Library search/filter (B1).
 //
-// Real contract (backend/src/routes/problems.js + smartContent.searchProblems):
-//   GET /api/problems/search?q=…&status=…&concept=…&provider=…&collection=…
+// Real contract (backend/src/routes/catalog.js + smartContent.searchProblems):
+//   GET /api/catalog/search?q=…&track=…&status=…&concept=…&provider=…&collection=…
 //   → { results: [ { …problem summary, track, concept, rating,
 //        whyMatched: [string], matchScore } ], filters }
 //
-// `whyMatched` is the server's own "Vì sao khớp". NOTE the server's `track`
-// means "verified-artifact content" — NOT the Library's two hướng (compete/
-// build by activityKind) — so the Library never sends its own track and keeps
-// applying hướng/source/difficulty/topics locally over server results. When
-// the endpoint is absent the Library falls back to LOCAL filtering with
-// locally computed (and locally worded) match reasons — no fake relevance.
+// `whyMatched` is the server's own "Vì sao khớp". Track is canonical across
+// Search, Library, Home, recommendations and feedback.
 
 // Normalize a topic/tag for tolerant matching: "Binary Search" /
 // "binary_search" → "binarysearch". (Moved from problems.js; re-exported there.)
@@ -19,7 +15,7 @@ export function normTopic(s) {
 }
 
 export function trackOf(p) {
-  return p && p.activityKind === "algorithm-module" ? "build" : "compete";
+  return p && p.activityKind === "algorithm-module" ? "algorithm-engineering" : "competitive";
 }
 
 export function matchesFilters(p, f) {
@@ -40,8 +36,7 @@ export function matchesFilters(p, f) {
 
 // Query params for the real search endpoint. The current compact Library UI
 // supplies q/status; explicit contract consumers may also supply every
-// supported metadata/rating filter. The Library's visual compete/build switch
-// remains local because it is not the backend catalog's `track` vocabulary.
+// supported metadata/rating filter.
 export function buildSearchParams(filters) {
   const out = {};
   if (filters.search) out.q = filters.search;
@@ -49,8 +44,6 @@ export function buildSearchParams(filters) {
   for (const key of ["track", "concept", "provider", "collection", "minRating", "maxRating"]) {
     if (filters[key] !== "" && filters[key] != null) out[key] = filters[key];
   }
-  // Do not send the Library-only track ids as backend catalog track filters.
-  if (out.track === "compete" || out.track === "build") delete out.track;
   return out;
 }
 
@@ -106,7 +99,7 @@ export function localReasons(p, filters) {
   if (has(p.concept)) reasons.push(`concept: ${p.concept}`);
   const tag = (p.tags || []).find((t) => has(t));
   if (tag) reasons.push(`tag: ${tag}`);
-  if (has(p.provider) || has(p.collection)) reasons.push(`nguồn: ${[p.provider, p.collection].filter(Boolean).join(" › ")}`);
-  else if (has(p.source)) reasons.push(`nguồn: ${p.source}`);
+  // Provider/collection are catalog internals; never repeat them in learner UI.
+  if (has(p.source)) reasons.push(`nguồn: ${p.source}`);
   return reasons.slice(0, 2);
 }

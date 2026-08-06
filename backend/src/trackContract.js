@@ -42,12 +42,19 @@ function normalizeActivityKind(value) {
 }
 
 function normalizeTrack(value, activityKind) {
-  const alias = TRACK_ALIASES[key(value)];
-  if (alias) return alias;
   const kind = normalizeActivityKind(activityKind);
-  return kind === ACTIVITY_KINDS.COMPETITIVE_PROBLEM
-    ? TRACKS.COMPETITIVE
-    : TRACKS.ALGORITHM_ENGINEERING;
+  // A competitive problem never becomes an engineering destination merely
+  // because old metadata called it a "verified-artifact". Its activity owns
+  // the product track; module and simulation artifacts own the other track.
+  if (kind === ACTIVITY_KINDS.COMPETITIVE_PROBLEM) return TRACKS.COMPETITIVE;
+  const alias = canonicalTrackInput(value);
+  return alias || TRACKS.ALGORITHM_ENGINEERING;
+}
+
+// Compatibility belongs at the API boundary. Unknown values stay unknown so
+// legacy non-catalog recommendation requests retain their old behavior.
+function canonicalTrackInput(value) {
+  return TRACK_ALIASES[key(value)] || null;
 }
 
 function normalizeCatalogItem(item = {}) {
@@ -63,6 +70,7 @@ module.exports = {
   TRACKS,
   ACTIVITY_KINDS,
   TRACK_ALIASES,
+  canonicalTrackInput,
   normalizeActivityKind,
   normalizeTrack,
   normalizeCatalogItem,

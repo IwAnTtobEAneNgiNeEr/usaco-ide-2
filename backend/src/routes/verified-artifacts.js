@@ -7,7 +7,6 @@ const verifiedArtifact = require("../verifiedArtifact");
 const bfsTrace = require("../bfsTrace");
 const dijkstraTrace = require("../dijkstraTrace");
 const prefixSumTrace = require("../prefixSumTrace");
-const derivedArtifactStore = require("../derivedArtifactStore");
 const { asyncHandler, requireProblem } = require("./_util");
 
 const router = express.Router();
@@ -79,67 +78,6 @@ router.post("/:id/analysis/dijkstra-trace", requireProblem, asyncHandler(async (
 
 router.post("/:id/analysis/prefix-sum-trace", requireProblem, asyncHandler(async (req, res) => {
   return evidenceBoundAnalysis(req, res, prefixSumTrace.tracePrefixSum);
-}));
-
-router.get("/:id/derived", requireProblem, asyncHandler(async (req, res) => {
-  res.json({ artifacts: await derivedArtifactStore.listArtifacts(req.problemId) });
-}));
-
-router.post("/:id/derived/grid-pathfinder", requireProblem, asyncHandler(async (req, res) => {
-  const evidenceId = req.body && req.body.evidenceId;
-  if (!evidenceId) return res.status(400).json({ error: "Thiếu AC evidenceId để tạo derived artifact." });
-  const artifact = await derivedArtifactStore.createGridPathfinder(req.problemId, evidenceId);
-  res.status(201).json({ artifact });
-}));
-
-router.post("/:id/derived/weighted-graph-router", requireProblem, asyncHandler(async (req, res) => {
-  const evidenceId = req.body && req.body.evidenceId;
-  if (!evidenceId) return res.status(400).json({ error: "Missing AC evidenceId for WeightedGraphRouter." });
-  const artifact = await derivedArtifactStore.createWeightedGraphRouter(req.problemId, evidenceId);
-  res.status(201).json({ artifact });
-}));
-
-router.post("/:id/derived/range-sum-module", requireProblem, asyncHandler(async (req, res) => {
-  const evidenceId = req.body && req.body.evidenceId;
-  if (!evidenceId) return res.status(400).json({ error: "Missing AC evidenceId for RangeSum." });
-  const artifact = await derivedArtifactStore.createRangeSumModule(req.problemId, evidenceId);
-  res.status(201).json({ artifact });
-}));
-
-router.get("/:id/derived/:artifactId", requireProblem, asyncHandler(async (req, res) => {
-  const artifact = await derivedArtifactStore.getArtifact(req.problemId, req.params.artifactId);
-  if (!artifact) return res.status(404).json({ error: "Derived artifact không tồn tại." });
-  res.json({ artifact });
-}));
-
-// Applied Algorithms v1 naming alias; the existing /derived route remains compatible.
-router.get("/:id/derived-artifacts/:artifactId", requireProblem, asyncHandler(async (req, res) => {
-  const artifact = await derivedArtifactStore.getArtifact(req.problemId, req.params.artifactId);
-  if (!artifact) return res.status(404).json({ error: "Derived artifact does not exist." });
-  res.json({ artifact });
-}));
-
-router.get("/:id/derived/:artifactId/source", requireProblem, asyncHandler(async (req, res) => {
-  res.json(await derivedArtifactStore.readSource(req.problemId, req.params.artifactId));
-}));
-
-router.put("/:id/derived/:artifactId/source", requireProblem, asyncHandler(async (req, res) => {
-  const source = req.body && (req.body.source != null ? req.body.source : req.body.content);
-  res.json({ artifact: await derivedArtifactStore.saveSource(req.problemId, req.params.artifactId, source) });
-}));
-
-router.post("/:id/derived/:artifactId/verify", requireProblem, asyncHandler(async (req, res) => {
-  const suite = req.body && req.body.suite || "baseline";
-  res.json(await derivedArtifactStore.verifyArtifact(req.problemId, req.params.artifactId, suite));
-}));
-
-router.post("/:id/derived/:artifactId/requirement-changes/:changeId/activate", requireProblem, asyncHandler(async (req, res) => {
-  const artifact = await derivedArtifactStore.activateRequirementChange(
-    req.problemId,
-    req.params.artifactId,
-    req.params.changeId
-  );
-  res.json({ artifact });
 }));
 
 module.exports = router;

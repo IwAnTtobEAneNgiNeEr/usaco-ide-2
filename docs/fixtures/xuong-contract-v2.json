@@ -1,0 +1,210 @@
+{
+  "contractVersion": "xuong-api.v2",
+  "fixtures": {
+    "mazeReference": {
+      "reference": {
+        "type": "reference-storyboard",
+        "id": "ref-maze-navigator-v1",
+        "projectId": "project-maze-navigator",
+        "display": {
+          "label": "Mẫu hành vi: tìm đường sau khi có tường mới",
+          "description": "Bản tham chiếu của Xưởng, không chạy code của em."
+        },
+        "scenario": {
+          "id": "maze-wall-detour",
+          "display": { "label": "Tường chặn lối cũ" },
+          "inputSummary": "Bản đồ 5×5, thêm tường tại ô (2,2)."
+        },
+        "recipe": {
+          "schemaVersion": "xuong.preview-recipe.v2",
+          "base": { "kind": "grid", "display": { "label": "Bản đồ di chuyển" } },
+          "overlays": [
+            { "kind": "path", "display": { "label": "Đường đang chọn" } },
+            { "kind": "target", "display": { "label": "Đích cần đến" } }
+          ],
+          "controlPack": { "kind": "none", "display": { "label": "Mẫu từng bước" } },
+          "layout": { "kind": "focus", "display": { "label": "Tập trung vào bản đồ" } },
+          "inspector": { "alwaysAvailable": true, "display": { "label": "Chi tiết lần chạy" } }
+        },
+        "frames": [
+          {
+            "id": "reference-detour",
+            "caption": "Khi lối cũ bị chặn, sản phẩm phải chọn một đường vòng hợp lệ.",
+            "highlightMappingIds": ["map-shortest-route"],
+            "observable": {
+              "schemaVersion": "xuong.observable.v2",
+              "runId": "reference-frame-detour",
+              "scenario": {
+                "id": "maze-wall-detour",
+                "display": { "label": "Tường chặn lối cũ" },
+                "inputSummary": "Bản đồ 5×5, thêm tường tại ô (2,2)."
+              },
+              "cursor": 0,
+              "entities": [
+                { "id": "cell-2-2", "kind": "cell", "display": { "label": "Tường mới" }, "state": { "blocked": true }, "geometry": { "x": 2, "y": 2 } },
+                { "id": "goal", "kind": "cell", "display": { "label": "Đích" }, "state": { "goal": true }, "geometry": { "x": 4, "y": 4 } }
+              ],
+              "relations": [],
+              "events": [],
+              "anchors": [],
+              "metrics": [{ "id": "route-length", "display": { "label": "Độ dài đường đi" }, "value": 8, "unit": "bước" }],
+              "outputs": [{ "id": "route-result", "display": { "label": "Kết quả" }, "value": "Đã tìm được đường vòng." }],
+              "controls": []
+            }
+          }
+        ]
+      }
+    },
+    "mazeUserFail": {
+      "project": {
+        "id": "project-maze-navigator",
+        "display": { "label": "Điều hướng trong kho có lối bị chặn" },
+        "status": "needs-attention",
+        "sourceRevision": "sha256:project-maze-r1",
+        "brief": {
+          "context": "Nhân viên kho cần tìm đường thay thế khi một lối đi vừa bị chặn.",
+          "application": "Thuật toán duyệt bản đồ để tìm đường hợp lệ tới điểm lấy hàng.",
+          "mission": "Cập nhật hàm tìm đường để bỏ qua ô bị chặn mới.",
+          "doneWhen": "Đường đi không đi xuyên qua tường và vẫn tới được đích khi còn lối khác."
+        },
+        "capability": {
+          "summary": "Lời giải cũ đã tìm được đường ít bước trên bản đồ cố định.",
+          "capabilities": [{ "id": "shortest-route", "display": { "label": "Tìm đường ít bước" }, "evidence": [{ "mappingId": "map-shortest-route", "claim": "Hàm cũ duyệt các ô kề để tìm đường." }] }],
+          "constraints": ["Bản đồ cũ chưa đánh dấu lối bị chặn động."]
+        },
+        "transformation": {
+          "oldAssumption": "Mọi ô trong bản đồ đều có thể đi qua.",
+          "breakingEvent": "Một kệ hàng mới chặn ô (2,2) trên đường cũ.",
+          "newCapability": "Bỏ qua ô bị chặn và tìm đường vòng khi có thể.",
+          "observableOutcome": "Preview cho thấy tuyến cũ dừng tại tường thay vì đi xuyên qua nó.",
+          "editableMappingIds": ["map-shortest-route"]
+        },
+        "files": [{ "path": "MazeNavigator.cpp", "display": { "label": "Hàm tìm đường" }, "editable": true, "source": "// source omitted in golden fixture", "contentHash": "sha256:maze-cpp-r1" }],
+        "sourceMappings": [{ "id": "map-shortest-route", "filePath": "MazeNavigator.cpp", "symbol": "findRoute", "span": { "startLine": 18, "startColumn": 0, "endLine": 38, "endColumn": 1 }, "contentHash": "sha256:maze-cpp-r1", "display": { "label": "Hàm tìm đường" }, "role": "editable" }],
+        "scenarios": [{ "id": "maze-wall-detour", "display": { "label": "Tường chặn lối cũ" }, "inputSummary": "Bản đồ 5×5, thêm tường tại ô (2,2)." }],
+        "growth": [{ "id": "basic-route", "display": { "label": "Đường cơ bản" }, "state": "present" }, { "id": "avoid-wall", "display": { "label": "Tránh lối bị chặn" }, "state": "current" }, { "id": "multiple-orders", "display": { "label": "Nhiều điểm giao" }, "state": "next" }],
+        "requirements": [{ "id": "avoid-blocked-cell", "display": { "label": "Không đi qua ô bị chặn mới." }, "state": "failing", "verifierIds": ["verify-maze-blocked"], "failureEvidenceIds": ["evidence-maze-blocked-fail"], "passEvidenceIds": [] }],
+        "nextAction": { "label": "Sửa hàm tìm đường để bỏ qua ô bị chặn", "reason": "Lần chạy vừa rồi vẫn đi xuyên qua ô (2,2)." }
+      },
+      "run": {
+        "type": "scenario-run",
+        "id": "run-maze-user-r1",
+        "projectId": "project-maze-navigator",
+        "scenarioId": "maze-wall-detour",
+        "sourceRevision": "sha256:project-maze-r1",
+        "provenance": "user-source",
+        "status": "completed",
+        "startedAt": "2026-07-23T03:00:00.000Z",
+        "durationMs": 18,
+        "eventCount": 2,
+        "diagnostics": [],
+        "outputSummary": "Đã tạo một tuyến, nhưng tuyến đi qua ô bị chặn."
+      },
+      "observable": {
+        "schemaVersion": "xuong.observable.v2",
+        "runId": "run-maze-user-r1",
+        "scenario": { "id": "maze-wall-detour", "display": { "label": "Tường chặn lối cũ" }, "inputSummary": "Bản đồ 5×5, thêm tường tại ô (2,2)." },
+        "cursor": 2,
+        "entities": [{ "id": "cell-2-2", "kind": "cell", "display": { "label": "Ô bị chặn (2,2)" }, "state": { "blocked": true, "routeUsed": true }, "geometry": { "x": 2, "y": 2 } }],
+        "relations": [],
+        "events": [
+          { "id": "event-route-step", "index": 0, "kind": "route-step", "display": { "label": "Tuyến đi tới ô (2,2)" }, "entityIds": ["cell-2-2"], "changedFields": [{ "entityId": "cell-2-2", "fieldId": "routeUsed", "display": { "label": "Được đưa vào tuyến" }, "before": false, "after": true }], "anchorIds": ["anchor-blocked-cell"] },
+          { "id": "event-invalid-route", "index": 1, "kind": "constraint-broken", "display": { "label": "Tuyến không hợp lệ vì đi qua tường" }, "entityIds": ["cell-2-2"], "changedFields": [], "anchorIds": ["anchor-blocked-cell"] }
+        ],
+        "anchors": [{ "id": "anchor-blocked-cell", "eventIndex": 1, "entityId": "cell-2-2", "sourceMappingId": "map-shortest-route", "severity": "error", "display": { "label": "Ô bị chặn vẫn được thêm vào tuyến", "description": "Mở hàm tìm đường để kiểm tra điều kiện bỏ qua ô bị chặn." } }],
+        "metrics": [{ "id": "route-length", "display": { "label": "Độ dài tuyến" }, "value": 8, "unit": "bước" }],
+        "outputs": [{ "id": "route-result", "display": { "label": "Kết quả" }, "value": "Tuyến không hợp lệ." }],
+        "controls": [{ "id": "trace-step", "display": { "label": "Bước mô phỏng" }, "type": "stepper", "value": 2 }]
+      },
+      "recipe": {
+        "schemaVersion": "xuong.preview-recipe.v2",
+        "base": { "kind": "grid", "display": { "label": "Bản đồ di chuyển" } },
+        "overlays": [{ "kind": "path", "display": { "label": "Tuyến của em" } }, { "kind": "error-anchor", "display": { "label": "Điểm cần sửa" } }],
+        "controlPack": { "kind": "stepper", "display": { "label": "Xem từng bước" } },
+        "layout": { "kind": "focus", "display": { "label": "Tập trung vào lỗi" } },
+        "inspector": { "alwaysAvailable": true, "display": { "label": "Chi tiết lần chạy" } }
+      },
+      "replay": {
+        "cursor": 1,
+        "totalEvents": 2,
+        "observable": { "schemaVersion": "xuong.observable.v2", "runId": "run-maze-user-r1", "scenario": { "id": "maze-wall-detour", "display": { "label": "Tường chặn lối cũ" }, "inputSummary": "Bản đồ 5×5, thêm tường tại ô (2,2)." }, "cursor": 1, "entities": [{ "id": "cell-2-2", "kind": "cell", "display": { "label": "Ô bị chặn (2,2)" }, "state": { "blocked": true, "routeUsed": true }, "geometry": { "x": 2, "y": 2 } }], "relations": [], "events": [], "anchors": [{ "id": "anchor-blocked-cell", "eventIndex": 1, "entityId": "cell-2-2", "sourceMappingId": "map-shortest-route", "severity": "error", "display": { "label": "Ô bị chặn vẫn được thêm vào tuyến" } }], "metrics": [], "outputs": [], "controls": [{ "id": "trace-step", "display": { "label": "Bước mô phỏng" }, "type": "stepper", "value": 1 }] },
+        "recipe": { "schemaVersion": "xuong.preview-recipe.v2", "base": { "kind": "grid", "display": { "label": "Bản đồ di chuyển" } }, "overlays": [{ "kind": "path", "display": { "label": "Tuyến của em" } }, { "kind": "error-anchor", "display": { "label": "Điểm cần sửa" } }], "controlPack": { "kind": "stepper", "display": { "label": "Xem từng bước" } }, "layout": { "kind": "focus", "display": { "label": "Tập trung vào lỗi" } }, "inspector": { "alwaysAvailable": true, "display": { "label": "Chi tiết lần chạy" } } },
+        "activeAnchorIds": ["anchor-blocked-cell"]
+      }
+    },
+    "routeWatchGraph": {
+      "run": {
+        "type": "scenario-run",
+        "id": "run-routewatch-r1",
+        "projectId": "project-routewatch",
+        "scenarioId": "routewatch-link-down",
+        "sourceRevision": "sha256:routewatch-r1",
+        "provenance": "user-source",
+        "status": "completed",
+        "startedAt": "2026-07-23T03:01:00.000Z",
+        "durationMs": 12,
+        "eventCount": 3,
+        "diagnostics": [],
+        "outputSummary": "Đã tính lại đường đi sau khi một liên kết bị ngắt."
+      },
+      "observable": {
+        "schemaVersion": "xuong.observable.v2",
+        "runId": "run-routewatch-r1",
+        "scenario": { "id": "routewatch-link-down", "display": { "label": "Một liên kết bị ngắt" }, "inputSummary": "Ngắt kết nối A–B khi hệ thống đang định tuyến." },
+        "cursor": 3,
+        "entities": [{ "id": "node-a", "kind": "node", "display": { "label": "Điểm A" }, "state": { "reachable": true }, "geometry": { "x": 0, "y": 0 } }, { "id": "node-b", "kind": "node", "display": { "label": "Điểm B" }, "state": { "reachable": true }, "geometry": { "x": 1, "y": 1 } }],
+        "relations": [{ "id": "edge-a-b", "fromEntityId": "node-a", "toEntityId": "node-b", "kind": "edge", "display": { "label": "Liên kết A–B" }, "state": { "available": false } }],
+        "events": [{ "id": "event-link-down", "index": 0, "kind": "link-down", "display": { "label": "Liên kết A–B ngắt" }, "entityIds": ["node-a", "node-b"], "changedFields": [], "anchorIds": [] }, { "id": "event-reroute", "index": 1, "kind": "reroute", "display": { "label": "Đang chọn đường thay thế" }, "entityIds": ["node-a", "node-b"], "changedFields": [], "anchorIds": [] }, { "id": "event-reroute-done", "index": 2, "kind": "reroute-done", "display": { "label": "Đã tìm đường thay thế" }, "entityIds": ["node-a", "node-b"], "changedFields": [], "anchorIds": [] }],
+        "anchors": [],
+        "metrics": [{ "id": "reroute-ms", "display": { "label": "Thời gian tính lại" }, "value": 12, "unit": "ms" }],
+        "outputs": [{ "id": "route-result", "display": { "label": "Kết quả" }, "value": "Đã đổi sang đường A–C–B." }],
+        "controls": [{ "id": "trace-step", "display": { "label": "Bước mô phỏng" }, "type": "stepper", "value": 3 }]
+      },
+      "recipe": {
+        "schemaVersion": "xuong.preview-recipe.v2",
+        "base": { "kind": "graph", "display": { "label": "Mạng đang định tuyến" } },
+        "overlays": [{ "kind": "dependency", "display": { "label": "Liên kết đang dùng" } }, { "kind": "compare", "display": { "label": "So sánh tuyến cũ và mới" } }],
+        "controlPack": { "kind": "stepper", "display": { "label": "Xem từng sự kiện" } },
+        "layout": { "kind": "balanced", "display": { "label": "Mạng và thông tin tuyến" } },
+        "inspector": { "alwaysAvailable": true, "display": { "label": "Chi tiết lần chạy" } }
+      }
+    },
+    "logMatcherInspector": {
+      "run": {
+        "type": "scenario-run",
+        "id": "run-logmatcher-r1",
+        "projectId": "project-logmatcher",
+        "scenarioId": "logmatcher-out-of-order",
+        "sourceRevision": "sha256:logmatcher-r1",
+        "provenance": "user-source",
+        "status": "completed",
+        "startedAt": "2026-07-23T03:02:00.000Z",
+        "durationMs": 4,
+        "eventCount": 1,
+        "diagnostics": [],
+        "outputSummary": "Đã phát hiện một bản ghi đến sai thứ tự."
+      },
+      "observable": {
+        "schemaVersion": "xuong.observable.v2",
+        "runId": "run-logmatcher-r1",
+        "scenario": { "id": "logmatcher-out-of-order", "display": { "label": "Bản ghi đến sai thứ tự" }, "inputSummary": "Một dòng log có thời gian nhỏ hơn dòng ngay trước." },
+        "cursor": 1,
+        "entities": [{ "id": "record-17", "kind": "record", "display": { "label": "Dòng log 17" }, "state": { "timestamp": "09:14:02", "ordered": false } }],
+        "relations": [],
+        "events": [{ "id": "event-order-broken", "index": 0, "kind": "order-broken", "display": { "label": "Thứ tự thời gian bị phá vỡ" }, "entityIds": ["record-17"], "changedFields": [{ "entityId": "record-17", "fieldId": "ordered", "display": { "label": "Thứ tự hợp lệ" }, "before": true, "after": false }], "anchorIds": [] }],
+        "anchors": [],
+        "metrics": [{ "id": "invalid-count", "display": { "label": "Dòng cần xem lại" }, "value": 1, "unit": "dòng" }],
+        "outputs": [{ "id": "log-result", "display": { "label": "Kết quả" }, "value": "Phát hiện dòng log sai thứ tự." }],
+        "controls": [{ "id": "trace-step", "display": { "label": "Bước mô phỏng" }, "type": "stepper", "value": 1 }]
+      },
+      "recipe": {
+        "schemaVersion": "xuong.preview-recipe.v2",
+        "base": { "kind": "universal-inspector", "display": { "label": "Preview" } },
+        "overlays": [{ "kind": "diff", "display": { "label": "Trường vừa thay đổi" } }],
+        "controlPack": { "kind": "stepper", "display": { "label": "Xem từng sự kiện" } },
+        "layout": { "kind": "balanced", "display": { "label": "Sự kiện và dữ liệu" } },
+        "inspector": { "alwaysAvailable": true, "display": { "label": "Chi tiết lần chạy" } }
+      }
+    }
+  }
+}

@@ -139,8 +139,20 @@ async function seedVault(id) {
   await referenceStore.setGenerator(id, DETERMINISTIC_GENERATOR_CODE, { source: "manual" });
 }
 
+// The gauntlet route gates on a configured AI key (NO_KEY → 400) even when the
+// vault is already populated and no AI call will happen. These tests used to
+// pass only because the developer's REAL data/ai-settings.json had a key —
+// with the isolated test workspace that hidden dependency is gone, so stub the
+// settings read the same way the vault-first test below does.
+async function withFakeAiKey(fn) {
+  const settingsStore = require("../src/settingsStore");
+  const original = settingsStore.getAiSettings;
+  settingsStore.getAiSettings = async () => ({ apiKey: "test-key" });
+  try { return await fn(); } finally { settingsStore.getAiSettings = original; }
+}
+
 test("POST gauntlet: a broken result records a Boss Case, not yet promoted on the first break", async () => {
-  await withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-first-break" }, async (id) => {
+  await withFakeAiKey(() => withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-first-break" }, async (id) => {
     await seedVault(id);
     const r = await postJson(base, `/api/problems/${id}/gauntlet`, { code: BUGGY_STUDENT_CODE, seeds: 5 });
     assert.equal(r.status, 200);
@@ -151,11 +163,11 @@ test("POST gauntlet: a broken result records a Boss Case, not yet promoted on th
 
     const list = await getJson(base, `/api/problems/${id}/boss-cases`);
     assert.equal(list.json.cases.length, 1);
-  }));
+  })));
 });
 
 test("POST gauntlet: the SAME counterexample recurring on a second attempt promotes the Boss", async () => {
-  await withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-recurring" }, async (id) => {
+  await withFakeAiKey(() => withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-recurring" }, async (id) => {
     await seedVault(id);
     await postJson(base, `/api/problems/${id}/gauntlet`, { code: BUGGY_STUDENT_CODE, seeds: 5 });
     const second = await postJson(base, `/api/problems/${id}/gauntlet`, { code: BUGGY_STUDENT_CODE, seeds: 5 });
@@ -166,11 +178,11 @@ test("POST gauntlet: the SAME counterexample recurring on a second attempt promo
     const mine = globalBosses.json.bosses.find((b) => b.problemId === id);
     assert.ok(mine, "promoted boss should show up in the global roster");
     assert.equal(mine.count, 2);
-  }));
+  })));
 });
 
 test("POST gauntlet/stream: emits phase progress via SSE and a final done frame matching the JSON route", async () => {
-  await withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-stream-survive" }, async (id) => {
+  await withFakeAiKey(() => withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-stream-survive" }, async (id) => {
     await seedVault(id);
     const res = await fetch(`${base}/api/problems/${id}/gauntlet/stream`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: CORRECT_STUDENT_CODE_FOR_STREAM, seeds: 5 }),
@@ -189,13 +201,13 @@ test("POST gauntlet/stream: emits phase progress via SSE and a final done frame 
     assert.ok(done, "must end with a done frame");
     assert.equal(done.survived, true);
     await new Promise((r) => setTimeout(r, 50)); // let fire-and-forget recordProblemEvent land before cleanup
-  }));
+  })));
 });
 
 const CORRECT_STUDENT_CODE_FOR_STREAM = REFERENCE_CODE;
 
 test("POST gauntlet/stream: a broken solution's done frame reports the phase it died in and records a boss case", async () => {
-  await withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-stream-broken" }, async (id) => {
+  await withFakeAiKey(() => withServer((base) => withProblem({ statement: STATEMENT, title: "zz-boss-case-stream-broken" }, async (id) => {
     await seedVault(id);
     const res = await fetch(`${base}/api/problems/${id}/gauntlet/stream`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: BUGGY_STUDENT_CODE, seeds: 5 }),
@@ -211,7 +223,7 @@ test("POST gauntlet/stream: a broken solution's done frame reports the phase it 
     assert.ok(done.boss);
     assert.equal(done.boss.count, 1);
     await new Promise((r) => setTimeout(r, 50)); // let fire-and-forget recordProblemEvent land before cleanup
-  }));
+  })));
 });
 
 test("POST gauntlet: with a pre-populated trusted vault + faked generator, survives a correct solution", async () => {

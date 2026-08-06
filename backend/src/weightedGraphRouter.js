@@ -31,24 +31,81 @@ const SOURCE = `#include "WeightedGraphRouter.hpp"
 #include <limits>
 #include <queue>
 #include <stdexcept>
-WeightedGraphRouter::WeightedGraphRouter(int n) : nodeCount_(n), graph_(n < 0 ? 0 : static_cast<std::size_t>(n)) { if (n < 0) throw std::invalid_argument("negative node count"); }
-void WeightedGraphRouter::requireVertex(int v) const { if (v < 0 || v >= nodeCount_) throw std::out_of_range("vertex out of range"); }
-void WeightedGraphRouter::addDirectedEdge(int u, int v, long long w) { requireVertex(u); requireVertex(v); if (w < 0) throw std::invalid_argument("negative weight"); graph_[u].push_back({v, w}); }
+using namespace std;
+
+// Trong bài thi em dựng đồ thị và chạy Dijkstra trong main().
+// Ở Xưởng, main() nằm trong demo/test; class này giữ trạng thái mạng để
+// sản phẩm có thể gọi lại thuật toán sau mỗi thay đổi.
+
+// PHẦN 1: Tạo mạng và thêm cạnh.
+WeightedGraphRouter::WeightedGraphRouter(int nodeCount)
+    : nodeCount_(nodeCount),
+      graph_(nodeCount < 0 ? 0 : static_cast<size_t>(nodeCount)) {
+  if (nodeCount < 0) throw invalid_argument("negative node count");
+}
+
+void WeightedGraphRouter::requireVertex(int vertex) const {
+  if (vertex < 0 || vertex >= nodeCount_) {
+    throw out_of_range("vertex out of range");
+  }
+}
+
+void WeightedGraphRouter::addDirectedEdge(int from, int to, long long weight) {
+  requireVertex(from);
+  requireVertex(to);
+  if (weight < 0) throw invalid_argument("negative weight");
+  graph_[from].push_back({to, weight});
+}
+
+// PHẦN 2: Dijkstra cũ của em. Build này không yêu cầu viết lại hàm này.
 WeightedRoute WeightedGraphRouter::shortestPath(int source, int target) const {
   requireVertex(source); requireVertex(target);
-  const long long inf = std::numeric_limits<long long>::max();
-  std::vector<long long> dist(nodeCount_, inf); std::vector<int> parent(nodeCount_, -1);
-  using Entry = std::pair<long long, int>; std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> heap;
-  dist[source] = 0; heap.push({0, source});
+  const long long inf = numeric_limits<long long>::max();
+  vector<long long> dist(nodeCount_, inf);
+  vector<int> parent(nodeCount_, -1);
+  using Entry = pair<long long, int>;
+  priority_queue<Entry, vector<Entry>, greater<Entry>> heap;
+  dist[source] = 0;
+  heap.push({0, source});
   while (!heap.empty()) {
-    auto [du, u] = heap.top(); heap.pop(); if (du != dist[u]) continue;
-    for (auto [v, w] : graph_[u]) if (du <= inf - w && du + w < dist[v]) { dist[v] = du + w; parent[v] = u; heap.push({dist[v], v}); }
+    auto [currentDistance, node] = heap.top();
+    heap.pop();
+    if (currentDistance != dist[node]) continue;
+    for (auto [next, weight] : graph_[node]) {
+      if (currentDistance <= inf - weight
+          && currentDistance + weight < dist[next]) {
+        dist[next] = currentDistance + weight;
+        parent[next] = node;
+        heap.push({dist[next], next});
+      }
+    }
   }
   if (dist[target] == inf) return {false, 0, {}};
-  std::vector<int> path; for (int v = target; v != -1; v = parent[v]) path.push_back(v); std::reverse(path.begin(), path.end());
+  vector<int> path;
+  for (int node = target; node != -1; node = parent[node]) {
+    path.push_back(node);
+  }
+  reverse(path.begin(), path.end());
   return {true, dist[target], path};
 }
-bool WeightedGraphRouter::updateDirectedEdge(int, int, long long) { return false; /* TODO v2 */ }
+
+// PHẦN 3: VIỆC CỦA EM.
+// Em chỉ viết trong hàm này. shortestPath() và các helper phía trên đã xong.
+bool WeightedGraphRouter::updateDirectedEdge(
+    int from,
+    int to,
+    long long newWeight
+) {
+  // TODO Xưởng 01.1 — kiểm tra đầu vào:
+  // - from và to phải là đỉnh hợp lệ;
+  // - newWeight không được âm.
+
+  // TODO Xưởng 01.2 — tìm pair {đỉnh đến, trọng số} trong graph_[from].
+  // Khi edge.first == to, gán edge.second = newWeight rồi return true.
+
+  // TODO Xưởng 01.3 — chỉ chạy tới đây khi không tìm thấy cạnh from -> to.
+  return false;
+}
 `;
 
 const BASELINE_TEST = `#include "WeightedGraphRouter.hpp"

@@ -129,7 +129,7 @@ export function initWorkspaces(app) {
     if (!pillEl) return;
     const known = getPreset(current);
     const icon = known ? known.icon : "✎";
-    const name = known ? known.name : "Tùy chỉnh";
+    const name = known ? known.name : (document.documentElement.lang === "en" ? "Custom" : "Tùy chỉnh");
     pillEl.querySelector(".ws-pill-icon").textContent = icon;
     pillEl.querySelector(".ws-pill-name").textContent = name;
     popoverEl.querySelectorAll(".ws-opt").forEach((o) =>
@@ -137,6 +137,7 @@ export function initWorkspaces(app) {
   }
 
   buildSwitcher();
+  document.addEventListener("localechange", renderPill);
 
   // Manual divergence → "Tùy chỉnh".
   app.bus.on("layout:changed", markCustomIfDiverged);

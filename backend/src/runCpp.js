@@ -371,6 +371,99 @@ async function compileSource({ code, settings, workdir }) {
   };
 }
 
+function normalizeProjectFilePath(value) {
+  const normalized = String(value || "").replace(/\\/g, "/");
+  if (!normalized || normalized.startsWith("/") || normalized.split("/").includes("..")
+      || !/^[A-Za-z0-9_.\-/]+$/.test(normalized)) {
+    const error = new Error("Invalid C++ project file path.");
+    error.status = 400;
+    throw error;
+  }
+  return normalized;
+}
+
+// Compile a real multi-file C++ project in one isolated directory. Headers and
+// nested paths are materialized exactly once; every .cpp translation unit is
+// passed to g++, so include boundaries and linker failures remain observable.
+async function compileFiles({ files, settings, workdir }) {
+  const startedAt = Date.now();
+  const compiler = (settings && settings.compilerPath) || "g++";
+  const std = (settings && settings.cppStandard) || "c++17";
+  const opt = (settings && settings.optimization) || "-O2";
+  const entries = (Array.isArray(files) ? files : []).map((file) => ({
+    path: normalizeProjectFilePath(file && file.path),
+    content: String(file && file.content != null ? file.content : ""),
+  }));
+  if (!entries.length || entries.length > 100) {
+    throw Object.assign(new Error("A C++ project must contain 1–100 files."), { status: 400 });
+  }
+  if (new Set(entries.map((file) => file.path.toLowerCase())).size !== entries.length) {
+    throw Object.assign(new Error("C++ project file paths must be unique."), { status: 400 });
+  }
+  const sources = entries.filter((file) => /\.cpp$/i.test(file.path));
+  if (!sources.length) throw Object.assign(new Error("A C++ project needs at least one .cpp file."), { status: 400 });
+
+  await Promise.all(entries.map(async (file) => {
+    const destination = path.join(workdir, ...file.path.split("/"));
+    await fsp.mkdir(path.dirname(destination), { recursive: true });
+    await fsp.writeFile(destination, file.content, "utf8");
+  }));
+
+  const binaryPath = binaryName(workdir);
+  const ext = process.platform === "win32" ? ".exe" : "";
+  const signature = entries.slice().sort((a, b) => a.path.localeCompare(b.path))
+    .map((file) => `${file.path}\u0000${file.content}`).join("\u0001");
+  const binKey = sha1(["multi-file-v1", compiler, std, opt, signature].join("\u0000"));
+  const cachedBin = path.join(BIN_CACHE_DIR, binKey + ext);
+  try {
+    await fsp.access(cachedBin);
+    await fsp.copyFile(cachedBin, binaryPath);
+    return { ok: true, compilerMissing: false, stderr: "", timeMs: Date.now() - startedAt, binaryPath, cached: true, fileCount: entries.length };
+  } catch { /* cache miss */ }
+
+  const args = [`-std=${std}`];
+  if (opt) args.push(opt);
+  args.push("-pipe", "-I.", ...sources.map((file) => file.path), "-o", binaryPath);
+  const result = await runProcess(compiler, args, {
+    cwd: workdir,
+    input: "",
+    timeoutMs: LIMITS.compileTimeoutMs,
+    maxStdout: 20000,
+    maxStderr: LIMITS.maxStderrBytes,
+  });
+  if (result.ok) {
+    const tmpBin = `${cachedBin}.${process.pid}.${Date.now()}.tmp`;
+    try {
+      await fsp.mkdir(BIN_CACHE_DIR, { recursive: true });
+      await fsp.copyFile(binaryPath, tmpBin);
+      await fsp.rename(tmpBin, cachedBin);
+      pruneBinCache();
+    } catch {
+      await fsp.rm(tmpBin, { force: true }).catch(() => {});
+    }
+  }
+  return {
+    ok: result.ok,
+    compilerMissing: result.notFound,
+    stderr: result.stderr,
+    timeMs: Date.now() - startedAt,
+    binaryPath: result.ok ? binaryPath : null,
+    cached: false,
+    fileCount: entries.length,
+  };
+}
+
+async function compileProject({ files, settings }) {
+  const workdir = await createWorkdir();
+  try {
+    const compile = await compileFiles({ files, settings, workdir });
+    return { ...compile, workdir };
+  } catch (error) {
+    await cleanupWorkdir(workdir);
+    throw error;
+  }
+}
+
 // Runs a compiled binary against one input string. Returns a per-run record.
 // fileMode: { name } enables USACO-style file IO — input is written to <name>.in
 // in the binary's cwd, and <name>.out is read back as the program's output
@@ -467,6 +560,8 @@ module.exports = {
   cleanupWorkdir,
   checkCompiler,
   compileSource,
+  compileFiles,
+  compileProject,
   compileStandalone,
   runBinary,
   overallVerdict

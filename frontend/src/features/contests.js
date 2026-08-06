@@ -24,14 +24,16 @@ function buildOverlay() {
   overlay.className = "contest-overlay hidden";
   overlay.setAttribute("aria-label", "Luyện tập theo bộ đề");
   overlay.innerHTML = `
-    <div class="contest-shell">
+    <div class="contest-shell" role="dialog" aria-modal="true" aria-labelledby="contest-bar-title">
       <header class="contest-bar">
-        <div class="contest-brand"><span class="contest-brand-mark">‹/›</span><span>USACO IDE <b>2.0</b></span></div>
         <button id="contest-back" class="btn btn-ghost btn-sm hidden" type="button">← Danh sách</button>
-        <span class="contest-bar-title">Luyện tập theo bộ đề</span>
+        <div class="contest-bar-heading">
+          <span class="aw-kicker">Bộ đề</span>
+          <span class="contest-bar-title" id="contest-bar-title">Luyện tập theo bộ đề</span>
+        </div>
         <span class="contest-bar-spacer"></span>
         <button id="contest-new-btn" class="btn btn-primary btn-sm" type="button">+ Tạo bộ đề</button>
-        <button id="contest-close" class="btn btn-ghost btn-sm" type="button">× Đóng</button>
+        <button id="contest-close" class="btn btn-ghost btn-sm" type="button" aria-label="Đóng">×</button>
       </header>
 
       <div class="contest-screen" id="contest-hub">

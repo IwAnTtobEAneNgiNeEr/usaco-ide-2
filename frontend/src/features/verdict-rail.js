@@ -56,6 +56,11 @@ export function chipsFor(app, { kind, verdict }) {
     if (visible(byId("btn-editorial"))) chips.push({ g: "§", label: "Lời giải chuẩn", run: () => byId("btn-editorial").click() });
     if (visible(byId("btn-synth"))) chips.push({ g: "↗", label: "Bản khó hơn", run: () => byId("btn-synth").click() });
     if (visible(byId("btn-defense"))) chips.push({ g: "✎", label: "Giải thích lời giải", run: () => byId("btn-defense").click() });
+    // Cây cầu Luyện tập → Xưởng (README §8.1): từ lời giải AC này, AI đề xuất
+    // các hướng phát triển thành project thật.
+    if (app.openXuongPathways && app.state.currentId) {
+      chips.push({ g: "⚒", label: "Phát triển lời giải", hint: "biến AC thành project", run: () => app.openXuongPathways(app.state.currentId) });
+    }
     if (byId("btn-random")) chips.push({ g: "»", label: "Bài tiếp theo", run: () => byId("btn-random").click() });
     return chips;
   }

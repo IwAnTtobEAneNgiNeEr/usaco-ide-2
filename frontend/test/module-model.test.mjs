@@ -29,7 +29,7 @@ const sample = {
 test("normalizeModules keeps valid rows, null on absent route", () => {
   const mods = normalizeModules(sample);
   assert.equal(mods.length, 2);
-  assert.equal(mods[0].track, "build");
+  assert.equal(mods[0].track, "algorithm-engineering");
   assert.equal(mods[0].itemType, "module");
   assert.equal(normalizeModules(null), null);
   assert.equal(normalizeModules({ nope: [] }), null);
@@ -52,8 +52,8 @@ test("moduleProvenance: standalone vs derived", () => {
 
 test("moduleMatchesFilters: lens, status mapping, search", () => {
   const [verified, needsWork] = normalizeModules(sample);
-  assert.equal(moduleMatchesFilters(verified, { track: "build" }), true);
-  assert.equal(moduleMatchesFilters(verified, { track: "compete" }), false);
+  assert.equal(moduleMatchesFilters(verified, { track: "algorithm-engineering" }), true);
+  assert.equal(moduleMatchesFilters(verified, { track: "competitive" }), false);
   assert.equal(moduleMatchesFilters(verified, { status: "solved" }), true);
   assert.equal(moduleMatchesFilters(needsWork, { status: "solved" }), false);
   assert.equal(moduleMatchesFilters(needsWork, { status: "learning" }), true);
@@ -76,7 +76,7 @@ test("visibleModules applies filters over the set", () => {
   const mods = normalizeModules(sample);
   assert.equal(visibleModules(mods, {}).length, 2);
   assert.equal(visibleModules(mods, { status: "solved" }).length, 1);
-  assert.equal(visibleModules(mods, { track: "compete" }).length, 0);
+  assert.equal(visibleModules(mods, { track: "competitive" }).length, 0);
 });
 
 test("currentSuite/pendingChange follow the requirement list", () => {

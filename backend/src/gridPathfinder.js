@@ -26,45 +26,60 @@ public:
 
 const SOURCE = `#include "GridPathfinder.hpp"
 #include <queue>
+using namespace std;
 
+// Trong bài thi em đặt BFS trong main(). Ở Xưởng, main() nằm trong demo/test;
+// hàm dưới đây chính là phần BFS cũ được tách ra để sản phẩm gọi lại.
 int GridPathfinder::shortestPath(
-    const std::vector<std::string>& grid,
-    std::pair<int, int> start,
-    std::pair<int, int> target
+    const vector<string>& grid,
+    pair<int, int> start,
+    pair<int, int> target
 ) {
+    // PHẦN 1: Kiểm tra dữ liệu đầu vào.
     const int rows = static_cast<int>(grid.size());
     if (rows == 0) return -1;
     const int cols = static_cast<int>(grid[0].size());
     if (cols == 0) return -1;
-    for (const std::string& row : grid) {
+    for (const string& row : grid) {
         if (static_cast<int>(row.size()) != cols) return -1;
     }
 
-    const auto inside = [rows, cols](std::pair<int, int> cell) {
+    const auto inside = [rows, cols](pair<int, int> cell) {
         return cell.first >= 0 && cell.second >= 0
             && cell.first < rows && cell.second < cols;
     };
     if (!inside(start) || !inside(target)) return -1;
     if (grid[start.first][start.second] == '#' || grid[target.first][target.second] == '#') return -1;
 
-    std::vector<std::vector<int>> distance(rows, std::vector<int>(cols, -1));
-    std::queue<std::pair<int, int>> queue;
-    const int dr[4] = {0, 1, 0, -1};
-    const int dc[4] = {1, 0, -1, 0};
-    distance[start.first][start.second] = 0;
-    queue.push(start);
+    // PHẦN 2: BFS cũ của em. Build hiện tại chỉ thay đổi bộ hướng bên dưới.
+    vector<vector<int>> distance(rows, vector<int>(cols, -1));
+    queue<pair<int, int>> pending;
 
-    while (!queue.empty()) {
-        const auto current = queue.front();
-        queue.pop();
+    // TODO Xưởng 01 — em chỉ sửa danh sách directions:
+    // Mỗi pair là {đổi hàng, đổi cột}. Ví dụ {1, 1} nghĩa là xuống-phải.
+    // Thêm bốn tổ hợp chéo của ±1 và ±1. Không cần sửa phần BFS bên dưới.
+    const vector<pair<int, int>> directions = {
+        {0, 1},   // phải
+        {1, 0},   // xuống
+        {0, -1},  // trái
+        {-1, 0},  // lên
+        // Em thêm 4 pair chéo ở đây.
+    };
+    distance[start.first][start.second] = 0;
+    pending.push(start);
+
+    while (!pending.empty()) {
+        const auto current = pending.front();
+        pending.pop();
         if (current == target) return distance[current.first][current.second];
-        for (int direction = 0; direction < 4; ++direction) {
-            const int nr = current.first + dr[direction];
-            const int nc = current.second + dc[direction];
+        // Vòng lặp đọc từng pair em khai báo; thêm hướng ở trên là đủ.
+        for (const auto& [rowStep, columnStep] : directions) {
+            const int nr = current.first + rowStep;
+            const int nc = current.second + columnStep;
             if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
             if (grid[nr][nc] == '#' || distance[nr][nc] != -1) continue;
             distance[nr][nc] = distance[current.first][current.second] + 1;
-            queue.push({nr, nc});
+            pending.push({nr, nc});
         }
     }
     return -1;

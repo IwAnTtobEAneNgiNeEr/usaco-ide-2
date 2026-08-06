@@ -68,9 +68,19 @@ async function request(method, url, body, opts2 = {}) {
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
   }
   if (!res.ok) {
-    const message = (data && (data.error || data.message)) || `Request failed (${res.status})`;
+    // Two shapes in the wild: legacy `{ error: "..." }` and the Xưởng v2
+    // envelope `{ error: { code, message, details } }`. Reading the object
+    // straight into Error() would render "[object Object]" at the user.
+    const raw = data && data.error;
+    const structured = raw && typeof raw === "object" ? raw : null;
+    const message = (structured && structured.message)
+      || (typeof raw === "string" ? raw : null)
+      || (data && data.message)
+      || `Request failed (${res.status})`;
     const err = new Error(message);
     err.status = res.status;
+    err.code = structured ? structured.code : undefined;
+    err.details = structured ? structured.details : undefined;
     err.data = data;
     throw err;
   }
@@ -151,11 +161,12 @@ export const api = {
   // (core/search-model.js buildSearchParams) — server returns ranked results
   // with its own "Vì sao khớp" reasons. 404 = backend without the route; the
   // Library falls back to local filtering.
-  searchProblems: (qs) => get(`/api/problems/search${qs ? `?${qs}` : ""}`),
+  searchProblems: (qs) => get(`/api/catalog/search${qs ? `?${qs}` : ""}`),
   // Home entry policy (B2): ≤3 reasoned items; unfinished work ranks first.
-  // `qs` carries dismissed=/liked= (core/entry-model.js). 404 = backend
+  // `qs` carries the canonical track (core/entry-model.js). 404 = backend
   // without the route; the home keeps its local ladder.
   entryRecommendations: (qs) => get(`/api/recommendations/entry${qs ? `?${qs}` : ""}`),
+  recommendationFeedback: (itemId, body) => put(`/api/recommendations/feedback/${encodeURIComponent(itemId)}`, body),
   getProblem: (id) => get(`/api/problems/${id}`),
   // Everything needed to open a problem (meta + files + tests) in one request.
   getWorkspace: (id) => get(`/api/problems/${id}/workspace`),
@@ -180,6 +191,8 @@ export const api = {
   saveNotes: (id, notes) => put(`/api/problems/${id}/notes`, { notes }),
   getStatement: (id) => get(`/api/problems/${id}/statement`),
   saveStatement: (id, statement) => put(`/api/problems/${id}/statement`, { statement }),
+  saveStatementEn: (id, statementEn) => put(`/api/problems/${id}/statementEn`, { statementEn }),
+  saveStatementVi: (id, statementVi) => put(`/api/problems/${id}/statementVi`, { statementVi }),
   getMistakes: (id) => get(`/api/problems/${id}/mistakes`),
   getHistory: (id) => get(`/api/problems/${id}/history`),
   gameReview: (id) => get(`/api/problems/${id}/game-review`),
@@ -397,6 +410,8 @@ export const api = {
   aiGenerateTests: (data, opts) => aiCall((s) => post("/api/ai/generate-tests", data, { signal: s }), opts),
   aiCapabilities: () => get("/api/ai/capabilities"),
   aiOcr: (data, opts) => aiCall((s) => post("/api/ai/ocr", data, { signal: s }), opts),
+  aiTranslateStatement: (data, opts) => aiCall((s) => post("/api/ai/translate-statement", data, { signal: s }), opts),
+  aiTranslateUi: (data, opts) => aiCall((s) => post("/api/ai/translate-ui", data, { signal: s }), opts),
   aiAnalyze: (data, opts) => aiCall((s) => post("/api/ai/analyze", data, { signal: s }), opts),
   aiTemplate: (data, opts) => aiCall((s) => post("/api/ai/template", data, { signal: s }), opts),
   aiProcess: (data, opts) => aiCall((s) => post("/api/ai/process", data, { signal: s }), opts),
@@ -535,5 +550,26 @@ export const api = {
   rushSubmit: (code, opts) => aiCall((s) => post("/api/arena/rush/submit", { code }, { signal: s }), opts),
   // Hint lũy tiến (server-authoritative): cấp 1 khoanh vùng miễn phí, cấp 2 kỹ
   // thuật trừ 1 điểm — không bao giờ trả bugSummary.
-  rushHint: (opts) => post("/api/arena/rush/hint", {}, opts)
+  rushHint: (opts) => post("/api/arena/rush/hint", {}, opts),
+
+  // ---- Xưởng v2 Preview Runtime (docs/XUONG-API-CONTRACT.md §3) ----------
+  // Envelopes are exact and there is NO fixture fallback: a 4xx/5xx is shown
+  // as itself. Silently degrading to fixtures is what once made a working AI
+  // call read as "phân tích thất bại".
+  // Run / replay / checks are deterministic — no aiCall wrapper on those.
+  xuongAnalyze: (data, opts) => aiCall((s) => post("/api/xuong/analyze", data, { signal: s }), opts),
+  xuongSelect: (sessionId, pathwayId, opts) => post(`/api/xuong/sessions/${encodeURIComponent(sessionId)}/select`, { pathwayId }, opts),
+  xuongProjects: () => get("/api/xuong/projects"),
+  xuongProject: (id) => get(`/api/xuong/projects/${encodeURIComponent(id)}`),
+  xuongReference: (id) => get(`/api/xuong/projects/${encodeURIComponent(id)}/reference`),
+  // expectedContentHash lets the server reject a save written against a stale
+  // revision (STALE_SOURCE) instead of silently invalidating every mapping.
+  xuongSaveFile: (id, path, source, expectedContentHash) =>
+    put(`/api/xuong/projects/${encodeURIComponent(id)}/files/${encodeURIComponent(path)}`, { source, expectedContentHash }),
+  xuongRun: (id, scenarioId, controlState, opts) =>
+    post(`/api/xuong/projects/${encodeURIComponent(id)}/run`, { scenarioId, controlState }, opts),
+  xuongReplay: (id, runId, cursor) =>
+    get(`/api/xuong/projects/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/replay?cursor=${encodeURIComponent(cursor)}`),
+  xuongChecks: (id, runId, opts) => post(`/api/xuong/projects/${encodeURIComponent(id)}/checks`, { runId }, opts),
+  xuongEvolve: (id, request, opts) => aiCall((s) => post(`/api/xuong/projects/${encodeURIComponent(id)}/evolve`, { request }, { signal: s }), opts)
 };

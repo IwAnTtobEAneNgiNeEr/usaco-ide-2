@@ -25,12 +25,55 @@ class RangeSum {
 const SOURCE = `#include "RangeSum.hpp"
 #include <stdexcept>
 #include <utility>
-RangeSum::RangeSum(std::vector<long long> values) : values_(std::move(values)) { rebuild(); }
-void RangeSum::rebuild() { prefix_.assign(values_.size()+1,0); for(std::size_t i=0;i<values_.size();++i) prefix_[i+1]=prefix_[i]+values_[i]; }
-std::size_t RangeSum::size() const { return values_.size(); }
-long long RangeSum::queryZeroBased(std::size_t l,std::size_t r) const { if(l>r||r>=values_.size()) throw std::out_of_range("invalid zero-based range"); return prefix_[r+1]-prefix_[l]; }
-long long RangeSum::queryOneBased(std::size_t l,std::size_t r) const { if(l==0||l>r||r>values_.size()) throw std::out_of_range("invalid one-based range"); return prefix_[r]-prefix_[l-1]; }
-bool RangeSum::updateZeroBased(std::size_t,long long) { return false; /* TODO v2 */ }
+using namespace std;
+
+// Trong bài thi em thường viết tất cả trong main().
+// Ở Xưởng, main() đã nằm trong file demo/test; file này chỉ giữ phần xử lý
+// để nhiều nơi có thể gọi lại mà không chép lại thuật toán.
+
+// PHẦN 1: Nhận mảng ban đầu rồi dựng mảng cộng dồn.
+RangeSum::RangeSum(vector<long long> values) : values_(move(values)) {
+  rebuild();
+}
+
+void RangeSum::rebuild() {
+  prefix_.assign(values_.size() + 1, 0);
+  for (size_t index = 0; index < values_.size(); ++index) {
+    prefix_[index + 1] = prefix_[index] + values_[index];
+  }
+}
+
+// PHẦN 2: Các hàm truy vấn đã hoạt động; em không cần sửa chúng ở build này.
+size_t RangeSum::size() const {
+  return values_.size();
+}
+
+long long RangeSum::queryZeroBased(size_t left, size_t right) const {
+  if (left > right || right >= values_.size()) {
+    throw out_of_range("invalid zero-based range");
+  }
+  return prefix_[right + 1] - prefix_[left];
+}
+
+long long RangeSum::queryOneBased(size_t left, size_t right) const {
+  if (left == 0 || left > right || right > values_.size()) {
+    throw out_of_range("invalid one-based range");
+  }
+  return prefix_[right] - prefix_[left - 1];
+}
+
+// PHẦN 3: VIỆC CỦA EM.
+// Em chỉ viết trong hàm này. rebuild() là helper đã có sẵn ở PHẦN 1.
+bool RangeSum::updateZeroBased(size_t index, long long value) {
+  // TODO Xưởng 01.1 — nếu index nằm ngoài values_, return false.
+
+  // TODO Xưởng 01.2 — ghi value mới vào đúng phần tử của values_.
+
+  // TODO Xưởng 01.3 — gọi rebuild() để prefix_ khớp dữ liệu mới.
+
+  // TODO Xưởng 01.4 — cập nhật hợp lệ thì return true.
+  return false;
+}
 `;
 const BASELINE_TEST = `#include "RangeSum.hpp"
 #include <iostream>

@@ -136,9 +136,22 @@ router.post("/rush/start", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/arena/rush/state — reload-resilient view of whatever is current.
+// An active run whose deadline already passed (the app was closed mid-drill)
+// is resolved as a timeout HERE, so a resumed session never shows a dead
+// "Còn 0s" clock on a drill the server already considers lost.
 router.get("/rush/state", asyncHandler(async (req, res) => {
-  const state = await rushStore.loadRunState(RUN_FILE);
-  res.json({ ok: true, run: clientRun(state) });
+  let state = await rushStore.loadRunState(RUN_FILE);
+  let expired = false;
+  let expiredReveal = "";
+  const now = Date.now();
+  const active = state.run.state === "active" && state.run.currentDrill;
+  if (active && state.run.deadlineAt != null && now > state.run.deadlineAt) {
+    expiredReveal = (state.run.currentDrill && state.run.currentDrill.bugSummary) || "";
+    const { run: resolved } = rush.resolveAttempt(state.run, { correct: false, now });
+    state = await rushStore.saveRun(RUN_FILE, resolved);
+    expired = true;
+  }
+  res.json({ ok: true, run: clientRun(state), expired, expiredReveal });
 }));
 
 // POST /api/arena/rush/run  { code, input, expected }

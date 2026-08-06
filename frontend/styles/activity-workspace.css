@@ -305,6 +305,31 @@
 
 .aw-control-span { grid-column: 1 / -1; }
 
+/* Grouped control clusters (Stress Test rail): a mono kicker + a bordered
+   sub-panel per group, so "how much to run" and "seed/compare" (secondary,
+   only relevant in fixed-seed / float-compare mode) read as two distinct
+   decisions instead of one undifferentiated 6-field grid. */
+.aw-control-group {
+  padding: 10px 11px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--panel-2) 55%, transparent);
+  display: grid;
+  gap: 8px;
+}
+.aw-control-group-secondary { opacity: .92; }
+.aw-control-group-k {
+  color: var(--text-dim);
+  font: 700 9.5px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.aw-control-group-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
 .aw-segment {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -651,15 +676,70 @@
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 12px;
   box-sizing: border-box;
   text-align: center;
 }
 
 .aw-state-shell .aw-close { position: absolute; top: 16px; right: 16px; }
-.aw-state-shell h1 { margin: 0; color: var(--text); font-size: var(--text-display); letter-spacing: -.035em; }
-.aw-state-shell p { max-width: 52ch; margin: 0; line-height: 1.6; }
+
+/* The loading/error card mirrors the workbench panels (same border/elevation
+   tokens) so "đang chuẩn bị" already looks like the workspace it becomes —
+   never a bare black void. */
+.aw-state-card {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(560px, 92vw);
+  padding: 36px 40px 30px;
+  border: 1px solid var(--border, rgba(148, 163, 184, .16));
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(148, 163, 184, .05), transparent 42%),
+    var(--panel, rgba(10, 14, 22, .92));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+}
+.aw-state-card h1 { margin: 0; color: var(--text); font-size: var(--text-display); letter-spacing: -.035em; }
+.aw-state-card p { max-width: 52ch; margin: 0; line-height: 1.6; }
 .aw-state-error { color: var(--danger); }
+
+.aw-state-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-caption, 12px);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.aw-state-steps i { font-style: normal; opacity: .45; }
+.aw-state-steps span { opacity: .45; }
+.aw-state-steps span.on { opacity: 1; color: var(--accent, #7dd3fc); }
+
+.aw-state-progress {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .14);
+  overflow: hidden;
+}
+.aw-state-progress i {
+  display: block;
+  width: 4%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent, #7dd3fc), var(--accent-2, #a78bfa));
+}
+
+.aw-state-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.aw-state-actions kbd {
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid var(--border, rgba(148, 163, 184, .2));
+  border-radius: 4px;
+  font-size: 10px;
+  opacity: .7;
+}
+.aw-state-shell.is-error .aw-state-card { border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 
 /* Shared problem-source layer. All four activity modes use the same entry
    point so selecting, pasting, and AI-authoring a task never drift apart. */
@@ -759,12 +839,12 @@
   width: 24px;
   height: 24px;
   box-sizing: border-box;
-  border: 1px solid rgba(var(--accent-rgb), .42);
+  border: 1px solid rgba(69, 200, 255, .42);
   border-radius: 7px;
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), .26), rgba(var(--accent-rgb), .08));
-  color: #ffe2a6;
+  background: linear-gradient(180deg, rgba(69, 200, 255, .26), rgba(69, 200, 255, .08));
+  color: #bfeaff;
   font: 700 12px/1 var(--mono);
-  box-shadow: var(--edge-light), 0 3px 12px -4px rgba(var(--accent-rgb), .5);
+  box-shadow: var(--edge-light), 0 3px 12px -4px rgba(69, 200, 255, .5);
 }
 
 .activity-workspace .aw-brand-name {
@@ -828,6 +908,20 @@
 .activity-workspace .aw-file-tab { min-height: 32px; padding: 0 10px; border-color: transparent; border-radius: 5px 5px 0 0; font-size: 11px; }
 .activity-workspace .aw-file-tab:hover { background: var(--panel-2); border-color: transparent; }
 .activity-workspace .aw-file-tab.active { background: var(--panel); border-color: var(--border); border-bottom-color: var(--accent); color: var(--text); }
+
+/* Overflow-controlled file tab row (README 15: no mid-word truncation). */
+.activity-workspace .aw-file-tabs-scroll { position: relative; min-width: 0; overflow: hidden; }
+.activity-workspace .aw-file-tabs-scroll .aw-file-tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+.activity-workspace .aw-file-tabs-scroll .aw-file-tabs::-webkit-scrollbar { display: none; }
+.activity-workspace .aw-file-tabs-scroll::after {
+  content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 26px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--editor-bg));
+}
+.activity-workspace .aw-file-tab { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 220px; white-space: nowrap; }
+.activity-workspace .aw-file-tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-workspace .aw-file-tab-lock { flex: none; font-style: normal; font-size: 11px; opacity: .85; }
+.activity-workspace .aw-file-tab.is-locked { color: var(--text-dim); }
+.activity-workspace .aw-file-tab.is-locked.active { color: var(--text); }
 .activity-workspace .aw-task-note { color: var(--accent); font-size: 11px; font-weight: 650; }
 .activity-workspace .aw-save-state { font-size: 11px; }
 .activity-workspace #aw-save { min-height: 28px; }
@@ -969,13 +1063,20 @@
    inherit that same material scale locally so their editor, statement and
    judge rail belong to one product while retaining the editor's contrast.
    ------------------------------------------------------------------------- */
+/* The activity workspace used gray --bg (#0f0f12) + amber --accent-rgb for
+   its ambient glow — but the reading-stage "cinema rule" (statement-neon.css)
+   is a deliberately hardcoded ink-blue family (#0f1929, rgba(18,27,44,…) /
+   rgba(12,18,30,…)) that every problem statement in the app already sits on.
+   Matching THAT family — not the gray/amber pair — is what makes Xưởng and
+   the 4 tools read as the same product as the statement pane they sit next
+   to, instead of a different, flatter app wearing the same chrome. */
 .activity-workspace {
   position: fixed;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(820px 420px at 4% -12%, rgba(var(--accent-rgb), .10), transparent 62%),
-    var(--bg);
+    radial-gradient(820px 420px at 4% -12%, rgba(69, 200, 255, .085), transparent 62%),
+    linear-gradient(145deg, #0d1524, #0a0f1c);
 }
 
 .activity-workspace::before {
@@ -988,22 +1089,34 @@
 }
 
 .activity-workspace .aw-shell { position: relative; z-index: 1; }
-.activity-workspace .aw-topbar { background: color-mix(in srgb, var(--bg) 94%, transparent); border-bottom-color: var(--border); }
-.activity-workspace .aw-head { background: color-mix(in srgb, var(--panel) 92%, transparent); border-bottom-color: var(--border); }
+.activity-workspace .aw-topbar { background: linear-gradient(180deg, rgba(13, 24, 42, .94), rgba(10, 15, 28, .94)); border-bottom-color: rgba(97, 198, 255, .2); }
+.activity-workspace .aw-head { background: rgba(13, 24, 42, .85); border-bottom-color: rgba(97, 198, 255, .18); }
 .activity-workspace .aw-body { background: transparent; }
 
+/* Each column used to carry exactly ONE small (~500px) glow pinned to a
+   corner over an otherwise flat fill. Fine when a column's content is tall
+   enough to reach past it — but short statements (Stress Test, Rush, a fresh
+   Xưởng project) leave most of the column as dead flat color below the glow's
+   reach, reading as a black hole next to the particle-lit rest of the app.
+   Sizing the washes in vh (so they always cover the viewport, not a fixed
+   content length) and pairing a top glow with a bottom one gives every
+   column ambient life top-to-bottom regardless of how much content it holds
+   — the same atmospheric quality as Home, without touching Home's own
+   background or literally piping particles through an opaque overlay. */
 .activity-workspace .aw-statement-col {
   background:
-    radial-gradient(520px 220px at 0 0, rgba(var(--accent-rgb), .055), transparent 76%),
-    linear-gradient(180deg, var(--bg), var(--bg-soft));
-  border-right-color: var(--border);
+    radial-gradient(70vh 55vh at 0% -8%, rgba(69, 200, 255, .075), transparent 72%),
+    radial-gradient(60vh 45vh at 100% 108%, rgba(150, 80, 255, .05), transparent 70%),
+    linear-gradient(180deg, #0c1220, #0a0f1c);
+  border-right-color: rgba(97, 198, 255, .16);
 }
 
 .activity-workspace .aw-code-col {
   background:
-    radial-gradient(640px 300px at 55% -12%, rgba(var(--accent-rgb), .035), transparent 68%),
-    var(--editor-bg);
-  border-right-color: var(--border);
+    radial-gradient(75vh 50vh at 55% -10%, rgba(69, 200, 255, .045), transparent 68%),
+    radial-gradient(55vh 40vh at 50% 110%, rgba(69, 200, 255, .03), transparent 70%),
+    #0a0f1c;
+  border-right-color: rgba(97, 198, 255, .16);
 }
 
 .activity-workspace .aw-result-col {
@@ -1012,18 +1125,19 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   background:
-    radial-gradient(480px 260px at 100% 0, rgba(var(--accent-rgb), .045), transparent 70%),
-    linear-gradient(180deg, var(--panel), var(--bg-soft));
+    radial-gradient(60vh 48vh at 100% -4%, rgba(69, 200, 255, .06), transparent 70%),
+    radial-gradient(55vh 45vh at 0% 108%, rgba(150, 80, 255, .045), transparent 70%),
+    linear-gradient(180deg, #0d1524, #0a0f1c);
 }
 
-.activity-workspace .aw-col-head { background: color-mix(in srgb, var(--panel) 92%, transparent); border-bottom-color: var(--border-soft); }
-.activity-workspace .aw-code-toolbar { background: color-mix(in srgb, var(--editor-bg) 92%, transparent); border-bottom-color: var(--border-soft); }
+.activity-workspace .aw-col-head { background: rgba(13, 24, 42, .78); border-bottom-color: rgba(97, 198, 255, .14); }
+.activity-workspace .aw-code-toolbar { background: rgba(10, 18, 32, .85); border-bottom-color: rgba(97, 198, 255, .14); }
 .activity-workspace .aw-editor-host,
 .activity-workspace .aw-editor-host .cm-editor,
 .activity-workspace .aw-editor-host .cm-scroller { background: transparent; }
-.activity-workspace .aw-editor-stack { background: var(--editor-bg); }
+.activity-workspace .aw-editor-stack { background: #0a1220; }
 
-.activity-workspace .aw-statement { background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--panel) 28%, transparent)); }
+.activity-workspace .aw-statement { background: linear-gradient(180deg, transparent, rgba(13, 24, 42, .3)); }
 .activity-workspace .aw-statement-editor { display: grid; gap: 12px; max-width: 780px; margin: 0 auto; padding: 18px; }
 .activity-workspace .aw-statement-editor > div { display: grid; gap: 4px; }
 .activity-workspace .aw-statement-editor b { color: var(--text); font-size: var(--text-h-m); }
@@ -1033,10 +1147,27 @@
 .activity-workspace .aw-statement-editor footer { display: flex; justify-content: flex-end; gap: 8px; }
 .activity-workspace .aw-statement-dock { background: var(--panel); border-color: var(--border); }
 .activity-workspace .aw-dock-step { background: var(--panel-2); border-color: var(--border-soft); }
-.activity-workspace .aw-controls { background: var(--panel-2); border-color: var(--border); }
-.activity-workspace .aw-io-field textarea { background: var(--editor-bg); border-color: var(--border); }
-.activity-workspace .aw-console-ready { flex: 1; background: var(--panel-2); border-color: var(--border); }
-.activity-workspace .aw-console-flow > div { background: var(--panel); border-color: var(--border-soft); }
+/* The Run/Judge rail's static panels (mode controls, the pre-first-run READY
+   card) rode a flat --panel-2 fill while every other surface in the app —
+   the statement hero, the practice cards, the toolguide rail right above
+   these — carries the same accent-glow + hairline recipe. Applying that
+   recipe here (not a new one) is what makes the rail read as part of the
+   same product instead of a bare placeholder box. */
+.activity-workspace .aw-controls {
+  background:
+    radial-gradient(420px 120px at 0 0, rgba(69, 200, 255, .09), transparent 70%),
+    #0d182a;
+  border-color: rgba(97, 198, 255, .22);
+}
+.activity-workspace .aw-io-field textarea { background: #0a1220; border-color: rgba(97, 198, 255, .16); }
+.activity-workspace .aw-console-ready {
+  flex: 1;
+  background:
+    radial-gradient(460px 130px at 0 0, rgba(69, 200, 255, .09), transparent 70%),
+    #0d182a;
+  border-color: rgba(97, 198, 255, .22);
+}
+.activity-workspace .aw-console-flow > div { background: #0a1528; border-color: rgba(97, 198, 255, .14); }
 
 .activity-workspace .aw-file-tab.active { background: var(--panel-2); border-color: var(--border); border-bottom-color: var(--accent); }
 .activity-workspace .aw-status-item { background: var(--panel-2); border-color: var(--border-soft); }
@@ -1074,11 +1205,11 @@
   overflow: visible;
   margin: 10px 12px 0;
   padding: 13px 13px 14px;
-  border: 1px solid rgba(109, 164, 210, .22);
+  border: 1px solid rgba(97, 198, 255, .22);
   border-radius: var(--radius-md);
   background:
-    radial-gradient(460px 130px at 0 0, rgba(var(--accent-rgb), .075), transparent 70%),
-    var(--panel);
+    radial-gradient(460px 130px at 0 0, rgba(69, 200, 255, .08), transparent 70%),
+    #0d182a;
   animation: aw-tool-enter 220ms var(--ease) both;
 }
 

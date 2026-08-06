@@ -221,8 +221,13 @@ export function initCommandPalette(app) {
   const btn = document.createElement("button");
   btn.id = "btn-cmdk";
   btn.className = "btn btn-ghost btn-sm";
-  btn.title = "Bảng lệnh nhanh (Ctrl+K)";
-  btn.innerHTML = `⌘ Lệnh <kbd>Ctrl·K</kbd>`;
+  const drawLabel = () => {
+    const english = document.documentElement.lang === "en";
+    btn.title = english ? "Command palette (Ctrl+K)" : "Bảng lệnh nhanh (Ctrl+K)";
+    btn.innerHTML = `⌘ ${english ? "Command" : "Lệnh"} <kbd>Ctrl·K</kbd>`;
+  };
+  drawLabel();
+  document.addEventListener("localechange", drawLabel);
   if (chips && chips.parentNode) chips.parentNode.insertBefore(btn, chips.nextSibling);
   btn.addEventListener("click", open);
 

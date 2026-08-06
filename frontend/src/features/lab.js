@@ -41,6 +41,19 @@ int main() {
     // Viết lời giải chậm nhưng chắc chắn đúng cho dữ liệu nhỏ.
 }`;
 
+// Seeded into the Solution tab only when the picked problem has no saved code,
+// so the stress workspace is never a dead end (a bare empty editor that fails
+// the batch with "Thiếu code Solution").
+const SOLUTION_STARTER = `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // TODO: dán lời giải cần kiểm tra vào đây rồi Run batch để dò bug.
+}`;
+
 const DEFAULTS = Object.freeze({
   mode: "correctness",
   testCount: 100,
@@ -107,33 +120,24 @@ function progressRow(frame) {
   return null;
 }
 
+// A short blockquote prepended ABOVE the real statement (never replacing it —
+// a student can't stress-test a problem they can't read). Plain Markdown so
+// it flows through the same parseSections/renderMarkdown pipeline as the
+// statement itself — the fuller "how to use this tool" story lives in the
+// rail's toolGuideHtml (activityProfile kind:"stress"), not here.
+function stressBanner() {
+  return `> **Stress Test:** viết **Generator** + **Brute Force** ở hai tab kế bên; app đối chiếu cả hai với **Solution** và dừng ở test đầu tiên sai. Chọn chế độ ở cột phải.`;
+}
+
+// Fallback đề when the problem being stress-tested has no saved statement.
 function pipelineStatement(title) {
   return `# Stress Test / Sinh Test
 
 **Bài đang kiểm tra:** ${title || "Bài hiện tại"}
 
-Quy trình chạy độc lập: **Generator → Brute Force → Solution → so sánh output**. Hệ thống dừng ở lỗi đầu tiên để input còn nhỏ và dễ debug.
+Chưa có đề bài lưu cho bài này — mở bài trong Luyện tập và dán/tạo đề trước, rồi quay lại đây để stress test theo đúng ràng buộc thật.
 
-## Contract của Generator
-
-- \`argv[1]\`: seed chính xác của test hiện tại.
-- \`argv[2]\`: \`correctness\` hoặc \`performance\`.
-- \`argv[3]\`: id subtask — chỉ có ở chế độ **Thi đấu**.
-- Ở **Correctness**, hãy sinh dữ liệu nhỏ để Brute chạy chắc chắn.
-- Ở **Performance**, hãy sinh dữ liệu sát constraint; Brute sẽ không được chạy.
-- Ở **Thi đấu**, switch theo subtask id để sinh đúng ràng buộc từng subtask.
-
-Fixed seed tái tạo đúng chuỗi cũ. Random seed mở một vùng kiểm tra mới. Run chạy nhanh 1 test; Judge chạy toàn bộ batch đã cấu hình.`;
-}
-
-function examRules() {
-  return `
-
----
-
-## Chế độ Thi đấu
-
-Giống một kỳ thi thật: **không coach, không gợi ý, không phân tích AI**. Bộ test ≥ 100, chia theo subtask như ban giám khảo. Em tự viết Brute làm trọng tài, tự soi input lỗi, tự tin rồi mới nộp — tự làm tự ăn.`;
+Quy trình chạy độc lập: **Generator → Brute Force → Solution → so sánh output**. Hệ thống dừng ở lỗi đầu tiên để input còn nhỏ và dễ debug.`;
 }
 
 function mountControls(host, state, syncRef, problemId, examRef, actions) {
@@ -164,13 +168,25 @@ function mountControls(host, state, syncRef, problemId, examRef, actions) {
           </div>`).join("")}</div>
         <div class="exam-plan-note">AI chỉ dựng khung sinh test — không giải, không gợi ý. Sửa generator/số test thoải mái; tối thiểu nên giữ ≥ 100 test.</div>`
         : `<div class="exam-plan-empty">Chưa có khung. Bấm "Dựng khung từ đề" — AI đọc ràng buộc trong đề và chia subtask + viết generator (1 lần duy nhất, có thể sửa tay).</div>`}
-      </div>` : `
-      <label>Số test<input data-field="testCount" type="number" min="1" max="1000"></label>`}
-      <label>Time/test (ms)<input data-field="timeMs" type="number" min="100" max="10000" step="100"></label>
-      <label>Seed mode<select data-field="seedMode"><option value="random">Random</option><option value="fixed">Fixed</option></select></label>
-      <label>Seed bắt đầu<input data-field="seedStart" type="number" min="0" max="1000000000"></label>
-      <label>So sánh<select data-field="compareMode"><option value="loose">Loose</option><option value="strict">Strict</option><option value="token">Token</option><option value="float">Float</option></select></label>
-      <label>Epsilon<input data-field="epsilon" type="number" min="0.000000001" step="0.000001"></label>
+      </div>` : ""}
+      <div class="aw-control-span aw-control-group">
+        <div class="aw-control-group-k">Khối lượng chạy</div>
+        <div class="aw-control-group-row">
+          ${isExam ? "" : `<label>Số test<input data-field="testCount" type="number" min="1" max="1000"></label>`}
+          <label>Time/test (ms)<input data-field="timeMs" type="number" min="100" max="10000" step="100"></label>
+        </div>
+      </div>
+      <div class="aw-control-span aw-control-group aw-control-group-secondary">
+        <div class="aw-control-group-k">Seed &amp; so sánh</div>
+        <div class="aw-control-group-row">
+          <label>Seed mode<select data-field="seedMode"><option value="random">Random</option><option value="fixed">Fixed</option></select></label>
+          <label>Seed bắt đầu<input data-field="seedStart" type="number" min="0" max="1000000000"></label>
+        </div>
+        <div class="aw-control-group-row">
+          <label>So sánh<select data-field="compareMode"><option value="loose">Loose</option><option value="strict">Strict</option><option value="token">Token</option><option value="float">Float</option></select></label>
+          <label>Epsilon<input data-field="epsilon" type="number" min="0.000000001" step="0.000001"></label>
+        </div>
+      </div>
     </div>`;
 
     host.querySelectorAll("[data-mode]").forEach((button) => {
@@ -244,7 +260,16 @@ export function initLab(app) {
       api.getExpected(problemId).catch(() => ({ expected: "" })),
       api.listTests(problemId).catch(() => ({ tests: [] }))
     ]);
-    const solutionCode = codeRes.code || app.getEditorValue() || "";
+    // Stress-testing a problem with no solution is a dead end: the batch used
+    // to fail with a cryptic "Thiếu code Solution" from the backend. When the
+    // problem has no saved code, seed the Solution tab with a clearly-labelled
+    // starter so the tool is always usable and the guidance is human.
+    const savedCode = codeRes.code || app.getEditorValue() || "";
+    const hasSolution = Boolean(savedCode.trim());
+    const solutionCode = hasSolution ? savedCode : SOLUTION_STARTER;
+    if (!hasSolution) {
+      app.toast("Bài này chưa có lời giải — viết vào tab Solution rồi Run batch để dò bug.", "info");
+    }
     const realStatement = (statementRes.statement || "").trim();
 
     const buildPlan = async () => {
@@ -399,15 +424,17 @@ export function initLab(app) {
       };
     };
 
-    const statementText = realStatement
-      ? realStatement + examRules()
-      : pipelineStatement(problem?.title) + examRules();
-
     await app.activityWorkspace.open({
       kind: "stress",
       kicker: "Kỹ năng thi đấu",
       title: "Stress Test / Sinh Test",
-      statement: statementText,
+      // Stress applies to a problem the user picks — the source dialog is the
+      // right tool here (and only here; rush/corefill/contest own their feed).
+      sourceSwitch: true,
+      // The actual đề bài is the primary reading surface (a student can't
+      // stress-test a problem they can't read) — a collapsed banner above it
+      // explains the TOOL, and the rail's toolGuideHtml explains the controls.
+      statement: stressBanner() + "\n\n" + (realStatement || pipelineStatement(problem?.title)),
       samples: (testsRes.tests || []).slice(0, 2).map((test) => ({ input: test.input || "", output: test.expected || "" })),
       sheetMeta: {
         title: problem?.title || "Stress Test / Sinh Test",

@@ -1,0 +1,228 @@
+{
+  "schemaVersion": "xuong-analysis-cache.v2",
+  "entries": {
+    "9876a77ea2880743b17808bc27cba626d48c35df1b9a63b5196a02a023644806": {
+      "analysis": {
+        "summary": "Sinh toàn bộ xâu độ dài n từ các ký tự A, B, C sao cho không có hai ký tự liền nhau giống nhau.",
+        "concepts": [
+          "đệ quy",
+          "quay lui",
+          "tạo chuỗi",
+          "điều kiện không trùng liền kề"
+        ],
+        "constraints": [
+          "1 ≤ n ≤ 10",
+          "phải in mỗi xâu trên một dòng",
+          "không dùng thư viện ngoài chuẩn"
+        ],
+        "evidenceRefs": [
+          "problem:xau-abc:verdict:AC"
+        ],
+        "pathways": []
+      },
+      "savedAt": 1785690048773
+    },
+    "0d0f5a9d2776209993a765061ce0287a6c440c79196d88f57f1469ee2b1f953d": {
+      "analysis": {
+        "summary": "Sử dụng thuật toán Dijkstra kết hợp heap để tìm đường đi có tổng chi phí nhỏ nhất trên lưới N x M, di chuyển 4 hướng, mỗi ô chỉ được qua một lần.",
+        "concepts": [
+          "Thuật toán Dijkstra",
+          "Heap (priority queue)",
+          "Đồ thị lưới",
+          "Chi phí ô"
+        ],
+        "constraints": [
+          "1 ≤ N, M ≤ 50",
+          "0 ≤ A[i][j] ≤ 9",
+          "Di chuyển 4 hướng (trái, phải, lên, xuống)",
+          "Thời gian O(N×M×log(N×M))"
+        ],
+        "evidenceRefs": [
+          "problem:tim-duong-di-voi-chi-phi-nho-nhat-tren-luoi-dijkstra-heap:verdict:AC"
+        ],
+        "pathways": [
+          {
+            "id": "path1",
+            "title": "Giải pháp C++ cho bài toán đường đi ngắn nhất trên lưới",
+            "purpose": "Tính tổng chi phí nhỏ nhất để di chuyển từ ô đầu (1,1) tới ô cuối (N,M).",
+            "context": "Học sinh Việt Nam cần công cụ thực hành thuật toán Dijkstra trên lưới, giúp họ hiểu cách áp dụng heap để tối ưu thời gian.",
+            "application": "Xây dựng đồ thị từ lưới, mỗi ô là đỉnh, các cạnh có trọng số bằng chi phí ô đích, chạy Dijkstra để trả về chi phí tối thiểu.",
+            "target": "cpp",
+            "seedId": "grid-pathfinder",
+            "deliverables": [
+              "GridPathfinder.hpp"
+            ],
+            "verification": "Chạy scenario thật và quan sát preview cho thấy tuyến màu xanh cắt chéo qua kho và giảm từ 12 xuống 6 bước.",
+            "tasks": [
+              "Mở rộng bộ hướng để xe đi từ khu nhận A tới khu giao B trong 6 bước chéo hợp lệ."
+            ],
+            "contractCriteria": [
+              "Preview cho thấy tuyến màu xanh cắt chéo qua kho và giảm từ 12 xuống 6 bước."
+            ]
+          }
+        ]
+      },
+      "savedAt": 1785597396248
+    },
+    "0449a1daa7be297d1e70d7fba9b07d788eb3b8d47e6d4a9fd2a233cc8a6213a9": {
+      "analysis": {
+        "summary": "Sử dụng thuật toán Dijkstra trên đồ thị trọng số để tính chi phí tối thiểu di chuyển quân hậu trên bàn cờ N×N, tính cả chi phí ô xuất phát và tránh ô chặn.",
+        "concepts": [
+          "đồ thị trọng số",
+          "thuật toán Dijkstra",
+          "đi chuyển đa hướng (8 hướng)",
+          "chi phí ô"
+        ],
+        "constraints": [
+          "N ≤ 100, tổng ô ≤ 10 000",
+          "ô chặn có giá trị -1 và không được đi qua",
+          "chi phí bao gồm ô xuất phát"
+        ],
+        "evidenceRefs": [
+          "problem:bai-113-quan-hau-tren-ban-co-co-chi-phi:verdict:AC"
+        ],
+        "pathways": [
+          {
+            "id": "1",
+            "title": "Bản đồ chi phí di chuyển quân hậu",
+            "purpose": "Tính chi phí nhỏ nhất để quân hậu di chuyển từ vị trí ban đầu tới vị trí đích trên bàn cờ.",
+            "context": "Học sinh lớp 9‑10 cần một công cụ nhanh chóng, chính xác để giải bài toán di chuyển quân hậu có chi phí, tránh các ô bị chặn.",
+            "application": "Xây dựng đồ thị trong mỗi ô là một nút, các cạnh nối tới các ô có thể di chuyển theo 8 hướng liên tiếp, trọng số của mỗi cạnh là tổng chi phí các ô trung gian. Sau đó áp dụng thuật toán Dijkstra để tìm đường đi ngắn nhất và cộng thêm chi phí ô xuất phát.",
+            "target": "cpp",
+            "seedId": "weighted-graph-router",
+            "deliverables": [
+              "WeightedGraphRouter.hpp",
+              "main.cpp"
+            ],
+            "verification": "Chạy scenario thật và quan sát preview đổi tuyến đang chọn từ a→b→d→f (phí 6) sang a→f (phí 5).",
+            "tasks": [
+              "Khi A→F giảm còn 5, cập nhật đúng cạnh và chọn lại tuyến trực tiếp."
+            ],
+            "contractCriteria": [
+              "Preview đổi tuyến đang chọn từ A→B→D→F (phí 6) sang A→F (phí 5)."
+            ]
+          }
+        ]
+      },
+      "savedAt": 1784915549589
+    },
+    "fdcf03f6fbbc0be3b99102bc5cdd93ab1da86a261b42ab72189474d696676f03": {
+      "analysis": {
+        "summary": "Mã hiện tại dùng DFS để kiểm tra khả năng di chuyển trong mê cung, nhưng có nguy cơ tràn stack. Thay thế bằng thuật toán duyệt lưới trong GridPathfinder để tính đường đi ngắn nhất một cách an toàn và hiệu quả.",
+        "concepts": [
+          "DFS",
+          "BFS",
+          "grid traversal",
+          "shortest path"
+        ],
+        "constraints": [
+          "Kích thước mê cung lên tới 1000 x 1000",
+          "Thời gian thực thi O(n*m)",
+          "Không được vượt quá bộ nhớ cho mảng visited"
+        ],
+        "evidenceRefs": [
+          "problem:107-me-cung-co-duong-di-khong:verdict:AC"
+        ],
+        "pathways": [
+          {
+            "id": "p1",
+            "title": "Kiểm tra khả năng di chuyển trong mê cung",
+            "purpose": "Xác định liệu có đường đi từ điểm bắt đầu tới điểm kết thúc trong mê cung hay không.",
+            "context": "Học sinh lớp 8 cần công cụ nhanh để kiểm tra tính khả thi của đường đi trong bài toán mê cung trên giấy, tránh việc viết mã phức tạp và gặp lỗi stack.",
+            "application": "Sử dụng thuật toán duyệt lưới theo bốn hướng (trên, dưới, trái, phải) để đánh dấu các ô có thể tiếp cận từ vị trí bắt đầu, sau đó kiểm tra ô đích có được đánh dấu hay không.",
+            "target": "cpp",
+            "seedId": "grid-pathfinder",
+            "deliverables": [
+              "GridPathfinder.hpp",
+              "main.cpp"
+            ],
+            "verification": "Chạy scenario thật và quan sát preview cho thấy tuyến từ góc xuất phát tới ô chéo kề chỉ còn một bước.",
+            "tasks": [
+              "Cho phép đi chéo để tuyến tới ô chéo kề có độ dài một bước."
+            ],
+            "contractCriteria": [
+              "Preview cho thấy tuyến từ góc xuất phát tới ô chéo kề chỉ còn một bước."
+            ]
+          }
+        ]
+      },
+      "savedAt": 1784828883445
+    },
+    "34e832953b6b18786f5ee4bc7f81fc6b1509545a4a7d3620bd50fba39fd50e49": {
+      "analysis": {
+        "summary": "Sử dụng thuật toán duyệt đồ thị BFS trên lưới để tính khoảng cách ngắn nhất giữa hai ô.",
+        "concepts": [
+          "BFS",
+          "đồ thị lưới",
+          "di chuyển 4 hướng"
+        ],
+        "constraints": [
+          "Lưới chỉ chứa các ký tự '.', '#', 'S', 'T'",
+          "Di chuyển được phép lên, xuống, trái, phải",
+          "Kích thước lưới giới hạn phù hợp với bộ nhớ"
+        ],
+        "evidenceRefs": [],
+        "pathways": [
+          {
+            "id": "path1",
+            "title": "Giúp robot tìm đường ngắn nhất trong kho",
+            "purpose": "Tính số bước ít nhất để robot di chuyển từ vị trí bắt đầu đến mục tiêu",
+            "context": "Học sinh muốn mô phỏng robot trong môi trường kho có kệ hàng, cần giải quyết vấn đề định hướng một cách hiệu quả",
+            "application": "Thuật toán duyệt BFS trên lưới, tính khoảng cách ngắn nhất giữa hai ô, tránh các ô kệ hàng",
+            "target": "cpp",
+            "seedId": "grid-pathfinder",
+            "deliverables": [
+              "GridPathfinder.hpp"
+            ],
+            "verification": "Chạy scenario thật và quan sát preview cho thấy tuyến từ góc xuất phát tới ô chéo kề chỉ còn một bước.",
+            "tasks": [
+              "Cho phép đi chéo để tuyến tới ô chéo kề có độ dài một bước."
+            ],
+            "contractCriteria": [
+              "Preview cho thấy tuyến từ góc xuất phát tới ô chéo kề chỉ còn một bước."
+            ]
+          }
+        ]
+      },
+      "savedAt": 1784815344850
+    },
+    "8087c9a28e661201c16857cdafab9c67a02c2e54e268a16d00da3006d1f1f49a": {
+      "analysis": {
+        "summary": "Thuật toán BFS trên lưới tính khoảng cách ngắn nhất giữa hai ô, tránh ô kệ hàng.",
+        "concepts": [
+          "BFS trên lưới",
+          "Đánh dấu ô đã thăm",
+          "Độ phức tạp O(N·M)"
+        ],
+        "constraints": [
+          "Di chuyển 4 hướng",
+          "Không đi qua ô '#'",
+          "Trả về -1 nếu không có đường"
+        ],
+        "evidenceRefs": [],
+        "pathways": [
+          {
+            "id": "path1",
+            "title": "Bản đồ di chuyển robot trong kho",
+            "purpose": "Tính số bước tối thiểu để robot di chuyển từ vị trí S tới T trong kho.",
+            "context": "Học sinh cấp 3 đang học thuật toán tìm đường trên lưới, cần công cụ thực tế để kiểm tra hiểu biết.",
+            "application": "Sử dụng thuật toán BFS trên lưới để xác định khoảng cách ngắn nhất, tránh các ô kệ hàng.",
+            "target": "cpp",
+            "seedId": "grid-pathfinder",
+            "deliverables": [
+              "GridPathfinder.hpp"
+            ],
+            "verification": "Chạy scenario thật và quan sát preview cho thấy tuyến từ góc xuất phát tới ô chéo kề chỉ còn một bước.",
+            "tasks": [
+              "Cho phép đi chéo để tuyến tới ô chéo kề có độ dài một bước."
+            ],
+            "contractCriteria": [
+              "Preview cho thấy tuyến từ góc xuất phát tới ô chéo kề chỉ còn một bước."
+            ]
+          }
+        ]
+      },
+      "savedAt": 1784815326885
+    }
+  }
+}

@@ -389,47 +389,37 @@ body.is-desktop .problem-scroll { user-select: text; }
    Practice set builder — full-screen overlay (hub · create · workspace).
    Reuses existing tokens; additive, never touches the main workbench layout.
    ============================================================================ */
+/* Contest hub = a standard centered sheet on the app's OWN tokens (the old
+   full-bleed takeover shipped its own blue palette + a fake brand bar — a
+   second visual language, banned by README §15.2). */
 .contest-overlay {
   position: fixed; inset: 0; z-index: 60;
-  --bg: #07101f;
-  --bg-soft: #091626;
-  --panel: #0b182a;
-  --panel-2: #102238;
-  --panel-3: #172d47;
-  --border: rgba(109, 164, 210, .28);
-  --border-soft: rgba(109, 164, 210, .16);
-  --text: #edf6ff;
-  --text-muted: #c1d4e5;
-  --text-dim: #8aa3b9;
-  --accent: #45c8ff;
-  --accent-rgb: 69, 200, 255;
-  background:
-    radial-gradient(900px 460px at 6% -10%, rgba(37, 137, 212, .18), transparent 62%),
-    radial-gradient(760px 440px at 92% 5%, rgba(111, 81, 218, .11), transparent 66%),
-    #07101f;
-  display: grid; place-items: stretch;
+  background: rgba(4, 5, 8, .72); /* dim only — backdrop-filter blur wedges screenshots */
+  display: grid; place-items: center;
+  padding: clamp(12px, 4vh, 48px) clamp(12px, 4vw, 48px);
+  box-sizing: border-box;
 }
 .contest-overlay.hidden { display: none; }
 .contest-shell {
-  width: 100%; height: 100%;
-  background: var(--bg); border: 0; border-radius: 0;
+  width: min(1040px, 100%);
+  height: min(720px, 100%);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 14px);
   display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: none;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .55);
 }
 .contest-bar {
   flex: none;
   display: flex; align-items: center; gap: 10px;
-  height: 48px; box-sizing: border-box;
-  padding: 0 16px; border-bottom: 1px solid var(--border);
+  min-height: 54px; box-sizing: border-box;
+  padding: 8px 16px; border-bottom: 1px solid var(--border);
   background: linear-gradient(180deg, var(--panel), var(--bg));
-  box-shadow: var(--edge-light), 0 1px 0 rgba(0, 0, 0, .55);
 }
-.contest-brand { display: flex; align-items: center; gap: 8px; min-width: 200px; color: var(--text); font-size: 13px; font-weight: 650; letter-spacing: -.02em; }
-.contest-brand b { color: var(--accent); font-weight: 650; }
-.contest-brand-mark { display: inline-grid; place-items: center; width: 24px; height: 24px; box-sizing: border-box; border: 1px solid rgba(var(--accent-rgb), .42); border-radius: 7px; background: rgba(var(--accent-rgb), .12); color: #ffe2a6; font: 700 12px/1 var(--mono); }
-.contest-bar-title { flex: 1; min-width: 0; text-align: center; font-size: 13px; font-weight: 650; color: var(--text); }
+.contest-bar-heading { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.contest-bar-title { font-size: 14px; font-weight: 650; color: var(--text); letter-spacing: -.01em; }
 .contest-bar-spacer { flex: 1; }
-.contest-screen { flex: 1; min-height: 0; overflow: auto; padding: 24px clamp(16px, 4vw, 56px); background: var(--bg); }
+.contest-screen { flex: 1; min-height: 0; overflow: auto; padding: 20px clamp(16px, 3vw, 32px); background: var(--bg); }
 .contest-screen.hidden { display: none; }
 
 /* ---- Hub ---- */
@@ -453,7 +443,7 @@ body.is-desktop .problem-scroll { user-select: text; }
 .contest-card-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 11.5px; color: var(--text-dim); }
 .contest-tag { color: var(--accent); font-weight: 600; }
 .contest-progress { height: 5px; background: var(--panel-3); border-radius: 4px; overflow: hidden; }
-.contest-progress-bar { height: 100%; background: var(--btn-judge); border-radius: 4px; transition: width .25s; }
+.contest-progress-bar { height: 100%; background: var(--btn-judge); border-radius: 4px; }
 .contest-card-foot { display: flex; align-items: center; gap: 6px; font-size: 11.5px; }
 
 /* ---- Create ---- */

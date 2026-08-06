@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  normalizeEntry, visibleSuggestions, entryQueryString, feedbackEvent,
+  normalizeEntry, visibleSuggestions, entryQueryString,
   parseHidden, serializeHidden, FEEDBACK_KINDS,
 } from "../src/core/entry-model.js";
 import { fixtures } from "./fixtures/contract-fixtures.mjs";
@@ -35,19 +35,13 @@ test("suggestions cap at 3 AFTER dismissals so a dismissal frees a slot", () => 
   assert.deepEqual(visibleSuggestions(four, new Set(["b"])).map((s) => s.id), ["a", "c", "d"]);
 });
 
-test("dismissals ride back to the server via the endpoint's own dismissed= param", () => {
-  assert.equal(entryQueryString(new Set()), "");
-  assert.equal(entryQueryString(new Set(["p1", "p2"])), "dismissed=p1%2Cp2");
+test("Home writes only canonical track vocabulary to the recommendation endpoint", () => {
+  assert.equal(entryQueryString("competitive"), "track=competitive");
+  assert.equal(entryQueryString("algorithm-engineering"), "track=algorithm-engineering");
 });
 
-test("feedback maps to the existing per-problem event route payload", () => {
-  for (const kind of FEEDBACK_KINDS) {
-    const ev = feedbackEvent("p9", kind.id);
-    assert.equal(ev.type, "recommendation-feedback");
-    assert.deepEqual(ev.data, { suggestionId: "p9", feedback: kind.id });
-  }
-  assert.equal(feedbackEvent("p9", "made-up-kind"), null);
-  assert.equal(feedbackEvent("", "too-easy"), null);
+test("feedback names are the canonical backend signals", () => {
+  assert.deepEqual(FEEDBACK_KINDS.map((kind) => kind.id), ["too_easy", "too_hard", "not_relevant", "already_know"]);
 });
 
 test("hidden list round-trips localStorage and survives garbage", () => {

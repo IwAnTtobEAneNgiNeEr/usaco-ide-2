@@ -93,6 +93,9 @@ function renderExamplesGrid(text) {
   let cur = null, started = false;
   for (const line of lines) {
     const t = line.trim();
+    // AI-authored samples often wrap the raw I/O in a fenced code block
+    // ("Input:\n```\n5\n…\n```") — the fence markers are formatting, not data.
+    if (/^```/.test(t)) continue;
     const isIn = IO_IN_RE.test(t), isOut = IO_OUT_RE.test(t);
     if (isIn || isOut) { if (cur) blocks.push(cur); cur = { kind: isIn ? "in" : "out", data: [] }; started = true; continue; }
     if (!started) preface.push(line);
@@ -304,9 +307,18 @@ function parseSections(raw) {
       }
     }
     // Plain-text label line (no Markdown heading) — the common real-world case.
+    // Inside an examples section, "Input"/"Output" sub-labels are the expected
+    // internal structure renderExamplesGrid() parses itself (Input 01/Output 01
+    // pairs) — never a new top-level section. Without this guard, an AI-written
+    // "## Sample 1\n\nInput:\n```\n…" statement gets its Input/Output lines
+    // stolen into spurious duplicate input/output sections, which then get
+    // dropped entirely (buildStatementSheetHtml keeps only the FIRST input/
+    // output section via .find(), and filters every input/output-typed section
+    // out of "rest") — silently deleting the whole sample, only "Constraints"
+    // (or notes/subtasks) may still legitimately break out of an examples block.
     if (!inFence && !hm) {
       const bare = classifyBareLabel(line);
-      if (bare) {
+      if (bare && !(cur.type === "examples" && (bare.type === "input" || bare.type === "output"))) {
         sections.push(cur);
         cur = { type: bare.type, label: bare.label, lines: [] };
         continue;
@@ -412,11 +424,12 @@ function renderStatement(app) {
       </div>`
     : `<div class="stmt-elo-chip stmt-elo-unrated"><span class="stmt-elo-rank">Chưa xếp</span></div>`;
 
-  // Dòng danh tính Brief (artifact contract): nguồn provider·collection
+  // Only the learner-facing source belongs in the brief. Catalog provenance is
+  // backend metadata and must not leak into the reading surface.
   // (fallback source cũ), origin, loại activity, gốc dẫn xuất. Chỉ hiện
   // field có dữ liệu thật — không bịa giá trị cho bài cũ.
   const briefOriginLabels = { imported: "nhập ngoài", ocr: "OCR", "user-authored": "tự viết", "ai-generated": "AI tạo", derived: "dẫn xuất" };
-  const briefSrc = [meta.provider, meta.collection].filter(Boolean).join(" · ") || meta.source || "";
+  const briefSrc = meta.source || "";
   // Bài AC cũ khai báo thẳng trạng thái "đã giải" ngay ở Brief (history là
   // nguồn sự thật, newest-first). AC lịch sử là evidence quá khứ — mở lại là
   // luyện tập, không phải trận mới; arena strip lo phần rated/friendly.
@@ -430,7 +443,6 @@ function renderStatement(app) {
     solvedChip,
     briefSrc && `<span class="stmt-brief-src">${escapeHtml(briefSrc)}</span>`,
     briefOriginLabels[meta.origin] && `<span class="stmt-brief-origin">gốc: ${escapeHtml(briefOriginLabels[meta.origin])}</span>`,
-    meta.activityKind === "algorithm-module" && `<span class="stmt-brief-kind">Module thuật toán</span>`,
     meta.derivedFrom && `<button type="button" class="stmt-brief-derived" data-open-problem="${escapeHtml(String(meta.derivedFrom.id || meta.derivedFrom))}" title="Mở artifact gốc">⑂ Phát triển từ: ${escapeHtml(String(meta.derivedFrom.title || meta.derivedFrom.id || meta.derivedFrom))}</button>`,
   ].filter(Boolean);
   const briefMetaHtml = briefParts.length ? `<div class="stmt-brief-meta">${briefParts.join('<span class="stmt-brief-dot"></span>')}</div>` : "";
@@ -919,6 +931,7 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
   app.el.genTestsCard.innerHTML = `<div class="card-title">Test do AI tạo</div><div class="muted" style="font-size:12px"><span class="spinner"></span> Đang tạo test…</div>`;
 
   try {
+    await app.persistActiveStatementVariant?.(statement);
     await api.saveStatement(app.state.currentId, statement);
     app.state.savedStatement = statement;
     renderStatement(app);
@@ -1193,6 +1206,7 @@ export function initStatement(app) {
   el.btnSaveStatement.addEventListener("click", async () => {
     if (!app.state.currentId) return;
     try {
+      await app.persistActiveStatementVariant?.(el.ioStatement.value);
       await api.saveStatement(app.state.currentId, el.ioStatement.value);
       app.state.savedStatement = el.ioStatement.value;
       renderStatement(app);
@@ -1261,6 +1275,12 @@ export function initStatement(app) {
       e.preventDefault();
       const dataUrl = await fileToDataUrl(found.blob);
       await runOcr(app, dataUrl, found.type, "pasted-image");
+      return;
+    }
+    const text = e.clipboardData && e.clipboardData.getData("text/plain");
+    if (text && app.handleStatementTextPaste) {
+      e.preventDefault();
+      await app.handleStatementTextPaste(text);
     }
   });
 

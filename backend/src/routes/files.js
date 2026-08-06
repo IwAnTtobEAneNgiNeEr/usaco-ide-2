@@ -23,6 +23,8 @@ bindFileKind("input");
 bindFileKind("expected");
 bindFileKind("notes");
 bindFileKind("statement");
+bindFileKind("statementEn");
+bindFileKind("statementVi");
 bindFileKind("mistakes");
 bindFileKind("checker"); // special judge source (SPJ) — used when meta.usesChecker
 
@@ -31,16 +33,18 @@ bindFileKind("checker"); // special judge source (SPJ) — used when meta.usesCh
 // GETs above stay for targeted refreshes.
 router.get("/:id/workspace", requireProblem, asyncHandler(async (req, res) => {
   const id = req.problemId;
-  const [problem, code, input, expected, notes, statement, tests] = await Promise.all([
+  const [problem, code, input, expected, notes, statement, statementEn, statementVi, tests] = await Promise.all([
     problemStore.readMeta(id),
     problemStore.getFile(id, "code"),
     problemStore.getFile(id, "input"),
     problemStore.getFile(id, "expected"),
     problemStore.getFile(id, "notes"),
     problemStore.getFile(id, "statement"),
+    problemStore.getFile(id, "statementEn"),
+    problemStore.getFile(id, "statementVi"),
     problemStore.listTests(id)
   ]);
-  res.json({ problem, code, input, expected, notes, statement, tests });
+  res.json({ problem, code, input, expected, notes, statement, statementEn, statementVi, tests });
 }));
 
 // ---- Test cases ----------------------------------------------------------

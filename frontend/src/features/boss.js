@@ -10,6 +10,7 @@ import { escapeHtml } from "../md.js";
 
 let cached = null;     // last /api/boss payload — repainted instantly on re-renders
 let loading = false;
+const tr = (english, vietnamese) => document.documentElement.lang === "en" ? english : vietnamese;
 
 function challengeMark(state = "ready") {
   return "";
@@ -19,7 +20,7 @@ function challengeTitle(title, week) {
   const clean = String(title || "")
     .replace(/^\s*[⚔️🐲]+\s*/u, "")
     .replace(/^Boss\s+\d{4}-W\d+\s*[—–-]\s*/i, "");
-  return clean ? `Thử thách ${week} — ${clean}` : `Thử thách tuần ${week}`;
+  return clean ? `${tr("Challenge", "Thử thách")} ${week} — ${clean}` : `${tr("Weekly challenge", "Thử thách tuần")} ${week}`;
 }
 
 function card(inner, mod = "") {
@@ -29,8 +30,8 @@ function card(inner, mod = "") {
 function render(s) {
   if (!s) {
     return card(`<div class="jh-boss-head">${challengeMark("loading")}
-      <div class="jh-boss-main"><div class="jh-boss-kicker">Thử thách thích ứng</div><div class="jh-boss-title">Đang chuẩn bị thử thách tuần</div>
-      <div class="jh-boss-sub">Hệ thống đang phân tích lịch sử luyện tập của bạn.</div></div></div>`);
+      <div class="jh-boss-main"><div class="jh-boss-kicker">${tr("Adaptive challenge", "Thử thách thích ứng")}</div><div class="jh-boss-title">${tr("Preparing this week's challenge", "Đang chuẩn bị thử thách tuần")}</div>
+      <div class="jh-boss-sub">${tr("The system is reviewing your practice history.", "Hệ thống đang phân tích lịch sử luyện tập của bạn.")}</div></div></div>`);
   }
   if (s.error) {
     return card(`<div class="jh-boss-head">${challengeMark("error")}
@@ -44,17 +45,17 @@ function render(s) {
   if (!s.boss) {
     const w = s.weakness;
     const pitch = w
-      ? `Điểm yếu phát hiện: <b class="jh-boss-topic">${escapeHtml(w.topic)}</b> — ${w.waCount} WA / ${w.attempts} bài. Boss sẽ đánh đúng chỗ đó.`
-      : `Chưa đủ dữ liệu điểm yếu — boss sẽ thử tổng lực cơ bản.`;
+      ? tr(`Weakness detected: <b class="jh-boss-topic">${escapeHtml(w.topic)}</b> — ${w.waCount} WA across ${w.attempts} problems. This challenge targets it.`, `Điểm yếu phát hiện: <b class="jh-boss-topic">${escapeHtml(w.topic)}</b> — ${w.waCount} WA / ${w.attempts} bài. Boss sẽ đánh đúng chỗ đó.`)
+      : tr("Not enough weakness data yet — this challenge uses a balanced baseline.", "Chưa đủ dữ liệu điểm yếu — boss sẽ thử tổng lực cơ bản.");
     return card(`
       <div class="jh-boss-head">
         ${challengeMark("ready")}
         <div class="jh-boss-main">
-          <div class="jh-boss-kicker">Thử thách tuần · ${week}</div>
-          <div class="jh-boss-title">Bài đấu được thiết kế theo điểm yếu <span class="jh-boss-xp">+${s.xpReward} XP</span></div>
+          <div class="jh-boss-kicker">${tr("Weekly challenge", "Thử thách tuần")} · ${week}</div>
+          <div class="jh-boss-title">${tr("A challenge designed around your weak point", "Bài đấu được thiết kế theo điểm yếu")} <span class="jh-boss-xp">+${s.xpReward} XP</span></div>
           <div class="jh-boss-sub">${pitch}</div>
         </div>
-        <button class="btn jh-boss-btn" data-boss="summon" type="button">Tạo thử thách <span aria-hidden="true">→</span></button>
+        <button class="btn jh-boss-btn" data-boss="summon" type="button">${tr("Create challenge", "Tạo thử thách")} <span aria-hidden="true">→</span></button>
       </div>`, "summonable");
   }
 
@@ -121,6 +122,7 @@ export function initBoss(app) {
     paint();      // instant (cached)
     refresh();    // then update
   });
+  document.addEventListener("localechange", paint);
 
   // Card interactions (delegated on the document — the slot is re-created often).
   document.addEventListener("click", async (e) => {

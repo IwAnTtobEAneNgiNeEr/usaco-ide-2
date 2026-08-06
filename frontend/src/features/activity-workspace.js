@@ -38,7 +38,7 @@ export function activityDiffLabel(diff) {
   return `${line}: expected “${expected}” · actual “${actual}”`;
 }
 
-async function mountActivityEditor(host, initialValue, onChange) {
+async function mountActivityEditor(host, initialValue, onChange, { readOnly = false } = {}) {
   const CM = await import(CM_BUNDLE);
   const theme = CM.EditorView.theme({
     "&": { height: "100%", fontSize: "var(--code-fs)", backgroundColor: "transparent", color: "var(--code-fg)" },
@@ -87,10 +87,18 @@ async function mountActivityEditor(host, initialValue, onChange) {
       CM.highlightActiveLine(),
       CM.syntaxHighlighting(highlight, { fallback: true }),
       CM.cpp(),
+      // Activity-workspace editors have no wrap-toggle control (unlike the
+      // main IDE, which exposes one) and their column is narrower — a long
+      // line here needs a horizontal scrollbar to even be seen. Wrap by
+      // default so nothing requires scrolling sideways to read.
+      CM.EditorView.lineWrapping,
       CM.keymap.of([CM.indentWithTab, ...CM.closeBracketsKeymap, ...CM.defaultKeymap, ...CM.historyKeymap]),
       CM.EditorView.updateListener.of((update) => {
         if (update.docChanged && typeof onChange === "function") onChange(update.state.doc.toString());
       }),
+      // Contract files (.hpp, tests) mount read-only: the student edits the
+      // implementation, never the spec the verifier judges against.
+      ...(readOnly ? [CM.EditorState.readOnly.of(true), CM.EditorView.editable.of(false)] : []),
       theme
     ]
   });
@@ -125,9 +133,11 @@ function normalizeEditors(config) {
       id,
       fileName: String((item && (item.fileName || item.label)) || `${id}.cpp`),
       label: String((item && (item.label || item.fileName)) || `${id}.cpp`),
+      shortLabel: String((item && item.shortLabel) || ""),
       code: String((item && item.code) || ""),
       taskNote: String((item && item.taskNote) || ""),
-      saveCode: item && item.saveCode
+      saveCode: item && item.saveCode,
+      readOnly: Boolean(item && item.readOnly)
     };
   });
 }
@@ -209,7 +219,7 @@ function activityProfile(config = {}) {
     readyRows: [["Correctness", "Gen + Brute + Solution"], ["Performance", "Gen + Solution"], ["Thi đấu", "Batch theo subtask"]],
     readyText: "Ví dụ: để STDIN trống rồi Run để kiểm tra một seed; dán STDIN để chạy riêng Solution trên một case cụ thể."
   };
-  return {
+  if (kind === "contest") return {
     label: "CONTEST",
     title: "Làm từng bài trong bộ đề",
     body: "Contest giữ tiến độ, rating và test riêng cho từng bài. Dùng điều hướng trên thanh bài để chuyển bài.",
@@ -218,6 +228,30 @@ function activityProfile(config = {}) {
     railBody: "Theo dõi bài hiện tại và trạng thái chấm ở header.",
     readyRows: [["Bài hiện tại", "Statement + code"], ["Input", "Run thử riêng"], ["Bộ test", "Judge toàn bài"]],
     readyText: "Ví dụ: copy Input 01 dưới đề sang STDIN, kiểm tra Expected output, rồi Submit khi lời giải ổn định."
+  };
+  if (kind === "xuong") return {
+    label: "XƯỞNG",
+    title: "Build project từ lời giải của em",
+    body: "Đề bên trái là project brief. Em hoàn thiện file triển khai; file 🔒 là hợp đồng interface + test, chỉ đọc.",
+    guideRows: [["01", "Đọc brief", "Xây gì, cần đạt gì, kiểm chứng bằng gì — tất cả ở cột trái."], ["02", "Sửa file triển khai", "Chỉ file không có 🔒; hợp đồng và bộ test giữ nguyên."], ["03", "Verify quyết định", "Fail đưa bằng chứng đọc được; đạt hết thì Tiến hóa để nhận yêu cầu mới."]],
+    railTitle: "Yêu cầu & bằng chứng",
+    railBody: "Trạng thái từng yêu cầu chỉ đổi khi có một lần verify thật đứng sau.",
+    readyRows: [["Brief", "Xây gì · cần đạt gì"], ["Verify", "Compile + test thật"], ["Tiến hóa", "Yêu cầu mới khi đã đạt"]],
+    readyText: "Ví dụ: hoàn thiện phần TODO trong file .cpp rồi bấm Verify — bằng chứng pass/fail nằm ở rail phải.",
+    guideFoot: "Không có Run/STDIN ở đây — <b>Verify</b> là con đường duy nhất: nó biên dịch cả project và chạy bộ test trong <b>tests/</b>."
+  };
+  // Unknown kinds get a NEUTRAL shell — never another tool's panel. (The old
+  // fallback returned the CONTEST profile for everything, which is exactly how
+  // the module workspace ended up wearing a contest costume — README mistake #3.)
+  return {
+    label: "LUYỆN TẬP",
+    title: "Không gian code chuẩn",
+    body: "Đề bên trái, code ở giữa, Run/Judge bên phải — cùng một nhịp thao tác cho mọi hoạt động.",
+    guideRows: [["01", "Đọc đề", "Kiểm tra format và ví dụ trước khi code."], ["02", "Code và Run thử", "Run với input riêng để quan sát."], ["03", "Judge quyết định", "Verdict + bằng chứng nằm ở cột phải."]],
+    railTitle: "Run / Judge",
+    railBody: "Kết quả chấm và bằng chứng hiện ở đây.",
+    readyRows: [["Run", "Input tự nhập"], ["Judge", "Chấm bộ test"], ["Verdict", "AC/WA + diff"]],
+    readyText: "Ví dụ: dán input mẫu vào STDIN rồi Run trước khi Judge."
   };
 }
 
@@ -228,7 +262,7 @@ function toolGuideHtml(config) {
     <h2>${escapeHtml(profile.title)}</h2>
     <p>${escapeHtml(profile.body)}</p>
     <div class="aw-guide-rows">${profile.guideRows.map(([number, title, copy]) => `<div class="aw-guide-row"><b>${number}</b><span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(copy)}</small></span></div>`).join("")}</div>
-    <p class="aw-guide-foot">Ví dụ thực hành: nhập một case nhỏ ở STDIN, bấm <b>Run</b> để quan sát; chỉ dùng <b>${escapeHtml(config.kind === "contest" ? "Submit" : "Judge")}</b> khi muốn chấm bộ test.</p>
+    <p class="aw-guide-foot">${activityProfile(config).guideFoot || `Ví dụ thực hành: nhập một case nhỏ ở STDIN, bấm <b>Run</b> để quan sát; chỉ dùng <b>${escapeHtml(config.kind === "contest" ? "Submit" : "Judge")}</b> khi muốn chấm bộ test.`}</p>
   </aside>`;
 }
 
@@ -247,16 +281,16 @@ function readyConsoleHtml(config) {
   </div>`;
 }
 
-function toolContextHtml(config) {
-  const profile = activityProfile(config);
-  return `<section class="aw-tool-context" aria-label="Cách dùng ${escapeHtml(profile.label)}">
-    <div class="aw-tool-context-head"><span>${escapeHtml(profile.label)}</span><b>TOOL CONTEXT</b></div>
-    <strong>${escapeHtml(profile.railTitle)}</strong>
-    <p>${escapeHtml(profile.railBody)}</p>
-  </section>`;
-}
-
 function renderStatement(statement, config) {
+  // A tool may fully own its left column (config.briefHtml) — Xưởng renders a
+  // 3-card project brief, not a problem statement, so it bypasses the generic
+  // statement-sheet builder entirely instead of shoehorning cards into
+  // Markdown. Everything else still gets the shared reader sheet.
+  if (config.briefHtml) {
+    statement.innerHTML = `<div class="aw-brief">${config.briefHtml}</div>`;
+    renderMath(statement);
+    return;
+  }
   try {
     statement.innerHTML = buildStatementSheetHtml(statementWithSamples(config), {
       title: (config.sheetMeta && config.sheetMeta.title) || config.title || "Bài luyện",
@@ -330,6 +364,7 @@ export function initActivityWorkspace(app) {
   let activeAbort = null;
   let activeKind = null;
   let lastResult = null;
+  let stateTicker = null;
   let epoch = 0;
   const savedCodes = new Map();
 
@@ -388,6 +423,8 @@ export function initActivityWorkspace(app) {
 
   function teardownSurface() {
     clearTimers();
+    clearInterval(stateTicker);
+    stateTicker = null;
     if (activeAbort) activeAbort.abort();
     activeAbort = null;
     activeKind = null;
@@ -422,17 +459,45 @@ export function initActivityWorkspace(app) {
     current = { kind, title, onClose };
     zone.dataset.kind = kind;
     zone.classList.remove("hidden");
+    // The preparation steps every activity really goes through (fetch/build the
+    // task, mount CodeMirror, arm the verifier). During loading a JS interval —
+    // never a CSS infinite animation (screenshot-wedge rule) — walks the steps
+    // and eases a progress bar so a 15–40s AI generation reads as work
+    // happening, not a frozen app.
+    const steps = ["Chuẩn bị đề", "Editor C++", "Bộ chấm"];
     zone.innerHTML = `
-      <div class="aw-state-shell">
+      <div class="aw-state-shell${error ? " is-error" : ""}">
         <button class="aw-close" type="button" aria-label="Đóng">×</button>
-        <span class="aw-kicker">${escapeHtml(kicker || "Không gian luyện tập")}</span>
-        <h1>${escapeHtml(title || "Đang tải")}</h1>
-        <p class="${error ? "aw-state-error" : "muted"}">${escapeHtml(message || "")}</p>
-        ${retry ? `<button class="btn btn-primary" data-aw-retry type="button">Thử lại</button>` : ""}
+        <div class="aw-state-card">
+          <span class="aw-kicker">${escapeHtml(kicker || "Không gian luyện tập")}</span>
+          <h1>${escapeHtml(title || "Đang tải")}</h1>
+          <p class="${error ? "aw-state-error" : "muted"}">${escapeHtml(message || "")}</p>
+          ${error ? "" : `
+          <div class="aw-state-steps" aria-hidden="true">${steps.map((s, i) => `<span data-aw-step="${i}">${escapeHtml(s)}</span>`).join("<i>→</i>")}</div>
+          <div class="aw-state-progress" role="progressbar" aria-label="Đang chuẩn bị"><i data-aw-state-bar></i></div>`}
+          <div class="aw-state-actions">
+            ${retry ? `<button class="btn btn-primary" data-aw-retry type="button">Thử lại</button>` : ""}
+            <button class="btn btn-ghost btn-sm" data-aw-state-close type="button">${error ? "Đóng" : "Hủy"} <kbd>Esc</kbd></button>
+          </div>
+        </div>
       </div>`;
     zone.querySelector(".aw-close").addEventListener("click", () => close());
+    zone.querySelector("[data-aw-state-close]").addEventListener("click", () => close());
     const retryBtn = zone.querySelector("[data-aw-retry]");
     if (retryBtn) retryBtn.addEventListener("click", retry);
+    if (!error) {
+      const bar = zone.querySelector("[data-aw-state-bar]");
+      const stepEls = zone.querySelectorAll("[data-aw-step]");
+      let pct = 4;
+      let tick = 0;
+      stateTicker = setInterval(() => {
+        tick += 1;
+        pct += Math.max(0.4, (92 - pct) * 0.06); // ease toward 92%, never claim done
+        if (bar) bar.style.width = `${Math.min(92, pct)}%`;
+        const stage = Math.min(steps.length - 1, Math.floor(pct / 34));
+        stepEls.forEach((el, i) => el.classList.toggle("on", i <= stage));
+      }, 350);
+    }
   }
 
   function openLoading(options = {}) {
@@ -452,7 +517,10 @@ export function initActivityWorkspace(app) {
   }
 
   async function openInternal(config, { preserveResult, keepFocusOwner }) {
-    if (!config || typeof config.run !== "function" || typeof config.judge !== "function") {
+    // A tool that hides the judge button owns verification in its own panel
+    // (Xưởng: Checks tab), so it must not be forced to register a judge
+    // adapter that nothing can reach.
+    if (!config || typeof config.run !== "function" || (!config.hideJudge && typeof config.judge !== "function")) {
       throw new Error("Activity workspace requires run and judge adapters.");
     }
     const myEpoch = ++epoch;
@@ -461,8 +529,13 @@ export function initActivityWorkspace(app) {
     current = config;
     if (!preserveResult) lastResult = null;
     editorConfigs = normalizeEditors(config);
-    activeEditorId = String(config.activeEditorId || editorConfigs[0].id);
-    if (!editorConfigs.some((entry) => entry.id === activeEditorId)) activeEditorId = editorConfigs[0].id;
+    // config.activeEditorId travels as the caller's raw file id (e.g. a path
+    // with dots); normalizeEditors sanitizes entry.id for DOM use, so match on
+    // fileName too or a dotted path never resolves and silently falls back to
+    // editorConfigs[0] — which reopened Xưởng on the locked contract tab.
+    const requestedActiveId = String(config.activeEditorId || editorConfigs[0].id);
+    const requestedActive = editorConfigs.find((entry) => entry.id === requestedActiveId || entry.fileName === requestedActiveId);
+    activeEditorId = requestedActive ? requestedActive.id : editorConfigs[0].id;
     for (const entry of editorConfigs) savedCodes.set(entry.id, entry.code);
     zone.dataset.kind = config.kind || "activity";
     zone.classList.remove("hidden");
@@ -479,8 +552,8 @@ export function initActivityWorkspace(app) {
           </div>
           <div class="aw-topbar-actions">
             <span class="aw-local-badge"><i></i> Local Judge</span>
-            <button class="btn btn-run" id="aw-run" type="button">${escapeHtml(config.runLabel || "Run")} <kbd>Ctrl·↵</kbd></button>
-            <button class="btn btn-judge" id="aw-judge" type="button">${escapeHtml(config.judgeLabel || (config.kind === "contest" ? "Submit" : "Judge"))} <kbd>Ctrl·⇧·↵</kbd></button>
+            ${config.hideRun ? "" : `<button class="btn btn-run" id="aw-run" type="button">${escapeHtml(config.runLabel || "Run")} <kbd>Ctrl·↵</kbd></button>`}
+            ${config.hideJudge ? "" : `<button class="btn btn-judge" id="aw-judge" type="button">${escapeHtml(config.judgeLabel || (config.kind === "contest" ? "Submit" : "Judge"))} <kbd>Ctrl·⇧·↵</kbd></button>`}
             <button class="aw-topbar-close" data-aw-close type="button" aria-label="Đóng">×</button>
           </div>
         </header>
@@ -492,17 +565,17 @@ export function initActivityWorkspace(app) {
           </div>
           <div class="aw-head-actions">
             <div class="aw-nav-actions">${(config.headerActions || []).map((a, i) => `<button class="btn btn-ghost btn-sm" data-aw-head="${i}" type="button"${a.disabled ? " disabled" : ""}>${escapeHtml(a.label)}</button>`).join("")}</div>
-            <button class="btn btn-ghost btn-sm aw-source-trigger" data-aw-source-open-dialog type="button">Đổi đề</button>
+            ${config.sourceSwitch ? `<button class="btn btn-ghost btn-sm aw-source-trigger" data-aw-source-open-dialog type="button">Đổi đề</button>` : ""}
           </div>
         </header>
         <div class="aw-body">
           <section class="aw-statement-col" aria-label="Đề bài">
-            <div class="aw-col-head"><span>Statement</span><button class="aw-statement-edit" id="aw-statement-edit" type="button">Chỉnh đề</button></div>
+            <div class="aw-col-head"><span>${config.briefHtml ? "Project Brief" : "Statement"}</span>${config.briefHtml ? "" : `<button class="aw-statement-edit" id="aw-statement-edit" type="button">Chỉnh đề</button>`}</div>
             <article class="statement-page aw-statement" id="aw-statement"></article>
           </section>
           <section class="aw-code-col" aria-label="Code">
             <div class="aw-code-toolbar">
-              <div class="aw-file-tabs" role="tablist" aria-label="Tệp C++">${editorConfigs.map((entry) => `<button class="aw-file-tab ${entry.id === activeEditorId ? "active" : ""}" type="button" role="tab" aria-selected="${entry.id === activeEditorId ? "true" : "false"}" data-aw-editor="${escapeHtml(entry.id)}">${escapeHtml(entry.label)}</button>`).join("")}</div>
+              <div class="aw-file-tabs-scroll"><div class="aw-file-tabs" role="tablist" aria-label="Tệp C++">${editorConfigs.map((entry) => `<button class="aw-file-tab ${entry.id === activeEditorId ? "active" : ""} ${entry.readOnly ? "is-locked" : ""}" type="button" role="tab" aria-selected="${entry.id === activeEditorId ? "true" : "false"}" data-aw-editor="${escapeHtml(entry.id)}" title="${escapeHtml(entry.fileName || entry.label)}">${entry.readOnly ? `<i class="aw-file-tab-lock" aria-hidden="true"></i>` : ""}<span>${escapeHtml(entry.shortLabel || entry.label)}</span></button>`).join("")}</div></div>
               <span class="aw-task-note" id="aw-task-note">${escapeHtml(editorConfigs.find((entry) => entry.id === activeEditorId)?.taskNote || "")}</span>
               <span class="toolbar-spacer"></span>
               <span class="aw-save-state" id="aw-save-state"></span>
@@ -511,25 +584,25 @@ export function initActivityWorkspace(app) {
             <div class="aw-editor-stack" id="aw-editor-stack">${editorConfigs.map((entry) => `<div class="aw-editor-host ${entry.id === activeEditorId ? "" : "hidden"}" data-aw-editor-host="${escapeHtml(entry.id)}"><div class="aw-editor-loading"><span class="spinner"></span> Đang mở CodeMirror…</div></div>`).join("")}</div>
           </section>
           <aside class="aw-result-col" aria-label="Run và kết quả chấm">
-            <div class="aw-col-head"><span>Run / Judge</span><span class="verdict-chip verdict-idle" id="aw-verdict">READY</span></div>
-            ${toolContextHtml(config)}
+            <div class="aw-col-head"><span>${escapeHtml(config.resultColTitle || "Run / Judge")}</span><span class="verdict-chip verdict-idle" id="aw-verdict">READY</span></div>
             <div class="aw-controls" id="aw-controls"></div>
             <section class="aw-io-stack ${config.hideIo ? "hidden" : ""}" aria-label="Custom test">
               <div class="aw-io-title"><span>Custom test</span><small>Case em tự nhập</small></div>
               <label class="aw-io-field"><span>STDIN</span><textarea id="aw-input" spellcheck="false" placeholder="Nhập input cho chương trình…"></textarea></label>
               <label class="aw-io-field ${config.expectedEnabled ? "" : "hidden"}"><span>EXPECTED OUTPUT <em>(tuỳ chọn)</em></span><textarea id="aw-expected" spellcheck="false" placeholder="Dán output để đối chiếu khi Run…"></textarea></label>
             </section>
-            ${toolGuideHtml(config)}
-            <div class="aw-result" id="aw-result">${readyConsoleHtml(config)}</div>
+            ${config.hideToolGuide ? "" : toolGuideHtml(config)}
+            <div class="aw-result" id="aw-result">${config.hideReadyConsole ? "" : readyConsoleHtml(config)}</div>
           </aside>
         </div>
       </div>`;
 
     const statement = zone.querySelector("#aw-statement");
     renderStatement(statement, config);
-    zone.querySelector("#aw-statement-edit").addEventListener("click", () => openStatementEditor(statement));
+    zone.querySelector("#aw-statement-edit")?.addEventListener("click", () => openStatementEditor(statement));
     zone.querySelectorAll("[data-aw-close]").forEach((button) => button.addEventListener("click", () => close()));
-    zone.querySelector("[data-aw-source-open-dialog]").addEventListener("click", openSourceDialog);
+    const sourceTrigger = zone.querySelector("[data-aw-source-open-dialog]");
+    if (sourceTrigger) sourceTrigger.addEventListener("click", openSourceDialog);
     zone.querySelectorAll("[data-aw-head]").forEach((button) => {
       button.addEventListener("click", () => {
         const action = (config.headerActions || [])[Number(button.dataset.awHead)];
@@ -555,8 +628,9 @@ export function initActivityWorkspace(app) {
     inputEl.addEventListener("input", scheduleIoSave);
     expectedEl.addEventListener("input", scheduleIoSave);
 
-    zone.querySelector("#aw-run").addEventListener("click", () => execute("run"));
-    zone.querySelector("#aw-judge").addEventListener("click", () => execute("judge"));
+    const runBtn = zone.querySelector("#aw-run");
+    if (runBtn) runBtn.addEventListener("click", () => execute("run"));
+    zone.querySelector("#aw-judge")?.addEventListener("click", () => execute("judge"));
     zone.querySelector("#aw-save").addEventListener("click", () => persistCode(false));
 
     try {
@@ -576,8 +650,10 @@ export function initActivityWorkspace(app) {
       if (myEpoch !== epoch) return;
       const stack = zone.querySelector("#aw-editor-stack");
       stack.innerHTML = `<div class="aw-editor-error">CodeMirror không tải được. Run/Judge đã khoá để tránh sửa code bằng editor sai chuẩn.<br><span>${escapeHtml(error.message || "")}</span></div>`;
-      zone.querySelector("#aw-run").disabled = true;
-      zone.querySelector("#aw-judge").disabled = true;
+      const brokenRun = zone.querySelector("#aw-run");
+      if (brokenRun) brokenRun.disabled = true;
+      const brokenJudge = zone.querySelector("#aw-judge");
+      if (brokenJudge) brokenJudge.disabled = true;
     }
     if (myEpoch !== epoch) return;
     if (lastResult) renderResult(lastResult);
@@ -647,6 +723,9 @@ export function initActivityWorkspace(app) {
       return;
     }
     if (!(event.ctrlKey || event.metaKey) || event.key !== "Enter") return;
+    // A hidden judge button means the tool drives checks from its own panel;
+    // the shortcut must not reach an action the UI does not offer.
+    if (event.shiftKey && current && current.hideJudge) return;
     event.preventDefault();
     execute(event.shiftKey ? "judge" : "run");
   }
@@ -691,21 +770,25 @@ export function initActivityWorkspace(app) {
 
   function setBusy(kind) {
     activeKind = kind;
-    const run = zone.querySelector("#aw-run");
-    const judge = zone.querySelector("#aw-judge");
-    if (!run || !judge) return;
+    const run = zone.querySelector("#aw-run"); // absent when config.hideRun
+    const judge = zone.querySelector("#aw-judge"); // absent when config.hideJudge
+    if (!run && !judge) return;
     if (!kind) {
-      run.disabled = false;
-      judge.disabled = false;
-      run.innerHTML = `${escapeHtml(current?.runLabel || "Run")} <kbd>Ctrl·↵</kbd>`;
-      judge.innerHTML = `${escapeHtml(current?.judgeLabel || (current?.kind === "contest" ? "Submit" : "Judge"))} <kbd>Ctrl·⇧·↵</kbd>`;
-      run.classList.remove("btn-stop");
-      judge.classList.remove("btn-stop");
+      if (run) {
+        run.disabled = false;
+        run.innerHTML = `${escapeHtml(current?.runLabel || "Run")} <kbd>Ctrl·↵</kbd>`;
+        run.classList.remove("btn-stop");
+      }
+      if (judge) {
+        judge.disabled = false;
+        judge.innerHTML = `${escapeHtml(current?.judgeLabel || (current?.kind === "contest" ? "Submit" : "Judge"))} <kbd>Ctrl·⇧·↵</kbd>`;
+        judge.classList.remove("btn-stop");
+      }
       return;
     }
-    run.disabled = kind !== "run";
-    judge.disabled = kind !== "judge";
-    const live = kind === "run" ? run : judge;
+    if (run) run.disabled = kind !== "run";
+    if (judge) judge.disabled = kind !== "judge";
+    const live = kind === "run" && run ? run : (judge || run);
     live.disabled = false;
     live.textContent = "■ Stop";
     live.classList.add("btn-stop");

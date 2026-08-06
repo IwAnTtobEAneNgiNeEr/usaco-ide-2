@@ -1,5 +1,7 @@
 "use strict";
 
+const { tagLabel } = require("./moment/diagnose");
+
 // planner.js — pure core of "Giáo Án Động" (Flagship 3, README-LOOPS.md D1 /
 // README-AUTOPILOT.md M8). Composes ONE session plan from ingredients that
 // already exist elsewhere in the app:
@@ -71,7 +73,7 @@ function composeSession({
     items.push({
       kind: "quiz",
       tag: bug.tag,
-      reason: `khởi động · lỗi "${bug.tag}" đã gặp ${bug.count || 0} lần, gần nhất ${bug.lastSeen || "?"}`,
+      reason: `khởi động · lỗi "${tagLabel(bug.tag)}" đã gặp ${bug.count || 0} lần, gần nhất ${bug.lastSeen || "?"}`,
       estMinutes: QUIZ_MIN,
     });
     used += QUIZ_MIN;

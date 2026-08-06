@@ -19,7 +19,7 @@ import { escapeHtml } from "../md.js";
 
 const nullOn = (p) => p.catch(() => null);
 
-// Reasons a match is GIAO HỮU, in the order they should be fixed.
+// Reasons a match does not count toward the rating, in the order to fix them.
 export function friendlyReasons(elig) {
   const e = elig || {};
   const out = [];
@@ -89,8 +89,8 @@ export function initArena(app) {
     const canPromote = solved && !m.eligibility.reference;
 
     const gate = m.wouldBeRated
-      ? `<span class="ar-badge ar-rated">RATED</span><span class="ar-strip-note">AC trận này sẽ được tính điểm</span>`
-      : `<span class="ar-badge ar-friendly">GIAO HỮU</span><span class="ar-strip-note">${escapeHtml(friendlyReasons(m.eligibility).join(" · "))}</span>`;
+      ? `<span class="ar-badge ar-rated">TÍNH ĐIỂM</span><span class="ar-strip-note">AC bài này sẽ được tính điểm</span>`
+      : `<span class="ar-badge ar-friendly">LUYỆN TỰ DO</span><span class="ar-strip-note">${escapeHtml(friendlyReasons(m.eligibility).join(" · "))}</span>`;
 
     const fight = live
       ? `<span class="ar-strip-fight">· trận ${match.state === "adjourned" ? "đang hoãn" : "đang mở"}${match.waCount ? ` — ${match.waCount} WA` : ""}</span>`
@@ -141,7 +141,7 @@ export function initArena(app) {
       btn.disabled = true; btn.textContent = "Đang xác thực…";
       const r = await nullOn(api.arenaPromoteFromAc(stripPid));
       if (r && r.ok && r.referencePromoted) {
-        app.toast(r.ratingConfirmed ? "Đã xác thực tham chiếu + xác nhận rating — bài này giờ đủ điều kiện rated." : "Đã xác thực code AC cũ thành tham chiếu tin cậy.", "ok");
+        app.toast(r.ratingConfirmed ? "Đã xác thực tham chiếu và xác nhận điểm — bài này có thể tính điểm." : "Đã xác thực code AC cũ thành tham chiếu tin cậy.", "ok");
         refreshStrip(stripPid);
       } else {
         const why = { "sample-mismatch": "đề đã đổi từ lúc AC — không khớp sample nữa.", "no-compiler": "g++ chưa sẵn sàng.", "no-ac-code": "không tìm được code lúc AC." };
@@ -166,7 +166,7 @@ export function initArena(app) {
       const r = await nullOn(api.arenaSurrender(stripPid));
       if (r && r.ok) {
         const d = r.rating && r.rating.delta;
-        app.toast(d ? `Đã đầu hàng (${d} điểm). Trận sau gỡ.` : "Đã đầu hàng — trận giao hữu, không mất điểm.", "ok");
+        app.toast(d ? `Đã đầu hàng (${d} điểm). Trận sau gỡ.` : "Đã đầu hàng — bài luyện tự do, không mất điểm.", "ok");
         refreshStrip(stripPid);
         refreshHud();
       }

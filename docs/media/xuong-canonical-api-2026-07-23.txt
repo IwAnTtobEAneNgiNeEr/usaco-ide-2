@@ -1,0 +1,27 @@
+Canonical: http://127.0.0.1:5050
+Project: project-08e6f315-0836-4048-b3e4-0e4d29f5bc7a
+Scenario: maze-navigator-diagonal
+
+GET /api/xuong/projects/:id/reference -> 200
+  type=reference-storyboard
+  recipe.controlPack=none
+  reference controls=0
+
+POST /api/xuong/projects/:id/run -> 200
+  run.type=scenario-run
+  run.provenance=user-source
+  run.status=completed
+  eventCount=2
+  observable.schemaVersion=xuong.observable.v2
+  anchor=anchor-diagonal -> sourceMappingId=main-editable-symbol
+
+GET /api/xuong/projects/:id/runs/:runId/replay?cursor=1 -> 200
+  activeAnchorIds=anchor-diagonal
+GET .../replay?cursor=999 -> 422 CURSOR_OUT_OF_RANGE
+
+POST /api/xuong/projects/:id/checks -> 200
+  evidence outcome=fail
+  detail=Scenario Điều hướng kho khi lối đi chéo mở ra: expected 1, actual 2 tại Hàm tìm đường; Kho mở thêm lối đi chéo giữa hai ô kề nhau.
+
+Metadata grep (active v2 source) -> NO_VISIBLE_METADATA_MATCHES
+Browser canonical audit -> 0 page errors

@@ -138,6 +138,8 @@ async function scaffold(id, meta, files = {}) {
   await store.writeText(path.join(dir, FILE_KINDS.expected), files.expected != null ? files.expected : "");
   await store.writeText(path.join(dir, FILE_KINDS.notes), files.notes != null ? files.notes : `# ${meta.title}\n`);
   await store.writeText(path.join(dir, FILE_KINDS.statement), files.statement != null ? files.statement : "");
+  await store.writeText(path.join(dir, FILE_KINDS.statementEn), files.statementEn != null ? files.statementEn : "");
+  await store.writeText(path.join(dir, FILE_KINDS.statementVi), files.statementVi != null ? files.statementVi : "");
   await writeMeta(id, meta);
 }
 
@@ -159,7 +161,7 @@ async function createProblem(input = {}) {
   return readMeta(id);
 }
 
-const META_PATCHABLE = ["title", "source", "provider", "collection", "origin", "activityKind", "derivedFrom", "track", "concept", "topic", "difficulty", "status", "tags", "lastVerdict", "fileName", "usacoMode", "usesChecker", "timeLimitMs", "analysis", "defense", "match", "reviewCount", "lastReviewedAt", "hintsUsed", "stressSeedsRan", "rating", "cfRating"];
+const META_PATCHABLE = ["title", "source", "provider", "collection", "origin", "activityKind", "derivedFrom", "track", "concept", "topic", "difficulty", "status", "tags", "lastVerdict", "fileName", "usacoMode", "usesChecker", "timeLimitMs", "analysis", "defense", "match", "reviewCount", "lastReviewedAt", "hintsUsed", "stressSeedsRan", "rating", "cfRating", "statementSourceLanguage"];
 
 async function updateProblem(id, patch = {}) {
   return withLock(id, async () => {
@@ -228,7 +230,9 @@ async function duplicateProblem(id) {
     input: await store.readText(path.join(srcDir, FILE_KINDS.input), ""),
     expected: await store.readText(path.join(srcDir, FILE_KINDS.expected), ""),
     notes: await store.readText(path.join(srcDir, FILE_KINDS.notes), ""),
-    statement: await store.readText(path.join(srcDir, FILE_KINDS.statement), "")
+    statement: await store.readText(path.join(srcDir, FILE_KINDS.statement), ""),
+    statementEn: await store.readText(path.join(srcDir, FILE_KINDS.statementEn), ""),
+    statementVi: await store.readText(path.join(srcDir, FILE_KINDS.statementVi), "")
   });
   // Copy tests across, preserving names/reasons.
   const tests = await listTests(id);
