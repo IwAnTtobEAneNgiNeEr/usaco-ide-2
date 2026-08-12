@@ -5,6 +5,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -28,3 +36,16 @@ jobs:
       - name: Run test suite
         run: npm test
         working-directory: backend
+
+  ci-gate:
+    name: ci-gate
+    if: ${{ always() }}
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the test matrix to pass
+        if: ${{ needs.test.result != 'success' }}
+        run: |
+          echo "Backend test matrix result: ${{ needs.test.result }}"
+          exit 1
+      - run: echo "All required CI checks passed."
