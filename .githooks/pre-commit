@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+branch="$(git symbolic-ref --short -q HEAD 2>/dev/null || true)"
+case "$branch" in
+  main|master)
+    echo "Blocked: do not commit directly on $branch. Create a feature/fix branch and open a PR." >&2
+    exit 1
+    ;;
+esac
+
+if ! git diff --cached --check; then
+  echo "Blocked: staged changes contain whitespace errors." >&2
+  exit 1
+fi

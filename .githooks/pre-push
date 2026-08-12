@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+set -eu
+
+branch="$(git symbolic-ref --short -q HEAD 2>/dev/null || true)"
+case "$branch" in
+  main|master)
+    echo "Blocked: direct pushes to $branch are not allowed. Use a pull request." >&2
+    exit 1
+    ;;
+esac
+
+needs_backend_tests=false
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in
+    ""|0000000000000000000000000000000000000000) continue ;;
+  esac
+
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    base="$(git rev-parse "$local_sha^" 2>/dev/null || true)"
+  else
+    base="$remote_sha"
+  fi
+
+  if [ -n "$base" ]; then
+    changed="$(git diff --name-only "$base" "$local_sha")"
+    if ! git diff --check "$base" "$local_sha"; then
+      echo "Blocked: the commits being pushed contain whitespace errors." >&2
+      exit 1
+    fi
+  else
+    changed="$(git diff-tree --no-commit-id --name-only -r "$local_sha")"
+  fi
+
+  if printf '%s\n' "$changed" | grep -Eq '(^|/)(backend/|package\.json$|package-lock\.json$)'; then
+    needs_backend_tests=true
+  fi
+done
+
+if [ "$needs_backend_tests" = true ]; then
+  echo "Running backend tests before push..."
+  npm test
+fi

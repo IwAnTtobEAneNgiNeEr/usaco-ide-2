@@ -1,0 +1,45 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "$(git config --bool --get sync.autoPush || echo false)" != "true" ]; then
+  exit 0
+fi
+
+branch="$(git symbolic-ref --short -q HEAD 2>/dev/null || true)"
+case "$branch" in
+  ""|main|master)
+    echo "Auto-sync skipped: this is not a feature branch." >&2
+    exit 0
+    ;;
+esac
+
+# Never push a commit while there are other uncommitted files in the worktree.
+# This prevents an accidental partial commit from being mistaken for a complete change.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Auto-sync skipped: the worktree still contains uncommitted changes." >&2
+  exit 0
+fi
+
+safe_branch="$(printf '%s' "$branch" | tr '/' '-')"
+rescue_tag="safety/${safe_branch}-$(date -u +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
+git tag "$rescue_tag" HEAD
+echo "Recovery tag created: $rescue_tag"
+
+if ! git remote get-url origin >/dev/null 2>&1; then
+  echo "Auto-sync skipped: no origin remote is configured." >&2
+  exit 0
+fi
+
+# Fetch first, but never auto-merge or auto-rebase. Conflicts require a deliberate action.
+git fetch --prune origin
+remote_ref="refs/remotes/origin/$branch"
+if git show-ref --verify --quiet "$remote_ref"; then
+  if ! git merge-base --is-ancestor "$remote_ref" HEAD; then
+    echo "Auto-sync skipped: origin/$branch is ahead or has diverged." >&2
+    echo "Resolve deliberately with: git pull --rebase origin $branch" >&2
+    exit 0
+  fi
+fi
+
+echo "Auto-sync: pushing $branch to origin..."
+git push --set-upstream origin "HEAD:refs/heads/$branch"

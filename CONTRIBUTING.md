@@ -24,6 +24,38 @@ npm test          # run the backend test suite
 
 You need Node ≥ 18 and `g++` on `PATH` (some tests self-skip without a compiler).
 
+## Git and GitHub workflow
+
+Install the repository hooks once after cloning:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-git-workflow.ps1
+```
+
+The setup enables `fetch.prune`, `pull.rebase`, worktree safety checks, and automatic
+post-commit push for non-protected branches. Before pushing, the hook runs the backend tests
+when the commit touches backend/runtime files. If tests fail, the push is blocked. Every
+automatic push also creates a local `safety/<branch>-<timestamp>-<sha>` tag first, so the
+commit can be recovered even if the branch later needs to be repaired.
+
+The hook never auto-merges or auto-rebases a branch that is behind or has diverged on GitHub;
+it stops and asks for an explicit `git pull --rebase`. It also skips pushing while the worktree
+contains additional uncommitted files. Use `git config --local sync.autoPush false` to disable
+automatic push temporarily.
+
+Create a branch before every change:
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c feature/short-description
+```
+
+Commit and push only that branch. Open a draft PR early, wait for `ci-gate`, request review,
+then merge through GitHub. Never force-push `main`; use `git revert <merge-commit>` for a safe
+rollback. For a feature branch, a recovery point can be restored with
+`git switch -c rescue/<name> safety/<tag>`.
+
 ## Before you open a PR
 
 - **Run `npm test`** — it must pass. CI runs it on Ubuntu + Windows across Node 18/20/22.
