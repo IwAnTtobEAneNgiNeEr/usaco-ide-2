@@ -122,6 +122,7 @@ for (const pause of ["settings", "problems", "problem"]) {
     await boot.finished;
     assert.equal(boot.app.state.activeTab, "history");
     assert.equal(boot.storage.getItem("usaco2.activeTab"), "history");
+    assert.equal(boot.app.workspace.current, "custom");
     assert.equal(boot.bodies.find((body) => body.dataset.panel === "history").classList.contains("hidden"), false);
     // A later explicit workspace choice still gets its normal tab behaviour.
     boot.app.workspace.switchTo("learning");
@@ -135,6 +136,7 @@ test("uninterrupted bootstrap still restores the saved workspace tab", async () 
   boot.release();
   await boot.finished;
   assert.equal(boot.app.state.activeTab, "coach");
+  assert.equal(boot.app.workspace.current, "learning");
 });
 
 test("a stale minimal-workspace restore cannot hide the newly selected History panel", async () => {
@@ -147,6 +149,7 @@ test("a stale minimal-workspace restore cannot hide the newly selected History p
   assert.equal(boot.tabs.find((tab) => tab.dataset.tab === "history").classList.contains("ws-tab-hidden"), false);
   assert.equal(boot.panelColumn.classList.contains("ws-panel-off"), false);
   assert.equal(boot.workbench.classList.contains("zen-mode"), false);
+  assert.equal(boot.app.workspace.current, "custom");
 });
 
 test("uninterrupted bootstrap still restores the minimal workspace visibility", async () => {

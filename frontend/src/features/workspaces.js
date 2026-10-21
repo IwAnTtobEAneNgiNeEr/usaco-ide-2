@@ -158,6 +158,7 @@ export function initWorkspaces(app, { preserveTab = false } = {}) {
   // Apply whatever was restored from the session (overrides today's scattered
   // layout/tab restore — this runs AFTER loadProblem in boot).
   applyPolicy({ preserveTab });
+  if (preserveTab) markCustomIfDiverged();
   renderPill();
 }
 
