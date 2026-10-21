@@ -9,10 +9,11 @@
     "node": ">=18"
   },
   "scripts": {
-    "setup": "npm install --prefix backend",
+    "setup": "npm ci --prefix backend --ignore-scripts",
     "start": "npm start --prefix backend",
     "dev": "npm run dev --prefix backend",
-    "test": "npm test --prefix backend"
+    "test": "npm test --prefix backend",
+    "check:repo": "node scripts/verify-repository.cjs"
   },
   "keywords": [
     "competitive-programming",

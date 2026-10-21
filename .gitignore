@@ -1,54 +1,54 @@
-# Dependencies
+# Dependencies and generated build output (GitHub Node template, scoped here)
 node_modules/
-
-# ---- Local secrets ----------------------------------------------------------
-# AI API key lives here. NEVER commit this file.
-# Copy data/ai-settings.example.json -> data/ai-settings.json and fill in your key.
-data/ai-settings.json
-
-# Local app settings (machine-specific compiler paths, etc.)
-# Copy data/settings.example.json -> data/settings.json, or let the app create it.
-data/settings.json
-
-# Weekend Boss state (per-user progress, written by the app)
-data/boss.json
-data/arena-*.json
-data/student-model.json
-data/backups/
-
-# NCKH research telemetry (docs/NCKH.md §5 — A/B/C/D events). This IS the
-# research dataset, not source code — keep it local, back it up separately.
-data/events.jsonl
-data/participant.json
-# Applied Algorithms module state (per-user saves/runs, written by the app)
-data/algorithm-modules/
-
-# Personal C++ starter template (Settings → Code template)
-data/template.cpp
-
-# ---- User data ---------------------------------------------------------------
-# Personal problems, contests, run history and the compile cache all live in
-# workspace/. They are YOUR data, not the app's source. A fresh clone re-creates
-# the folder and seeds a sample problem on first run.
-workspace/
-
-# ---- Build output -------------------------------------------------------------
-desktop/dist/
-desktop/out/
-
-# ---- Python tooling (OCR / MarkItDown helper scripts) -------------------------
-# Bytecode caches are regenerated on every run — never commit them.
+/desktop/dist/
+/desktop/out/
 __pycache__/
 *.pyc
+*.log
 
-# ---- OS / editor / tooling ----------------------------------------------------
+# Runtime: exclude contents, preserve reviewable examples; do not ignore .in/.out fixtures
+/data/*
+!/data/*.example.json
+/workspace/
+/user-data/
+/test-data/
+/runtime/
+/.runtime/
+/.local/
+/temp/
+/tmp/
+/cache/
+/runs/
+/usaco-audit-kit/
+/browser-profile*/
+/browser-output/
+/screenshots/
+/evidence/
+/reports/
+
+# Credentials/environment (examples allowed explicitly)
+.env
+.env.*
+!.env.example
+.npmrc
+!.npmrc.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+
+# Root delivery archives and accidental root executable output; fixtures stay visible
+/*.zip
+/*.exe
+/*.dll
+/*.o
+/*.obj
+/*.gch
+
+# Editor/OS state
 .DS_Store
 Thumbs.db
-*.log
 .claude/
 .impeccable/
-
-# ---- Internal dev-process docs (kept local, not shipped in the public repo) ----
 .planning/
-PRODUCT.md
-README_FABEL_EVOLUTION.md
