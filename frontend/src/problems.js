@@ -48,7 +48,7 @@ const DERIVED_STATUS_LABELS = {
   "in-progress": { text: "đang làm", cls: "info" },
   "needs-work": { text: "cần sửa", cls: "warn" },
   "historically-accepted": { text: "AC cũ", cls: "info" },
-  stale: { text: "code đổi sau AC", cls: "warn" },
+  stale: { text: "đầu vào chấm đã đổi", cls: "warn" },
 };
 
 // Rating thật (analysis/cfRating) → số; không có → nhãn độ khó; không cả hai
@@ -131,12 +131,12 @@ export function renderProblems(app) {
     app.el.sourceSuggest.innerHTML = sources.map((s) => `<option value="${escapeHtml(s)}">`).join("");
   }
 
-  const solved = problems.filter((p) => p.status === "solved" || p.lastVerdict === "AC").length;
+  const solved = problems.filter((p) => p.truth?.derivedStatus === "verified").length;
   const searchTag = filters.search
     ? (serverSearch.unavailable || !visible.some((v) => v.__serverMatch) ? " · tìm cục bộ" : " · tìm qua server")
     : "";
   app.el.problemCount.textContent = problems.length
-    ? `${visible.length}/${problems.length} · ✓ ${solved} đã giải${searchTag}`
+    ? `${visible.length}/${problems.length} · ✓ ${solved} AC hiện tại${searchTag}`
     : "0 problems";
 
   if (visible.length === 0) {
@@ -148,7 +148,8 @@ export function renderProblems(app) {
   }
 
   list.innerHTML = visible.map((p) => {
-    const v = p.lastVerdict ? `<span class="vbadge v-${escapeHtml(p.lastVerdict)}">${escapeHtml(p.lastVerdict)}</span>` : "";
+    const current = p.truth?.currentVerdict;
+    const v = current ? `<span class="vbadge v-${escapeHtml(current)}">${escapeHtml(current)}</span>` : "";
     // `provider` / `collection` are internal catalog metadata. Only the
     // learner-facing source is allowed in the practice sidebar.
     const srcLabel = p.source || "";
@@ -164,6 +165,7 @@ export function renderProblems(app) {
       originLabel && `<span class="p-origin">${escapeHtml(originLabel)}</span>`,
       derived && `<span class="p-derived" title="Phát triển từ một artifact gốc">⑂ dẫn xuất</span>`,
       derivedStatus && `<span class="p-dstatus p-dstatus-${escapeHtml(derivedStatus.cls)}" title="Trạng thái xác minh (từ lịch sử Judge)">${escapeHtml(derivedStatus.text)}</span>`,
+      p.truth?.candidateCount > 0 && `<span class="p-dstatus p-dstatus-warn">${p.truth.candidateCount} candidate chưa chấm</span>`,
       `<span class="p-rating p-rating-${rating.kind}">${escapeHtml(rating.text)}</span>`,
       `<span>${relTime(p.updatedAt)}</span>`,
     ].filter(Boolean);

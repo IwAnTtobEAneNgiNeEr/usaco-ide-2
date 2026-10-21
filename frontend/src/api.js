@@ -202,6 +202,7 @@ export const api = {
   addTest: (id, data) => post(`/api/problems/${id}/tests`, data),
   addTestsBulk: (id, tests) => post(`/api/problems/${id}/tests/bulk`, { tests }),
   updateTest: (id, testId, data) => put(`/api/problems/${id}/tests/${testId}`, data),
+  trustTest: (id, testId, contentHash) => post(`/api/problems/${id}/tests/${testId}/trust`, { method: "user-reviewed", contentHash }),
   deleteTest: (id, testId) => del(`/api/problems/${id}/tests/${testId}`),
 
   // Judge — opts ({ signal }) lets the Stop button abort; the backend stops

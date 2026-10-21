@@ -314,6 +314,7 @@ function wire(app) {
     try {
       const { settings } = await api.saveSettings(patch);
       app.state.settings = settings;
+      await app.syncMeta?.();
       if (app.applyTabSize) app.applyTabSize(settings.tabSize);
       else app.el.codeEditor.style.tabSize = String(settings.tabSize);
       if (app.applyTheme) app.applyTheme(settings.theme, settings.accentColor);

@@ -67,7 +67,7 @@ function judgeHistory(history) {
   return (Array.isArray(history) ? history : [])
     .filter(isJudgeEntry)
     .slice()
-    .sort((a, b) => entryTime(b) - entryTime(a));
+    .sort((a, b) => entryTime(b) - entryTime(a) || (b.sequence || 0) - (a.sequence || 0));
 }
 
 function hasJudgeAcceptance(history) {
@@ -85,27 +85,15 @@ function hasHistoricalAcceptance(meta = {}) {
   return meta.lastVerdict === "AC" && (!latest || latest.type !== "run");
 }
 
-function matchingSnapshot(entry, detailedHistory) {
-  const list = Array.isArray(detailedHistory) ? detailedHistory : [];
-  if (entry && entry.id) {
-    const byId = list.find((item) => item && item.id === entry.id);
-    if (byId) return byId;
-  }
-  return list.find((item) => item && isJudgeEntry(item) && item.at === entry.at) || null;
-}
-
-function deriveStatus({ history, detailedHistory, currentCode } = {}) {
+function deriveStatus({ history, detailedHistory, currentFingerprint, fingerprintVerifiable = true } = {}) {
   const all = Array.isArray(history) ? history : [];
   const judges = judgeHistory(all);
   if (!judges.length) return all.length ? "in-progress" : "unverified";
 
-  const latest = judges[0];
-  if (latest.verdict !== "AC") return "needs-work";
-
-  const snapshot = matchingSnapshot(latest, detailedHistory);
-  if (!snapshot || typeof snapshot.code !== "string") return "historically-accepted";
-  if (typeof currentCode !== "string") return "historically-accepted";
-  return sha256(snapshot.code) === sha256(currentCode) ? "verified" : "stale";
+  const matching = judges.find(entry => currentFingerprint && entry.judgeFingerprint === currentFingerprint);
+  if (matching && fingerprintVerifiable) return matching.verdict === "AC" ? "verified" : "needs-work";
+  if (judges.some(entry => entry.judgeFingerprint)) return "stale";
+  return judges[0].verdict === "AC" ? "historically-accepted" : "needs-work";
 }
 
 function moduleActionForConcept(concept) {
@@ -128,6 +116,11 @@ function nextAction({ operation = "summary", verdict, derivedStatus, intent = "c
     return { id: "judge-full-suite", state: "verify", label: "Judge toàn bộ test", reason: "Run chỉ kiểm tra input hiện tại và không tạo completion.", evidence: evidenceRef };
   }
 
+  // Current revision takes precedence over any historical verdict.
+  if (derivedStatus === "stale" || derivedStatus === "historically-accepted") {
+    return { id: "judge-full-suite", state: "verify", label: "Judge lại đầu vào hiện tại", reason: derivedStatus === "stale" ? "Code, tests hoặc cấu hình chấm đã thay đổi; evidence cũ không xác nhận revision này." : "AC lịch sử thiếu fingerprint đầy đủ; cần Judge mới." };
+  }
+
   if (verdict === "CE") {
     return { id: "open-compiler-output", state: "feedback", label: "Mở lỗi biên dịch", reason: "Full Judge chưa chạy được vì CE.", evidence: evidenceRef };
   }
@@ -145,33 +138,34 @@ function nextAction({ operation = "summary", verdict, derivedStatus, intent = "c
     return { id: "continue-plan", state: "evolve", label: "Tiếp tục kế hoạch", reason: "Judge AC đã verify solution; AC lịch sử không tự trở thành fresh/rated progress.", evidence: evidenceRef };
   }
 
-  if (derivedStatus === "stale") {
-    return { id: "judge-full-suite", state: "verify", label: "Judge lại code hiện tại", reason: "Code hiện tại khác snapshot AC gần nhất." };
-  }
-  if (derivedStatus === "historically-accepted") {
-    return { id: "judge-full-suite", state: "verify", label: "Tạo evidence mới", reason: "Có AC cũ nhưng thiếu snapshot để verify code hiện tại." };
-  }
   if (derivedStatus === "needs-work") {
     return { id: "return-to-work", state: "work", label: "Tiếp tục sửa code", reason: "Full Judge gần nhất chưa AC.", evidence: evidenceRef };
   }
   return { id: "open-work", state: "work", label: "Mở Work", reason: "Artifact chưa có full Judge AC cho code hiện tại." };
 }
 
-function buildContract({ meta = {}, history, detailedHistory, currentCode, evidence = null, intent = "competitive" } = {}) {
+function buildContract({ meta = {}, history, detailedHistory, currentFingerprint, fingerprintVerifiable = true, evidence = null, intent = "competitive", candidateCount = 0 } = {}) {
   const effectiveHistory = Array.isArray(history) ? history : Array.isArray(meta.history) ? meta.history : [];
-  const derivedStatus = deriveStatus({ history: effectiveHistory, detailedHistory, currentCode });
-  const latestJudge = judgeHistory(effectiveHistory)[0] || null;
+  const derivedStatus = deriveStatus({ history: effectiveHistory, detailedHistory, currentFingerprint, fingerprintVerifiable });
+  const ordered = judgeHistory(effectiveHistory);
+  const matching = ordered.find(entry => currentFingerprint && entry.judgeFingerprint === currentFingerprint);
+  const latestJudge = matching || ordered[0] || null;
   const normalized = normalizeMetadata(meta);
   const concept = clean(meta.concept) || clean(meta.topic) || (Array.isArray(meta.tags) ? clean(meta.tags[0]) : "");
 
   return {
-    version: 1,
+    version: 2,
     id: meta.id || "",
     title: meta.title || meta.id || "",
     ...normalized,
     concept,
     difficulty: meta.difficulty || "unrated",
     derivedStatus,
+    judgeFingerprint: currentFingerprint || null,
+    fingerprintVerifiable,
+    currentVerdict: matching && fingerprintVerifiable ? matching.verdict : null,
+    currentAttempt: matching ? { id: matching.id, at: matching.at, verdict: matching.verdict, judgeFingerprint: matching.judgeFingerprint } : null,
+    candidateCount,
     evidence,
     derivedFrom: meta.derivedFrom && typeof meta.derivedFrom === "object" ? meta.derivedFrom : null,
     nextAction: nextAction({

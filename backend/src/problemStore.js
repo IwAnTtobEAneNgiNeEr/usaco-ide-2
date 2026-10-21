@@ -5,6 +5,8 @@ const { PROBLEMS_DIR, DEFAULT_CHECKER_TEMPLATE, FILE_KINDS, LIMITS } = require("
 const store = require("./fileStore");
 const settingsStore = require("./settingsStore");
 const verifiedArtifact = require("./verifiedArtifact");
+const oracleTrust = require("./oracleTrust");
+const testPaths = require("./testPaths");
 
 // Per-problem write lock — every mutation below is a read-modify-write over
 // meta.json / tests/meta.json / history.json; two concurrent ones (autosave
@@ -88,8 +90,7 @@ async function writeMeta(id, meta) {
 
 // A lightweight summary used by the problem list (no heavy file reads).
 async function toSummary(meta) {
-  const [history, currentCode] = await Promise.all([listHistory(meta.id), getFile(meta.id, "code")]);
-  const artifact = verifiedArtifact.buildContract({ meta, history, currentCode });
+  const artifact = await require("./judgeState").contract(meta.id);
   return {
     id: meta.id,
     title: meta.title,
@@ -103,6 +104,8 @@ async function toSummary(meta) {
     concept: meta.concept,
     provenance: { provider: meta.provider, collection: meta.collection, origin: meta.origin, activityKind: meta.activityKind, derivedFrom: meta.derivedFrom },
     derivedStatus: artifact.derivedStatus,
+    currentVerdict: artifact.currentVerdict,
+    truth: artifact,
     rating: meta.rating == null ? null : meta.rating,
     cfRating: meta.cfRating == null ? (meta.analysis && meta.analysis.cfRating != null ? meta.analysis.cfRating : null) : meta.cfRating,
     topic: meta.topic,
@@ -156,7 +159,7 @@ async function createProblem(input = {}) {
   });
   // Seed initial test cases if provided (one meta write, not one per test).
   if (Array.isArray(input.tests) && input.tests.length) {
-    await addTests(id, input.tests);
+    await addTests(id, input.tests.map(t => input.origin === "ai-generated" ? { ...t, generatedBy: "ai" } : t));
   }
   return readMeta(id);
 }
@@ -306,20 +309,23 @@ function pad(n) {
 }
 
 function inPath(id, testId) {
-  return path.join(testsDir(id), `${testId}.in`);
+  return testPaths.paths(id, testId).input;
 }
 
 function outPath(id, testId) {
-  return path.join(testsDir(id), `${testId}.out`);
+  return testPaths.paths(id, testId).expected;
 }
 
 async function listTestIds(id) {
+  await testPaths.rejectSuiteLinks(id);
   const files = await store.listFiles(testsDir(id));
   const ids = files
     .filter((name) => name.endsWith(".in"))
     .map((name) => name.slice(0, -3));
-  ids.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  return ids;
+  ids.forEach(testPaths.assertTestId); // Reject unsupported on-disk ids; never silently shrink the suite.
+  const safeIds = ids;
+  safeIds.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return safeIds;
 }
 
 // Per-test metadata lives in tests/meta.json: { tests: [{id,name,reason,generatedBy,createdAt}] }.
@@ -328,6 +334,7 @@ function testsMetaPath(id) {
 }
 
 async function readTestsMeta(id) {
+  await testPaths.rejectSuiteLinks(id);
   const raw = await store.readJson(testsMetaPath(id), null);
   const map = {};
   if (raw && Array.isArray(raw.tests)) {
@@ -363,21 +370,25 @@ async function testInfo(id, testId, testsMeta, problemMeta) {
 }
 
 async function listTests(id) {
-  const [problemMeta, testsMeta, ids] = await Promise.all([readMeta(id), readTestsMeta(id), listTestIds(id)]);
+  const [problemMeta, testsMeta, ids, statement] = await Promise.all([readMeta(id), readTestsMeta(id), listTestIds(id), getFile(id, "statement")]);
   return Promise.all(ids.map(async (testId) => {
+    await testPaths.rejectLinks(id, testId);
     const [info, input, expected] = await Promise.all([
       testInfo(id, testId, testsMeta, problemMeta),
       store.readText(inPath(id, testId), ""),
       store.readText(outPath(id, testId), "")
     ]);
-    return {
+    const test = {
       id: testId, name: info.name, reason: info.reason, generatedBy: info.generatedBy,
       category: info.category, provenance: info.provenance, statementHash: info.statementHash, input, expected
     };
+    test.oracle = oracleTrust.read(test, testsMeta[testId] && testsMeta[testId].oracle, statement);
+    return test;
   }));
 }
 
 async function writeTestFiles(id, testId, input, expected) {
+  await testPaths.rejectLinks(id, testId);
   await store.writeText(inPath(id, testId), input != null ? input : "");
   await store.writeText(outPath(id, testId), expected != null ? expected : "");
 }
@@ -399,6 +410,8 @@ async function addTests(id, items = []) {
   return withLock(id, async () => {
     const ids = await listTestIds(id);
     const testsMeta = await readTestsMeta(id);
+    const statement = await getFile(id, "statement");
+    const problemMeta = await readMeta(id);
     let next = maxNumericId(ids) + 1;
     let count = ids.length;
     const added = [];
@@ -426,6 +439,7 @@ async function addTests(id, items = []) {
         generatedBy: t.generatedBy === "ai" ? "ai" : "manual",
         ...(t.category ? { category: String(t.category) } : {}),
         createdAt: nowIso(),
+        oracle: oracleTrust.initial({ input, expected, generatedBy: t.generatedBy }, statement, problemMeta.origin),
         // Optional trustLayer.js evidence labels — omitted (not just falsy) when
         // the caller doesn't pass them, so old records stay byte-identical.
         ...(t.provenance ? { provenance: String(t.provenance) } : {}),
@@ -450,7 +464,9 @@ async function addTest(id, test = {}) {
 }
 
 async function updateTest(id, testId, patch = {}) {
+  testPaths.assertTestId(testId);
   return withLock(id, async () => {
+    await testPaths.rejectLinks(id, testId);
     const ids = await listTestIds(id);
     if (!ids.includes(testId)) throw new Error("Test case not found.");
     const currentIn = await store.readText(inPath(id, testId), "");
@@ -463,21 +479,42 @@ async function updateTest(id, testId, patch = {}) {
     const entry = testsMeta[testId] || { id: testId, name: `Test ${testId}`, reason: "", generatedBy: "manual", createdAt: nowIso() };
     if (patch.name != null) entry.name = String(patch.name);
     if (patch.reason != null) entry.reason = String(patch.reason);
+    if (patch.input != null || patch.expected != null || patch.output != null) {
+      const edited = { input: nextIn, expected: nextOut, generatedBy: entry.generatedBy };
+      entry.oracle = entry.generatedBy === "ai" ? oracleTrust.candidate(edited, "Edited AI candidate requires review") : oracleTrust.receipt(edited, "user-provided");
+    }
     testsMeta[testId] = entry;
     await writeTestsMeta(id, testsMeta);
     await touchUnlocked(id);
-    return { id: testId, name: entry.name, reason: entry.reason, generatedBy: entry.generatedBy, input: nextIn, expected: nextOut };
+    return { id: testId, name: entry.name, reason: entry.reason, generatedBy: entry.generatedBy, input: nextIn, expected: nextOut, oracle: entry.oracle };
   });
 }
 
 async function deleteTest(id, testId) {
+  testPaths.assertTestId(testId);
   return withLock(id, async () => {
+    await testPaths.rejectLinks(id, testId);
+    if (!(await listTestIds(id)).includes(testId)) throw Object.assign(new Error("Test case not found."), { status: 404 });
     await store.removeFile(inPath(id, testId));
     await store.removeFile(outPath(id, testId));
     const testsMeta = await readTestsMeta(id);
     delete testsMeta[testId];
     await writeTestsMeta(id, testsMeta);
     await touchUnlocked(id);
+  });
+}
+
+async function trustTest(id, testId, { method, contentHash } = {}) {
+  testPaths.assertTestId(testId);
+  if (method !== "user-reviewed" || typeof contentHash !== "string") throw Object.assign(new Error("Explicit user review and current content hash required."), { status: 400 });
+  return withLock(id, async () => {
+    const test = (await listTests(id)).find(t => t.id === testId);
+    if (!test) throw Object.assign(new Error("Test case not found."), { status: 404 });
+    if (contentHash !== oracleTrust.contentHash(test)) throw Object.assign(new Error("Test changed since review; reload and review again."), { status: 409 });
+    const metadata = await readTestsMeta(id);
+    metadata[testId] = { ...metadata[testId], oracle: oracleTrust.receipt(test, "user-reviewed") };
+    await writeTestsMeta(id, metadata); await touchUnlocked(id);
+    return { ...test, oracle: metadata[testId].oracle };
   });
 }
 
@@ -491,7 +528,17 @@ function historyPath(id) {
 
 async function listHistory(id) {
   const raw = await store.readJson(historyPath(id), null);
-  return raw && Array.isArray(raw.entries) ? raw.entries : [];
+  const legacy = raw && Array.isArray(raw.entries) ? raw.entries : [];
+  const saved = await require("./evidenceStore").listAttempts(id);
+  const byId = new Map(legacy.map((entry, index) => [entry.id || `legacy-${index}`, entry]));
+  for (const doc of saved) {
+    byId.set(doc.run.id, { ...doc.run, cancelled: Boolean(doc.cancelled), code: doc.codeSnapshot.code, stdout: doc.test?.actual || "", stderr: doc.compile.ok ? doc.test?.stderr || "" : doc.compile.stderr, compile: doc.compile, results: doc.results || [], inputSnapshot: doc.inputSnapshot || null, judgeFingerprint: doc.judgeFingerprint || null, scope: doc.scope || (doc.run.type === "judge" ? "full" : "scratch"), legacy: doc.version < 2 });
+  }
+  const meta = await readMeta(id);
+  for (const entry of meta.history || []) {
+    if (![...byId.values()].some(h => entry.id ? h.id === entry.id : h.at === entry.at && h.type === entry.type)) byId.set(entry.id || `legacy-index-${entry.at}`, { ...entry, legacy: true });
+  }
+  return [...byId.values()].sort((a, b) => String(b.at).localeCompare(String(a.at)) || (b.sequence || 0) - (a.sequence || 0));
 }
 
 // Snapshot stdout/stderr are display-only (the timeline view); a program that
@@ -508,12 +555,12 @@ function capSnapshotText(value) {
 
 async function recordRun(id, entry) {
   return withLock(id, async () => {
-    const at = nowIso();
+    const at = entry.at || nowIso();
     const meta = await readMeta(id);
 
     // Lightweight index kept in meta.json (used for list/lastVerdict/quick timeline).
     const record = {
-      ...(entry.id ? { id: String(entry.id) } : {}),
+      id: entry.id ? String(entry.id) : require("./evidenceStore").createRunId(),
       at,
       type: entry.type || "run",
       verdict: entry.verdict || null,
@@ -522,28 +569,21 @@ async function recordRun(id, entry) {
       total: entry.total != null ? entry.total : null,
       error: entry.error || null
     };
+    // Compatibility callers with only a code/output snapshot get immutable v1
+    // evidence. Never rewrite or truncate a historical history.json document.
+    if (entry.snapshot) {
+      const stderr = capSnapshotText(entry.snapshot.stderr);
+      await require("./evidenceStore").saveRunEvidence(id, {
+        record, code: typeof entry.snapshot.code === "string" ? entry.snapshot.code : "",
+        result: { compileOk: entry.verdict !== "CE", compile: { stderr: entry.verdict === "CE" ? stderr : "" }, results: [] },
+        fallbackTest: { actual: capSnapshotText(entry.snapshot.stdout), stderr }
+      });
+    }
     meta.history.unshift(record);
     if (meta.history.length > LIMITS.historyLimit) meta.history = meta.history.slice(0, LIMITS.historyLimit);
     if (entry.verdict) meta.lastVerdict = entry.verdict;
     meta.updatedAt = at;
     await writeMeta(id, meta);
-
-    // Detailed snapshot (code + outputs) kept in history.json for the timeline view.
-    if (entry.snapshot) {
-      const entries = await listHistory(id);
-      entries.unshift({
-        ...record,
-        code: typeof entry.snapshot.code === "string" ? entry.snapshot.code : "",
-        stdout: capSnapshotText(entry.snapshot.stdout),
-        stderr: capSnapshotText(entry.snapshot.stderr)
-      });
-      // Cap older entries too — files written before the cap existed shrink on
-      // their next rewrite instead of staying huge forever.
-      const capped = entries.slice(0, LIMITS.historyLimit).map((e) => ({
-        ...e, stdout: capSnapshotText(e.stdout), stderr: capSnapshotText(e.stderr)
-      }));
-      await store.writeJson(historyPath(id), { entries: capped });
-    }
 
     return record;
   });
@@ -569,6 +609,7 @@ module.exports = {
   addTests,
   updateTest,
   deleteTest,
+  trustTest,
   recordRun,
   listHistory
 };

@@ -13,25 +13,8 @@ const router = express.Router();
 
 // GET /api/problems/:id/verified-artifact — additive read model for Agent B.
 router.get("/:id/verified-artifact", requireProblem, asyncHandler(async (req, res) => {
-  const id = req.problemId;
-  const [meta, detailedHistory, currentCode] = await Promise.all([
-    problemStore.readMeta(id),
-    problemStore.listHistory(id),
-    problemStore.getFile(id, "code"),
-  ]);
-  const latestJudge = verifiedArtifact.judgeHistory(meta.history)[0] || null;
-  const evidence = latestJudge ? await evidenceStore.referenceForHistoryEntry(id, latestJudge) : null;
   const intent = req.query.intent === "derive-module" ? "derive-module" : "competitive";
-  res.json({
-    artifact: verifiedArtifact.buildContract({
-      meta,
-      history: meta.history,
-      detailedHistory,
-      currentCode,
-      evidence,
-      intent,
-    }),
-  });
+  res.json({ artifact: await require("../judgeState").contract(req.problemId, { intent }) });
 }));
 
 // GET /api/problems/:id/evidence/:evidenceId — immutable run/test/snapshot link.

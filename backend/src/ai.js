@@ -5,6 +5,7 @@
 
 const crypto = require("crypto");
 const { CONTEST, COREFILL } = require("./config");
+const { redact } = require("./secretRedaction");
 
 const NO_KEY_MESSAGE = "Bạn cần nhập API key trong Settings trước.";
 
@@ -132,7 +133,7 @@ async function chatOnce({ settings, model, messages, jsonMode, maxTokens, timeou
     const text = await res.text().catch(() => "");
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = null; }
-    const providerMsg = (data && data.error && (data.error.message || data.error.type)) || res.statusText || "request failed";
+    const providerMsg = redact((data && data.error && (data.error.message || data.error.type)) || res.statusText || "request failed", settings);
     const e = new Error(friendlyAiError(res.status, providerMsg));
     e.status = res.status;
     e.providerMessage = providerMsg;
@@ -438,7 +439,7 @@ function normalizeTests(parsed) {
     const hasStr = typeof t.expected === "string";
     const expected = hasStr ? t.expected : "";
     const warning = (t.warning && String(t.warning).trim()) || "";
-    const expectedKnown = hasStr && expected.trim() !== "" && !warning;
+    const expectedKnown = false; // Presence is not an oracle-verification receipt.
     const category = (t.category && String(t.category).trim()) || "";
     let reason = (t.reason && String(t.reason).trim()) || "";
     if (category) reason = reason ? `[${category}] ${reason}` : `[${category}]`;
@@ -449,6 +450,7 @@ function normalizeTests(parsed) {
       input: typeof t.input === "string" ? t.input : "",
       expected,
       expectedKnown,
+      hasExpected: hasStr && expected.trim() !== "",
       reason
     };
   });

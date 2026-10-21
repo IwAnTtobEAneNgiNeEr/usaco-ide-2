@@ -62,7 +62,8 @@ test("Dijkstra route analyzes only the stored evidence snapshot", async () => {
   const meta = await problemStore.createProblem({ title: "zz-dijkstra-trace", code: CODE });
   try {
     const runId = evidenceStore.createRunId();
-    const record = await problemStore.recordRun(meta.id, { id: runId, type: "judge", verdict: "WA", snapshot: { code: CODE } });
+    // Save the complete immutable evidence once below, not via snapshot as well.
+    const record = await problemStore.recordRun(meta.id, { id: runId, type: "judge", verdict: "WA" });
     await evidenceStore.saveRunEvidence(meta.id, { record, code: CODE, result: { compileOk: true, results: [{ testId: "01", status: "WA", input: INPUT, expected: "7", actual: "8" }] } });
     await withServer(async (base) => {
       const response = await fetch(`${base}/api/problems/${meta.id}/analysis/dijkstra-trace`, {

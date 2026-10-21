@@ -322,14 +322,19 @@ app.reloadTests = async () => {
   try {
     const { tests } = await api.listTests(app.state.currentId);
     app.state.tests = tests;
+      app.invalidateJudge?.();
     renderTests(app);
+      await app.syncMeta();
   } catch (err) { app.toast(err.message, "err"); }
 };
 
 app.syncMeta = async () => {
   if (!app.state.currentId) return;
   try {
-    const { problem } = await api.getProblem(app.state.currentId);
+    const id = app.state.currentId;
+    const { problem } = await api.getProblem(id);
+    if (app.state.currentId !== id) return;
+    if (app.state.meta?.truth?.judgeFingerprint !== problem.truth?.judgeFingerprint) app.invalidateJudge?.();
     app.state.meta = problem;
     renderMeta(app);
     renderHistory(app);
@@ -338,6 +343,17 @@ app.syncMeta = async () => {
     if (app.refreshCoachActions) app.refreshCoachActions();
     await app.refreshProblems();
   } catch { /* non-fatal */ }
+};
+
+// Clear transient verdict paint as soon as judge inputs change. Historical
+// attempts remain in the timeline; saved current status comes from the server.
+app.invalidateJudge = () => {
+  app.state.testResults = {};
+  app.state.lastJudge = null;
+  renderTests(app);
+  renderMeta(app);
+  const badge = app.el.outputVerdict;
+  if (badge) { badge.textContent = "STALE"; badge.className = "vbadge"; }
 };
 
 // ---------------- Metadata modal ----------------
@@ -381,6 +397,7 @@ function initMetaModal() {
         const { problem } = await api.updateProblem(app.state.editingMeta.id, data);
         app.state.meta = problem;
         renderMeta(app);
+          await app.syncMeta();
         if (app.refreshHighlight) app.refreshHighlight();
         await app.refreshProblems();
         app.toast("Saved", "ok");

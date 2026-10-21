@@ -67,7 +67,7 @@ function auditTestQuality(tests) {
   return issues;
 }
 
-function applyProvenance({ tests, samples, statement }) {
+function applyProvenance({ tests, samples, statement, trustedStatement = true }) {
   const list = Array.isArray(tests) ? tests : [];
   const hash = statementHash(statement);
   const official = new Set((Array.isArray(samples) ? samples : []).map((sample) =>
@@ -80,8 +80,11 @@ function applyProvenance({ tests, samples, statement }) {
     delete test.bruteVerified;
     delete test.bruteMismatch;
     const key = `${exactInput(test.input)}\u0000${normalizeOutput(test.expected)}`;
-    if (official.has(key)) test.provenance = PROVENANCE.OFFICIAL_SAMPLE;
+    if (trustedStatement && official.has(key)) test.provenance = PROVENANCE.OFFICIAL_SAMPLE;
     else test.provenance = normalizeProvenance(test.provenance, "ai");
+    test.hasExpected = typeof test.expected === "string" && test.expected.trim() !== "";
+    test.expectedKnown = trustedStatement && official.has(key);
+    test.oracleState = test.expectedKnown ? "trusted" : "candidate";
     test.statementHash = hash;
     test.quality = { lowQuality: false, flags: [] };
   }

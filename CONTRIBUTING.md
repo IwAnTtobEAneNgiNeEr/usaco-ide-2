@@ -1,58 +1,11 @@
-# Contributing to USACO IDE 2.0
+# Contributing
 
-Thanks for your interest! This project is intentionally small and local-first. Contributions
-that keep it that way are very welcome.
+Read AGENTS.md and docs/operations/development.md first. Work from the verified patched source, not the old extracted ZIP. Establish real upstream ancestry before creating commits for synchronization. No GitHub destination/authentication has been confirmed for this snapshot.
 
-## Project principles (please keep these)
+Keep changes small and reviewable. Preserve the Express/vanilla-JS/file persistence architecture and Truth Core invariants. Functional fixes start with a failing regression; preserve failures and explain intentional contract changes. Do not update snapshots/assertions merely to conceal failures.
 
-1. **Local-first.** No accounts, no cloud, no telemetry. The app runs on the user's machine.
-2. **Zero build step on the frontend.** Vanilla ES modules, no framework, no bundler.
-3. **Minimal dependencies.** The backend has a *single* runtime dependency (Express). Don't
-   add heavyweight deps without a strong reason.
-4. **It must work offline.** AI is the only feature allowed to need the network.
-5. **Your data is just files.** Keep the file-per-problem model; never require a database.
+Run node scripts/verify-repository.cjs for static checks. Judge tests and the server belong in the verified MXC environment on the borrowed machine, using owned temporary data and fresh browser profiles. Record actual pass/fail/skip counts and browser evidence for affected user flows. npm test is not a safe stock-runner CI subset.
 
-## Getting set up
+Submit source identity, scope, exact changes, validation evidence, risks and rollback. Check staged paths for secrets, data/, workspace/, profiles, archives, dependencies and binaries. Ignore patterns do not protect previously tracked files. Never attach raw runtime logs without review: local event/research data and HTTP URLs can contain sensitive material.
 
-```bash
-git clone https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2.git
-cd usaco-ide-2
-npm run setup     # installs backend deps
-npm start         # http://127.0.0.1:5050
-npm test          # run the backend test suite
-```
-
-You need Node ≥ 18 and `g++` on `PATH` (some tests self-skip without a compiler).
-
-## Before you open a PR
-
-- **Run `npm test`** — it must pass. CI runs it on Ubuntu + Windows across Node 18/20/22.
-- **Add tests** for backend logic changes (`backend/test/*.test.js`, `node --test`, no test
-  deps). The judge, stores, and progress engine are all unit-tested — follow the patterns
-  there (e.g. ephemeral `zz-*` throwaway problems for route tests).
-- **Don't commit secrets or user data.** `data/ai-settings.json`, `data/settings.json`, and
-  `workspace/` are gitignored for a reason. Never `git add -f` them.
-- **Match the surrounding style.** No linter is enforced; mirror the existing code's naming,
-  comment density, and idioms. Keep functions small and commented where intent isn't obvious.
-- **Keep the UI consistent.** New user-facing strings should match the app's primary language
-  (Vietnamese) unless they're developer-facing.
-
-## Good first contributions
-
-- Translations / English-mode polish.
-- More algorithm snippets (`frontend/src/snippet-table.js`).
-- Visualizer support for more input shapes.
-- Documentation fixes in `docs/`.
-- Bug reports with a minimal repro (statement + code + expected vs actual).
-
-## Reporting bugs
-
-Open an issue with:
-- what you did and what you expected,
-- the **backend console output**,
-- your OS, Node version (`node --version`), and `g++ --version`.
-
-## Code of conduct
-
-Be kind and constructive. Assume good faith. This is a learning tool for students — keep it
-welcoming.
+Remote push/creation/settings, releases, merge, destructive cleanup and history rewrites require specific owner approval. Security reports follow SECURITY.md. The PR template is a review aid, not an authorization or proof that checks passed.

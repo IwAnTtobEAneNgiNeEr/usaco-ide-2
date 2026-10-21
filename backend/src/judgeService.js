@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 const fsp = require("fs/promises");
 const runCpp = require("./runCpp");
+const { LIMITS } = require("./config");
 // NOTE: peak-memory sampling (memSampler.js) is intentionally NOT wired into the
 // run loop — on Windows it spawns a PowerShell monitor per run, which would slow
 // judging and still miss sub-200ms programs. Until that's solved without a speed
@@ -14,6 +15,12 @@ const runCpp = require("./runCpp");
 
 const COMPILER_MISSING_MESSAGE =
   "Không tìm thấy g++. Hãy cài MinGW (hoặc g++) hoặc cấu hình đường dẫn compiler trong Settings.";
+function compilerEvidence(c, stderr = c.stderr) {
+  const bounded = (value, max) => new TextDecoder("utf-8").decode(Buffer.from(String(value || "")).subarray(0, max), { stream: true });
+  return { stderr: bounded(stderr, LIMITS.maxStderrBytes), stdout: bounded(c.stdout, 20000), timeMs: c.timeMs || 0,
+    command: c.command || null, cached: Boolean(c.cached), exitCode: c.exitCode ?? null,
+    timedOut: Boolean(c.timedOut), errorCode: c.errorCode || null };
+}
 
 // How many tests run at once. Half the cores (capped) keeps single-threaded
 // contest programs from fighting each other for CPU, so measured runtimes stay
@@ -81,7 +88,7 @@ async function prepareChecker(checker, settings, testCount) {
   return {
     error: {
       verdict: "CE", compileOk: false, checkerBroken: true,
-      compile: { stderr: "checker.cpp: " + (c.stderr || "compile failed"), timeMs: c.timeMs },
+      compile: compilerEvidence(c, ("checker.cpp: " + (c.stderr || "compile failed")).slice(0, 250000)),
       results: [], summary: { total: testCount, passed: 0, failed: testCount, timeMs: 0 }
     }
   };
@@ -102,14 +109,14 @@ async function compileAndJudge({ code, settings, tests, fileMode, checker, shoul
     if (compile.compilerMissing) {
       return {
         verdict: "CE", compileOk: false, compilerMissing: true,
-        compile: { stderr: COMPILER_MISSING_MESSAGE, timeMs: 0 },
+        compile: compilerEvidence(compile, COMPILER_MISSING_MESSAGE),
         results: [], summary: { total: list.length, passed: 0, failed: list.length, timeMs: 0 }
       };
     }
     if (!compile.ok) {
       return {
         verdict: "CE", compileOk: false,
-        compile: { stderr: compile.stderr, timeMs: compile.timeMs },
+        compile: compilerEvidence(compile),
         results: [], summary: { total: list.length, passed: 0, failed: list.length, timeMs: 0 }
       };
     }
@@ -141,7 +148,8 @@ async function compileAndJudge({ code, settings, tests, fileMode, checker, shoul
       return {
         testId: test.id, name: test.name, status,
         input: test.input, expected: test.expected, actual: run.stdout,
-        stderr: run.stderr, timeMs: run.runtimeMs, diff, checkerMessage
+        stderr: run.stderr, timeMs: run.runtimeMs, diff, checkerMessage,
+        errorCode: run.errorCode, outputChannel: run.outputChannel, outputLimitBytes: run.outputLimitBytes
       };
     };
 
@@ -178,7 +186,7 @@ async function compileAndJudge({ code, settings, tests, fileMode, checker, shoul
     for (const r of done) totalTime += r.timeMs;
     return {
       verdict, compileOk: true, cancelled: stop() || undefined,
-      compile: { stderr: compile.stderr, timeMs: compile.timeMs },
+      compile: compilerEvidence(compile),
       results: done,
       summary: { total: done.length, passed, failed: done.length - passed, timeMs: totalTime }
     };
@@ -196,16 +204,16 @@ async function compileAndRun({ code, settings, input, expected, fileMode, checke
   try {
     const compile = await runCpp.compileSource({ code, settings, workdir });
     if (compile.compilerMissing) {
-      return { verdict: "CE", compileOk: false, compilerMissing: true, runtimeOk: false, stdout: "", stderr: COMPILER_MISSING_MESSAGE, timeMs: 0, diff: null, hasExpected };
+      return { verdict: "CE", compileOk: false, compilerMissing: true, runtimeOk: false, stdout: "", stderr: COMPILER_MISSING_MESSAGE, compile: compilerEvidence(compile, COMPILER_MISSING_MESSAGE), timeMs: 0, diff: null, hasExpected };
     }
     if (!compile.ok) {
-      return { verdict: "CE", compileOk: false, runtimeOk: false, stdout: "", stderr: compile.stderr, timeMs: compile.timeMs, diff: null, hasExpected };
+      return { verdict: "CE", compileOk: false, runtimeOk: false, stdout: "", stderr: compile.stderr, compile: compilerEvidence(compile), timeMs: compile.timeMs, diff: null, hasExpected };
     }
 
     if (checker && String(checker).trim() && hasExpected) {
       const prepared = await prepareChecker(checker, settings, 1);
       if (prepared.error) {
-        return { verdict: "CE", compileOk: false, checkerBroken: true, runtimeOk: false, stdout: "", stderr: prepared.error.compile.stderr, timeMs: prepared.error.compile.timeMs, diff: null, hasExpected };
+        return { verdict: "CE", compileOk: false, checkerBroken: true, runtimeOk: false, stdout: "", stderr: prepared.error.compile.stderr, compile: prepared.error.compile, timeMs: prepared.error.compile.timeMs, diff: null, hasExpected };
       }
       checkerCtx = prepared.ctx;
     }
@@ -226,7 +234,7 @@ async function compileAndRun({ code, settings, input, expected, fileMode, checke
         diff = cmp.diff;
       }
     }
-    return { verdict, compileOk: true, runtimeOk: run.status === "OK", stdout: run.stdout, stderr: run.stderr, timeMs: run.runtimeMs, diff, hasExpected, checkerMessage };
+    return { verdict, compileOk: true, runtimeOk: run.status === "OK", stdout: run.stdout, stderr: run.stderr, compile: compilerEvidence(compile), timeMs: run.runtimeMs, diff, hasExpected, checkerMessage, errorCode: run.errorCode, outputChannel: run.outputChannel, outputLimitBytes: run.outputLimitBytes };
   } finally {
     await runCpp.cleanupWorkdir(workdir);
     if (checkerCtx) await runCpp.cleanupWorkdir(checkerCtx.workdir);
