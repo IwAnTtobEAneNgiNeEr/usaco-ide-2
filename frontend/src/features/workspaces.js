@@ -8,7 +8,7 @@ import { loadSession, saveSession } from "../core/session-store.js";
 
 const ALL_TABS = ["run", "tests", "notes", "coach", "history", "settings"];
 
-export function initWorkspaces(app) {
+export function initWorkspaces(app, { preserveTab = false } = {}) {
   const wsList = listWorkspaces();
   let session = loadSession(window.localStorage);
   let current = session.workspaceId || "free";
@@ -24,7 +24,7 @@ export function initWorkspaces(app) {
   };
 
   // Apply the resolved policy through existing primitives, transition-suppressed.
-  function applyPolicy() {
+  function applyPolicy({ preserveTab = false } = {}) {
     applying = true;
     const wb = document.querySelector(".workbench");
     const prev = wb ? wb.style.transition : "";
@@ -33,12 +33,12 @@ export function initWorkspaces(app) {
     // Layout axes
     if (app.setLayoutMode) app.setLayoutMode(policy.layout);
     const isZen = Boolean(wb && wb.classList.contains("zen-mode"));
-    if (policy.zen !== isZen && app.toggleZenMode) app.toggleZenMode();
+    if (!preserveTab && policy.zen !== isZen && app.toggleZenMode) app.toggleZenMode();
     if (app.setSidebarCollapsed) app.setSidebarCollapsed(policy.explorer === "collapsed");
-    if (policy.rightTab && app.setTab) app.setTab(policy.rightTab);
+    if (!preserveTab && policy.rightTab && app.setTab) app.setTab(policy.rightTab);
 
     // Panel + widget visibility
-    applyPanelVisibility(app, policy);
+    applyPanelVisibility(app, policy, preserveTab);
     applyWidgetVisibility(policy);
 
     // Focus / motion
@@ -157,21 +157,23 @@ export function initWorkspaces(app) {
 
   // Apply whatever was restored from the session (overrides today's scattered
   // layout/tab restore — this runs AFTER loadProblem in boot).
-  applyPolicy();
+  applyPolicy({ preserveTab });
+  if (preserveTab) markCustomIfDiverged();
   renderPill();
 }
 
 // ---- visibility helpers (operate on existing DOM; reversible) ----
-function applyPanelVisibility(app, policy) {
+function applyPanelVisibility(app, policy, preserveTab = false) {
   const tabs = document.querySelectorAll("#panel-tabs .tab");
   let activeHidden = false;
   tabs.forEach((t) => {
-    const hide = policy.panels && policy.panels[t.dataset.tab] === "hide";
+    const hide = policy.panels && policy.panels[t.dataset.tab] === "hide"
+      && !(preserveTab && t.dataset.tab === app.state.activeTab);
     t.classList.toggle("ws-tab-hidden", hide);
     if (hide && t.classList.contains("active")) activeHidden = true;
   });
   const col = document.querySelector(".col-panel");
-  if (col) col.classList.toggle("ws-panel-off", policy.rightTab === null);
+  if (col) col.classList.toggle("ws-panel-off", policy.rightTab === null && !preserveTab);
   // If the active tab got hidden, fall back to the first visible one.
   if (activeHidden && policy.rightTab !== null) {
     const firstVisible = ALL_TABS.find((id) => !(policy.panels && policy.panels[id] === "hide"));

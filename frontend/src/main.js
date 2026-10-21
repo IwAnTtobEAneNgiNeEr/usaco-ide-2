@@ -60,6 +60,7 @@ const app = {
     meta: null,
     settings: { autosave: true, autosaveDelayMs: 800, tabSize: 4, compareMode: "loose", timeMs: 2000 },
     activeTab: "run",
+    tabRevision: 0,
     activeView: "code",
     dirty: false,
     filters: { search: "", track: "", source: "", status: "", difficulty: "", topics: [] },
@@ -183,7 +184,7 @@ function collectRefs() {
 }
 
 // ---------------- Shared helpers ----------------
-app.setTab = (name) => { clearTabAttn(name); setTab(app, name); };
+app.setTab = (name) => { app.state.tabRevision += 1; clearTabAttn(name); setTab(app, name); };
 app.setView = (name) => setView(app, name);
 app.setLayoutMode = (m) => setLayoutMode(app, m);
 app.toggleLayoutMode = () => cycleLayoutMode(app);
@@ -1146,6 +1147,7 @@ function initGlobalParticles(app) {
 
 // ---------------- Boot ----------------
 async function boot() {
+  const tabRevisionAtStart = app.state.tabRevision;
   collectRefs();
 
   try {
@@ -1257,7 +1259,11 @@ async function boot() {
     const saved = localStorage.getItem("usaco2.activeTab");
     if (saved && ["run", "tests", "notes", "coach", "history"].includes(saved)) initialTab = saved;
   } catch { /* private mode */ }
-  app.setTab(initialTab);
+  // Once navigation has happened, an older bootstrap restore has no authority
+  // to replace it, including while settings/editor setup is still pending.
+  const restoreTab = app.state.tabRevision === tabRevisionAtStart;
+  if (restoreTab) app.setTab(initialTab);
+  const restoredTabRevision = app.state.tabRevision;
 
   await app.refreshProblems();
   // Startup goes straight to the editor — reopen the last problem (or the most
@@ -1278,7 +1284,7 @@ async function boot() {
 
   // Workspace environment — restore the saved workspace and apply it as the
   // authoritative layout/behaviour layer (runs after loadProblem on purpose).
-  initWorkspaces(app);
+  initWorkspaces(app, { preserveTab: !restoreTab || app.state.tabRevision !== restoredTabRevision });
   initPanelSignals(app);
 
   try {
