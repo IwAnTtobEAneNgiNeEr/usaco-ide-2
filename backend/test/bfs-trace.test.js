@@ -106,8 +106,9 @@ test("BFS trace route can only analyze the code/input snapshot from stored evide
     const runId = evidenceStore.createRunId();
     const record = await problemStore.recordRun(id, {
       id: runId, type: "judge", verdict: "WA", passed: 0, total: 1,
-      snapshot: { code: SAFE_BFS, stdout: "-1", stderr: "" },
     });
+    // recordRun(snapshot) already writes immutable evidence. Write this fixture's
+    // complete evidence below once, without reserving the same attempt twice.
     await evidenceStore.saveRunEvidence(id, {
       record,
       code: SAFE_BFS,

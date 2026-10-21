@@ -7,7 +7,7 @@ body:
     id: description
     attributes:
       label: What happened?
-      description: Include the expected behavior and the observed behavior.
+      description: Include expected and observed behavior using synthetic data; follow SECURITY.md for private reports.
     validations:
       required: true
   - type: textarea
@@ -20,8 +20,8 @@ body:
   - type: input
     id: commit
     attributes:
-      label: Commit
-      description: Paste `git rev-parse --short HEAD`.
+      label: Source identity
+      description: Provide an established Git commit, or the ZIP/source manifest SHA-256 when no Git history exists. Never invent a commit.
     validations:
       required: true
   - type: dropdown

@@ -1,3 +1,5 @@
+> Governance notice (2026-10-17): Historical API design. The current Truth Core contract is security/truth-core.md and executable backend tests. Code-only or legacy AC evidence described below cannot establish current full verification.
+
 # Verified Artifact API
 
 ## Phase 0 audit: BFS slice

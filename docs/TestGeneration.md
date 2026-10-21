@@ -1,45 +1,9 @@
-# Test Generation
+# Test generation and oracle trust
 
-Two complementary ways to build a strong test suite.
+AI-generated input/expected pairs are untrusted candidates. A non-empty expected output, expectedKnown flag, compilable helper or helper matching statement samples never creates independently verified judge truth. If reference compile fails, samples mismatch, verification is unavailable or budgets expire, review is still required.
 
-## Import existing tests (`.in` / `.out`)
+Generation can show preview and add selected candidates, but candidates are excluded from normal full-suite judging. Explicit authorized review uses a backend content-bound receipt; editing content invalidates earlier review. Trusted user/imported tests and AI provenance are distinct concerns. Never bypass this distinction through a frontend flag or automatic fallback to scratch judging.
 
-In the **Tests** tab, click **📂 Import .in/.out** or **drag a whole downloaded test-data
-folder onto the tab**. Files are paired by stem (`1.in` ↔ `1.out`; `.ans` / `.expected` are
-accepted as the answer side), numerically sorted, and added in one shot. Oversized files are
-skipped with a report — never fatal.
+Inspect backend routes/ai.js, problemStore.js and the current contract in security/truth-core.md. Tests truth-campaign.test.js, truth-core-contract.test.js, test-generation.test.js and verify-tests.test.js cover reference failure, candidate exclusion and review/edit boundaries. Sample matching alone cannot establish a correct oracle for unseen cases.
 
-## Generate with AI
-
-Click **✨ Generate with AI** (Tests tab) or **✨ Tạo test ngay** (Problem view). The AI:
-
-1. **Solves** the problem itself to know the answers.
-2. **Designs** diverse cases across categories: samples, min-boundary, small-random,
-   duplicates, sorted, reverse, extreme values, constraint-limit, corner, adversarial,
-   overflow, and precision.
-3. **Verifies** every expected output, ideally by *executing* an AI reference solution
-   against your compiler (best-effort).
-
-A preview dialog opens where you can:
-- check/uncheck which tests to keep,
-- edit **name / input / expected**,
-- read each test's *reason*.
-
-Click **Apply selected** to write them into `tests/` (tagged `AI`).
-
-### ⚠ Always review AI tests
-
-The AI can be **wrong about expected output**. When it isn't confident it marks a test
-**NO EXPECTED** (input-only) and adds a warning instead of guessing. Before trusting AI
-tests, re-run a solution you *know* is correct and confirm the outputs.
-
-## Verify outputs the safe way
-
-The surest validation is the **Stress Lab** (see [LocalJudge.md](LocalJudge.md#stress-lab)):
-generate random inputs and compare your solution against a simple brute force. If they ever
-disagree, you've found a real bug — no AI guessing involved.
-
-## Save a one-off test
-
-In the **Run** tab, after entering custom input/expected, click **Save as test** to add the
-current case to the suite.
+Before importing/generated tests, validate IDs/paths and review both input and expected output. Keep generated artifacts, prompts and provider material out of Git unless explicitly sanitized and owned.
