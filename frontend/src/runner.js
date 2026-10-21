@@ -285,8 +285,14 @@ function renderSideDiff(app, idx) {
 
 // ---- History --------------------------------------------------------------
 
-export function renderHistory(app) {
-  const history = (app.state.meta && app.state.meta.history) || [];
+export async function renderHistory(app) {
+  const id = app.state.currentId;
+  let history = (app.state.meta && app.state.meta.history) || [];
+  try {
+    const saved = await api.getHistory(id);
+    if (app.state.currentId !== id) return;
+    history = saved.history;
+  } catch { /* legacy index remains available if read fails */ }
   const list = app.el.historyList;
   app.el.historyDetail.classList.add("hidden");
   if (history.length === 0) {
@@ -298,9 +304,9 @@ export function renderHistory(app) {
     const counts = h.total != null && h.passed != null ? `${h.passed}/${h.total} · ` : "";
     const t = new Date(h.at);
     const time = isNaN(t) ? "" : t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return `<div class="tl-item" data-at="${escapeHtml(h.at)}" data-i="${i}">
+    return `<div class="tl-item" data-at="${escapeHtml(h.at)}" data-id="${escapeHtml(h.id || "")}" data-i="${i}">
       <span class="tl-time">${time}</span>${v}
-      <span class="tl-type">${escapeHtml(h.type)}</span>
+      <span class="tl-type">${escapeHtml(h.type)}${h.scope ? " · " + escapeHtml(h.scope) : ""}</span>
       <span class="tl-meta">${counts}${Math.round(h.timeMs || 0)}ms</span>
     </div>`;
   }).join("");
@@ -314,13 +320,18 @@ async function showHistoryDetail(app, at, itemEl) {
   detail.innerHTML = `<div class="hd-section-title">Loading snapshot…</div>`;
   try {
     const { history } = await api.getHistory(app.state.currentId);
-    const snap = history.find((h) => h.at === at);
+    const snap = history.find((h) => itemEl?.dataset.id ? h.id === itemEl.dataset.id : h.at === at);
     if (!snap) { detail.innerHTML = `<div class="hd-section-title">No snapshot stored for this run.</div>`; return; }
     const v = snap.verdict ? `<span class="vbadge v-${escapeHtml(snap.verdict)}">${escapeHtml(snap.verdict)}</span>` : "";
     detail.innerHTML = `
       <div class="hd-head">${v}<span class="tl-meta">${snap.type} · ${Math.round(snap.timeMs || 0)}ms ${snap.total != null ? "· " + snap.passed + "/" + snap.total : ""}</span>
         <button id="hd-restore" class="btn btn-ghost btn-sm" style="margin-left:auto">Restore code</button></div>
       ${snap.code ? `<div class="hd-section-title">code snapshot</div><pre class="hd-pre">${escapeHtml(snap.code)}</pre>` : ""}
+      ${snap.legacy && typeof snap.code !== "string" ? '<p>Legacy: source/compiler snapshot chưa được lưu ở phiên bản cũ; không thể tái tạo evidence này.</p>' : ""}
+      <div class="hd-section-title">judge fingerprint</div><pre class="hd-pre">${escapeHtml(snap.judgeFingerprint || "Legacy — chưa có fingerprint đầy đủ; không xác nhận current AC")}</pre>
+      ${snap.compile ? `<div class="hd-section-title">compiler evidence</div><pre class="hd-pre">${escapeHtml(JSON.stringify(snap.compile, null, 2))}</pre>` : ""}
+      ${snap.inputSnapshot ? `<details><summary>Judge inputs snapshot</summary><pre class="hd-pre">${escapeHtml(JSON.stringify(snap.inputSnapshot, null, 2))}</pre></details>` : ""}
+      ${snap.results?.length ? `<details><summary>Per-test evidence</summary><pre class="hd-pre">${escapeHtml(JSON.stringify(snap.results, null, 2))}</pre></details>` : ""}
       ${snap.stdout ? `<div class="hd-section-title">stdout</div><pre class="hd-pre">${escapeHtml(snap.stdout)}</pre>` : ""}
       ${snap.stderr ? `<div class="hd-section-title">stderr</div><pre class="hd-pre io-pre-err">${escapeHtml(snap.stderr)}</pre>` : ""}`;
     const restore = document.getElementById("hd-restore");
@@ -491,6 +502,7 @@ export function initRunner(app) {
       renderJudgeOutput(app, r);
       applyTestResults(app, r.results);
       app.state.lastJudge = r; // verdict rail / autopsy read the failing test from here
+      if (r.truth?.judgeFingerprint && r.truth.judgeFingerprint !== r.judgeFingerprint) app.invalidateJudge?.();
       // r.arena (⚔ Đấu Trường): match transition + rating delta, computed by the
       // backend inside the same judge round-trip — the moment card reveals it
       // with zero extra fetches. Absent on older backends; consumers null-check.

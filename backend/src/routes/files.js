@@ -2,6 +2,7 @@
 
 const express = require("express");
 const problemStore = require("../problemStore");
+const judgeState = require("../judgeState"), testPaths = require("../testPaths");
 const { asyncHandler, requireProblem } = require("./_util");
 
 const router = express.Router();
@@ -44,7 +45,8 @@ router.get("/:id/workspace", requireProblem, asyncHandler(async (req, res) => {
     problemStore.getFile(id, "statementVi"),
     problemStore.listTests(id)
   ]);
-  res.json({ problem, code, input, expected, notes, statement, statementEn, statementVi, tests });
+  const truth = await judgeState.contract(id);
+  res.json({ problem: { ...problem, truth }, truth, code, input, expected, notes, statement, statementEn, statementVi, tests });
 }));
 
 // ---- Test cases ----------------------------------------------------------
@@ -70,18 +72,24 @@ router.post("/:id/tests/bulk", requireProblem, asyncHandler(async (req, res) => 
 }));
 
 // PUT /api/problems/:id/tests/:testId
-router.put("/:id/tests/:testId", requireProblem, asyncHandler(async (req, res) => {
+router.put("/:id/tests/:testId", testPaths.middleware, requireProblem, asyncHandler(async (req, res) => {
   const test = await problemStore.updateTest(req.problemId, req.params.testId, req.body || {});
   res.json({ test });
 }));
 
 // DELETE /api/problems/:id/tests/:testId
-router.delete("/:id/tests/:testId", requireProblem, asyncHandler(async (req, res) => {
+router.delete("/:id/tests/:testId", testPaths.middleware, requireProblem, asyncHandler(async (req, res) => {
   await problemStore.deleteTest(req.problemId, req.params.testId);
   res.json({ ok: true });
 }));
 
 // GET /api/problems/:id/history — detailed run snapshots (code + stdout/stderr)
+router.post("/:id/tests/:testId/trust", testPaths.middleware, requireProblem, asyncHandler(async (req, res) => {
+  res.json({ test: await problemStore.trustTest(req.problemId, req.params.testId, req.body || {}) });
+}));
+router.get("/:id/attempts", requireProblem, asyncHandler(async (req, res) => {
+  res.json({ attempts: await require("../evidenceStore").listAttempts(req.problemId) });
+}));
 router.get("/:id/history", requireProblem, asyncHandler(async (req, res) => {
   res.json({ history: await problemStore.listHistory(req.problemId) });
 }));

@@ -6,6 +6,7 @@ const fsp = require("fs/promises");
 const { spawn } = require("child_process");
 const crypto = require("crypto");
 const { LIMITS, WORKSPACE_DIR } = require("./config");
+const { getCompilerIdentity } = require("./compilerIdentity");
 
 // Persistent compile caches live under workspace/.cache (kept out of the throwaway
 // build workdirs so they survive across runs). Two layers:
@@ -141,6 +142,8 @@ function runProcess(command, args, options) {
     let stderr = Buffer.alloc(0);
     let stdoutCapped = false;
     let stderrCapped = false;
+    let fileCapped = false;
+    const text = (buffer, max) => new TextDecoder("utf-8").decode(Buffer.from(buffer.toString("utf8")).subarray(0, max), { stream: true });
 
     try {
       child = spawn(command, args, {
@@ -184,31 +187,45 @@ function runProcess(command, args, options) {
       child.kill("SIGKILL");
     }, options.timeoutMs);
 
+    // Poll file output without loading it. The final bounded read also handles
+    // fast programs that exit between polls.
+    const fileTimer = options.outputFile ? setInterval(async () => {
+      try {
+        if ((await fsp.lstat(options.outputFile)).size > maxStdout) {
+          fileCapped = true;
+          child.kill("SIGKILL");
+        }
+      } catch { /* output may not exist yet */ }
+    }, 50) : null;
     child.on("error", (error) => {
       clearTimeout(timer);
+      clearInterval(fileTimer);
       resolve({
         ok: false,
         code: null,
         notFound: error && error.code === "ENOENT",
-        stdout: stdout.toString("utf8"),
-        stderr: stderr.toString("utf8") || error.message,
+        stdout: text(stdout, maxStdout),
+        stderr: text(stderr, maxStderr) || error.message,
         timeMs: Date.now() - startedAt,
         timedOut,
-        outputCapped: stdoutCapped || stderrCapped
+        outputCapped: stdoutCapped || stderrCapped || fileCapped,
+        outputChannel: stdoutCapped ? "stdout" : stderrCapped ? "stderr" : fileCapped ? "file" : null
       });
     });
 
     child.on("close", (code) => {
       clearTimeout(timer);
+      clearInterval(fileTimer);
       resolve({
-        ok: code === 0 && !timedOut && !stdoutCapped && !stderrCapped,
+        ok: code === 0 && !timedOut && !stdoutCapped && !stderrCapped && !fileCapped,
         code,
         notFound: false,
-        stdout: stdout.toString("utf8"),
-        stderr: stderr.toString("utf8"),
+        stdout: text(stdout, maxStdout),
+        stderr: text(stderr, maxStderr),
         timeMs: Date.now() - startedAt,
         timedOut,
-        outputCapped: stdoutCapped || stderrCapped
+        outputCapped: stdoutCapped || stderrCapped || fileCapped,
+        outputChannel: stdoutCapped ? "stdout" : stderrCapped ? "stderr" : fileCapped ? "file" : null
       });
     });
 
@@ -246,8 +263,8 @@ async function checkCompiler(settings) {
 // ---------------------------------------------------------------------------
 const pchBuilds = new Map(); // hash -> Promise<string|null>
 
-async function ensurePch({ compiler, std, opt }) {
-  const hash = sha1([compiler, std, opt].join("|"));
+async function ensurePch({ compiler, std, opt, toolchain }) {
+  const hash = sha1([compiler, std, opt, toolchain].join("|"));
   if (pchBuilds.has(hash)) return pchBuilds.get(hash);
 
   const build = (async () => {
@@ -311,6 +328,7 @@ async function compileSource({ code, settings, workdir }) {
   const std = (settings && settings.cppStandard) || "c++17";
   const opt = (settings && settings.optimization) || "-O2";
   const sourceStr = code == null ? "" : String(code);
+  const toolchain = settings?._toolchainFingerprint || (await getCompilerIdentity(settings)).digest;
   const sourcePath = path.join(workdir, "main.cpp");
   const binaryPath = binaryName(workdir);
   const ext = process.platform === "win32" ? ".exe" : "";
@@ -318,7 +336,7 @@ async function compileSource({ code, settings, workdir }) {
   await fsp.writeFile(sourcePath, sourceStr, "utf8");
 
   // ---- Binary cache: identical inputs → copy the cached exe, skip g++. -------
-  const binKey = sha1([compiler, std, opt, sourceStr].join("\u0000"));
+  const binKey = sha1([compiler, std, opt, toolchain, sourceStr].join("\u0000"));
   const cachedBin = path.join(BIN_CACHE_DIR, binKey + ext);
   try {
     await fsp.access(cachedBin);
@@ -331,7 +349,7 @@ async function compileSource({ code, settings, workdir }) {
   const usesStdAll = /#\s*include\s*<bits\/(?:stdc|extc)\+\+\.h>/.test(sourceStr);
   let pchHeader = null;
   if (usesStdAll) {
-    try { pchHeader = await ensurePch({ compiler, std, opt }); } catch { pchHeader = null; }
+    try { pchHeader = await ensurePch({ compiler, std, opt, toolchain }); } catch { pchHeader = null; }
   }
 
   const args = [`-std=${std}`];
@@ -367,7 +385,10 @@ async function compileSource({ code, settings, workdir }) {
     compilerMissing: result.notFound,
     stderr: result.stderr,
     timeMs: Date.now() - startedAt,
-    binaryPath: result.ok ? binaryPath : null
+    binaryPath: result.ok ? binaryPath : null,
+    command: [compiler, ...args], cached: false,
+    stdout: result.stdout, exitCode: result.code, timedOut: result.timedOut,
+    errorCode: result.outputCapped ? "OUTPUT_LIMIT" : result.timedOut ? "COMPILE_TIMEOUT" : result.notFound ? "COMPILER_MISSING" : result.ok ? null : "COMPILER_EXIT"
   };
 }
 
@@ -486,19 +507,21 @@ async function runBinary({ binaryPath, input, timeMs, fileMode, args }) {
     input: fileMode && fileMode.name ? "" : input,
     timeoutMs: limit,
     maxStdout: LIMITS.maxOutputBytes,
-    maxStderr: LIMITS.maxStderrBytes
+    maxStderr: LIMITS.maxStderrBytes,
+    outputFile: outFilePath
   });
 
-  if (result.timedOut) {
-    return { status: "TLE", stdout: result.stdout, stderr: result.stderr, runtimeMs: result.timeMs };
-  }
   if (result.outputCapped) {
     return {
       status: "RE",
       stdout: result.stdout,
-      stderr: (result.stderr ? result.stderr + "\n" : "") + "Output limit exceeded.",
-      runtimeMs: result.timeMs
+      stderr: result.stderr || "Output limit exceeded.",
+      runtimeMs: result.timeMs,
+      errorCode: "OUTPUT_LIMIT", outputChannel: result.outputChannel, outputLimitBytes: result.outputChannel === "stderr" ? LIMITS.maxStderrBytes : LIMITS.maxOutputBytes
     };
+  }
+  if (result.timedOut) {
+    return { status: "TLE", stdout: result.stdout, stderr: result.stderr, runtimeMs: result.timeMs };
   }
   if (result.code !== 0) {
     return {
@@ -511,12 +534,23 @@ async function runBinary({ binaryPath, input, timeMs, fileMode, args }) {
   // In file mode the answer is whatever the program wrote to <name>.out.
   let stdout = result.stdout;
   if (outFilePath) {
-    try { stdout = await fsp.readFile(outFilePath, "utf8"); }
+    try {
+      const stat = await fsp.lstat(outFilePath);
+      if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("Output must be a regular file.");
+      if (stat.size > LIMITS.maxOutputBytes) return { status: "RE", stdout: "", stderr: "File output limit exceeded.", runtimeMs: result.timeMs, errorCode: "OUTPUT_LIMIT", outputChannel: "file", outputLimitBytes: LIMITS.maxOutputBytes };
+      const file = await fsp.open(outFilePath, "r");
+      try {
+        const buffer = Buffer.alloc(LIMITS.maxOutputBytes + 1);
+        const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+        if (bytesRead > LIMITS.maxOutputBytes) return { status: "RE", stdout: "", stderr: "File output limit exceeded.", runtimeMs: result.timeMs, errorCode: "OUTPUT_LIMIT", outputChannel: "file", outputLimitBytes: LIMITS.maxOutputBytes };
+        stdout = new TextDecoder("utf-8").decode(Buffer.from(buffer.subarray(0, bytesRead).toString("utf8")).subarray(0, LIMITS.maxOutputBytes), { stream: true });
+      } finally { await file.close(); }
+    }
     catch {
       return {
         status: "RE",
         stdout: "",
-        stderr: (result.stderr ? result.stderr + "\n" : "") + `Program did not create the output file (${path.basename(outFilePath)}).`,
+        stderr: result.stderr || `Program did not create the output file (${path.basename(outFilePath)}).`,
         runtimeMs: result.timeMs
       };
     }

@@ -843,7 +843,7 @@ function renderGenTests(app, tests, notes) {
           <div class="gt-card-head">
             <input type="checkbox" class="gt-pick" checked />
             <input type="text" class="gt-name" value="${escapeHtml(t.name)}" />
-            ${t.expectedKnown ? "" : '<span class="gt-warn" title="Chưa có đáp án kiểm chứng">NO EXPECTED</span>'}
+            ${t.oracleState === "trusted" ? '<span class="gt-warn">SAMPLE — đối chiếu đề</span>' : '<span class="gt-warn" title="Có output không đồng nghĩa oracle đáng tin">CANDIDATE — cần review</span>'}
           </div>
           ${t.reason ? `<div class="gt-reason">${escapeHtml(t.reason)}</div>` : ""}
           <div class="gt-io">
@@ -969,10 +969,10 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
       status(app, `<span class="warn-text">Tạo test lỗi: ${escapeHtml(res.testsError)}</span>`);
     } else {
       const tests = res.tests || [];
-      const autoAddable = tests.filter((t) => t.expectedKnown);
-      const unverified = tests.filter((t) => !t.expectedKnown);
-      // On a fresh problem (no tests yet), auto-add the execution-verified tests
-      // silently and only surface the unverified ones for manual review.
+      const autoAddable = tests.filter((t) => t.oracleState === "trusted");
+      const unverified = tests.filter((t) => t.oracleState !== "trusted");
+      // Only exact statement samples can be added automatically. Reference-AI
+      // outputs stay visible candidates until explicit review in the Test tab.
       let added = 0;
       if (autoAddable.length && (app.state.tests || []).length === 0) {
         try {
@@ -994,10 +994,10 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
       if (added > 0) {
         if (unverified.length) renderGenTests(app, unverified, res.notes);
         else { app.el.genTestsCard.classList.add("hidden"); app.el.genTestsCard.innerHTML = ""; }
-        status(app, `✓ Phân tích xong · đã thêm <b>${added}</b> test đã kiểm chứng${unverified.length ? ` · <b>${unverified.length}</b> test cần xem lại bên dưới` : ""}.`);
+        status(app, `✓ Phân tích xong · đã thêm <b>${added}</b> sample khớp đề${unverified.length ? ` · <b>${unverified.length}</b> AI candidate cần review, chưa dùng để chấm` : ""}.`);
       } else {
         renderGenTests(app, tests, res.notes);
-        status(app, `✓ Đã phân tích &amp; tạo <b>${tests.length}</b> test.`);
+        status(app, `✓ Đã tạo <b>${tests.length}</b> candidate. Output AI cần review trước khi làm oracle.`);
       }
       if (app.playSound) app.playSound("complete");
       if (app.bus) app.bus.emit("tests:generated");

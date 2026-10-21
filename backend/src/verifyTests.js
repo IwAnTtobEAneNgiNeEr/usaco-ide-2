@@ -1,11 +1,8 @@
 "use strict";
 
-// verifyTests.js — turn AI-PROPOSED test inputs into TRUSTWORTHY expected outputs
-// by compiling an AI-written reference solution and RUNNING it, instead of
-// trusting the model's in-head arithmetic. The reference is first cross-checked
-// against the statement's official samples; if it disagrees there, we do NOT
-// trust its computed outputs. Degrades gracefully (tests returned unchanged)
-// when g++ is missing, the reference won't compile, or the budget is exhausted.
+// AI reference execution provides self-consistency evidence only. Matching a
+// finite set of samples never makes its other outputs an independent oracle.
+// All generated outputs remain candidates, including every early failure path.
 
 const runCpp = require("./runCpp");
 const ai = require("./ai");
@@ -14,11 +11,13 @@ const { PROVENANCE } = require("./trustLayer");
 const PER_TEST_MS = 3000;   // hard per-run cap for the (possibly slow) reference
 const BUDGET_MS = 20000;    // overall wall-clock cap so a slow brute can't hang the request
 
-// Mutates each test's `expected` / `expectedKnown` in place when the reference
-// produces a trustworthy answer. Returns a summary used for the UI note.
+// Computes candidate outputs in place. Trust is assigned separately by
+// oracleTrust after exact statement-sample matching or explicit user review.
 async function verifyWithReference({ aiSettings, judgeSettings, statement, code, tests, samples }) {
   const list = Array.isArray(tests) ? tests : [];
   const result = { tests: list, referenceUsed: false, referenceTrusted: false, verifiedCount: 0, note: "" };
+  // AI self-checks are evidence, not an independent oracle. Revoke model/cache claims first.
+  for (const t of list) { t.hasExpected = typeof t.expected === "string" && t.expected.trim() !== ""; t.expectedKnown = false; t.oracleState = "candidate"; t.provenance = PROVENANCE.GENERATED_UNVERIFIED; }
   if (list.length === 0) return result;
 
   // No compiler → cannot verify; keep the AI outputs as-is.
@@ -55,7 +54,7 @@ async function verifyWithReference({ aiSettings, judgeSettings, statement, code,
       if (r.status !== "OK" || !runCpp.compareOutput(s.output, r.stdout, "loose").ok) { trusted = false; break; }
       checked += 1;
     }
-    result.referenceTrusted = trusted;
+    result.samplesMatched = trusted;
     result.samplesChecked = checked;
 
     if (!trusted && sampleList.length) {
@@ -73,9 +72,10 @@ async function verifyWithReference({ aiSettings, judgeSettings, statement, code,
       const r = await run(t.input);
       if (r.status === "OK") {
         t.expected = String(r.stdout).replace(/\s+$/, "");
-        t.expectedKnown = true;
-        t.verifiedBy = "reference";
-        t.provenance = trusted ? PROVENANCE.VERIFIED_REFERENCE : PROVENANCE.GENERATED_SELF_CHECK;
+        t.hasExpected = true;
+        t.expectedKnown = false;
+        t.selfCheckedBy = "ai-reference";
+        t.provenance = PROVENANCE.GENERATED_SELF_CHECK;
         result.verifiedCount += 1;
       } else {
         // Reference TLE/RE on this input (e.g. a max case a brute can't handle) → keep AI value, flag it.
@@ -85,7 +85,7 @@ async function verifyWithReference({ aiSettings, judgeSettings, statement, code,
     }
 
     result.note = sampleList.length
-      ? `🔬 Đã kiểm chứng ${result.verifiedCount}/${list.length} test bằng lời giải tham chiếu (khớp ${checked} sample).`
+      ? `🔬 Đã tính ${result.verifiedCount}/${list.length} output bằng reference AI (khớp ${checked} sample); vẫn cần review oracle.`
       : `🔬 Đã tính ${result.verifiedCount}/${list.length} test bằng lời giải tham chiếu (không có sample để đối chiếu — nên kiểm tra kỹ).`;
     return result;
   } finally {

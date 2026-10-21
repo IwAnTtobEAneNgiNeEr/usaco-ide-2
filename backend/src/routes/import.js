@@ -55,11 +55,12 @@ router.post("/", asyncHandler(async (req, res) => {
 
       const tests = testCases
         .filter((t) => t && t.problemId === oldId)
-        .map((t) => ({ input: String(t.input || ""), expected: String(t.expectedOutput || t.expected || "") }));
+        .map((t) => ({ input: String(t.input || ""), expected: String(t.expectedOutput || t.expected || ""), generatedBy: t.generatedBy === "ai" || p.origin === "ai-generated" ? "ai" : "manual" }));
 
       const meta = await problemStore.createProblem({
         title: p.title || p.name || "Imported problem",
         source: typeof p.source === "string" ? p.source : "",
+        origin: p.origin === "ai-generated" ? "ai-generated" : "imported",
         topic: typeof p.topic === "string" ? p.topic : "",
         difficulty: typeof p.difficulty === "string" ? p.difficulty.toLowerCase() : "unrated",
         status: mapStatus(p.status),

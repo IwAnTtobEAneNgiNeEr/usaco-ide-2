@@ -77,10 +77,12 @@ export function renderTests(app) {
         <span class="vbadge tc-badge">—</span>
         <span class="tcard-name">${escapeHtml(t.name)}</span>
         ${t.generatedBy === "ai" ? '<span class="tc-aitag">AI</span>' : ""}
+        <span class="tc-trust" data-oracle="${escapeHtml(t.oracle?.state || "candidate")}">${t.oracle?.state === "trusted" ? "Trusted · " + escapeHtml(t.oracle.method) : "CANDIDATE — chưa dùng để chấm"}</span>
         <span class="tcard-prev">in: ${escapeHtml(preview(t.input))} · out: ${escapeHtml(preview(t.expected))}</span>
         <span class="tcard-time"></span>
         <div class="tcard-btns">
-          <button class="btn btn-ghost btn-sm" data-act="run">Chạy</button>
+          <button class="btn btn-ghost btn-sm" data-act="run" ${t.oracle?.state !== "trusted" ? "disabled" : ""}>Chạy</button>
+          ${t.oracle?.state !== "trusted" ? '<button class="btn btn-ghost btn-sm" data-act="trust">Xác nhận oracle</button>' : ""}
           <button class="btn btn-ghost btn-sm" data-act="viz" title="Vẽ input này thành hình">◉</button>
           <button class="btn btn-ghost btn-sm" data-act="toggle">Sửa</button>
           <button class="btn btn-ghost btn-sm btn-danger-ghost" data-act="del">✕</button>
@@ -170,6 +172,7 @@ export function initTests(app) {
       app.state.tests.push(test);
       app.state.openTests.add(test.id);
       renderTests(app);
+      await app.syncMeta();
     } catch (err) { app.toast(err.message, "err"); }
   });
 
@@ -244,6 +247,14 @@ export function initTests(app) {
         app.state.tests = app.state.tests.filter((t) => t.id !== tid);
         app.state.openTests.delete(tid);
         renderTests(app);
+        await app.syncMeta();
+      } catch (err) { app.toast(err.message, "err"); }
+    } else if (act === "trust") {
+      const test = app.state.tests.find(t => t.id === tid);
+      if (!test || !confirm("Tôi đã kiểm tra input và expected bằng nguồn tin cậy. Dùng cặp này làm oracle cho Judge?")) return;
+      try {
+        await api.trustTest(app.state.currentId, tid, test.oracle.contentHash);
+        await app.reloadTests();
       } catch (err) { app.toast(err.message, "err"); }
     } else if (act === "run") {
       await app.runSingleTest(tid);
@@ -268,6 +279,8 @@ export function initTests(app) {
     try {
       const { test: updated } = await api.updateTest(app.state.currentId, tid, patch);
       Object.assign(test, updated);
+      app.invalidateJudge?.();
+      await app.syncMeta();
       if (patch.name) card.querySelector(".tcard-name").textContent = updated.name;
       if (patch.input != null || patch.expected != null) {
         card.querySelector(".tcard-prev").textContent = `in: ${preview(test.input)} · out: ${preview(test.expected)}`;

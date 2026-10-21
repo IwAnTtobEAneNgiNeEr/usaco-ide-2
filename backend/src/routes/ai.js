@@ -80,7 +80,7 @@ router.post("/generate-tests", asyncHandler(async (req, res) => {
       result.notes = refreshUnverifiedNote(result.notes, result.tests);
       if (v.note) result.notes.unshift(v.note);
     } catch { /* verification is best-effort — never blocks generation */ }
-    applyProvenance({ tests: result.tests, samples: ai.extractSamples(statement), statement });
+    applyProvenance({ tests: result.tests, samples: ai.extractSamples(statement), statement, trustedStatement: meta?.origin !== "ai-generated" });
     let added = 0;
     let skipped = 0;
     if (problemId && await problemStore.problemExists(problemId)) {
@@ -304,7 +304,7 @@ router.post("/process", asyncHandler(async (req, res) => {
       const raw = await problemStore.getFile(problemId, "aicache");
       if (raw) {
         const saved = JSON.parse(raw);
-        if (saved && saved.hash === stmtHash && saved.out) {
+        if (saved && saved.schema === "truth-core-v1" && saved.hash === stmtHash && saved.out) {
           ai.log("Process pipeline cache hit (disk)", problemId);
           return res.json({ ...saved.out, samples: ai.extractSamples(statement), cached: true });
         }
@@ -354,6 +354,7 @@ router.post("/process", asyncHandler(async (req, res) => {
       if (v.note) out.notes.unshift(v.note);
       out.verified = { used: v.referenceUsed, trusted: v.referenceTrusted, count: v.verifiedCount };
     } catch { /* verification is best-effort */ }
+    applyProvenance({ tests: out.tests, samples, statement, trustedStatement: meta?.origin !== "ai-generated" });
   } else {
     out.tests = [];
     out.notes = [];
@@ -370,7 +371,7 @@ router.post("/process", asyncHandler(async (req, res) => {
 
   // Persist to disk cache only when BOTH stages succeeded (never cache a partial failure).
   if (problemId && analysisRes.status === "fulfilled" && testsRes.status === "fulfilled") {
-    try { await problemStore.setFile(problemId, "aicache", JSON.stringify({ hash: stmtHash, out, at: new Date().toISOString() })); }
+    try { await problemStore.setFile(problemId, "aicache", JSON.stringify({ schema: "truth-core-v1", hash: stmtHash, out, at: new Date().toISOString() })); }
     catch { /* non-fatal */ }
   }
 

@@ -49,11 +49,12 @@ test("legacy untyped AC remains readable but is not current verification without
   assert.equal(artifact.deriveStatus({ history, detailedHistory: [], currentCode: AC_CODE }), "historically-accepted");
 });
 
-test("derivedStatus is verified only when current code matches latest Judge AC snapshot", () => {
-  const history = [{ id: "run-1", at: "2026-01-01T00:00:00.000Z", type: "judge", verdict: "AC" }];
+test("current verification requires complete matching judge fingerprint; code-only legacy evidence stays historical", () => {
+  const history = [{ id: "run-1", at: "2026-01-01T00:00:00.000Z", type: "judge", verdict: "AC", judgeFingerprint: "inputs-A" }];
   const detailedHistory = [{ id: "run-1", at: history[0].at, type: "judge", verdict: "AC", code: AC_CODE }];
-  assert.equal(artifact.deriveStatus({ history, detailedHistory, currentCode: AC_CODE }), "verified");
-  assert.equal(artifact.deriveStatus({ history, detailedHistory, currentCode: AC_CODE + "// edit" }), "stale");
+  assert.equal(artifact.deriveStatus({ history, detailedHistory, currentFingerprint: "inputs-A" }), "verified");
+  assert.equal(artifact.deriveStatus({ history, detailedHistory, currentFingerprint: "inputs-B" }), "stale");
+  assert.equal(artifact.deriveStatus({ history: history.map(({judgeFingerprint,...h}) => h), detailedHistory, currentCode: AC_CODE }), "historically-accepted");
 });
 
 test("latest full Judge failure returns needs-work even when an older AC exists", () => {
@@ -98,7 +99,7 @@ test("historical AC contract never reports a fresh win or Rated progress", () =>
     detailedHistory: [{ at: "2025-01-01T00:00:00.000Z", type: "judge", verdict: "AC", code: AC_CODE }],
     currentCode: AC_CODE,
   });
-  assert.equal(contract.derivedStatus, "verified");
+  assert.equal(contract.derivedStatus, "historically-accepted");
   assert.equal(contract.freshness.freshWin, false);
   assert.equal(contract.freshness.ratedProgress, false);
 });

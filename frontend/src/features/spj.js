@@ -82,6 +82,7 @@ export function initSpj(app) {
       saveBtn.disabled = true;
       try {
         await api.saveChecker(app.state.currentId, overlay.querySelector("#spj-code").value);
+        await app.syncMeta();
         app.toast("Đã lưu checker.cpp", "ok");
         overlay.classList.add("hidden");
       } catch (err) {

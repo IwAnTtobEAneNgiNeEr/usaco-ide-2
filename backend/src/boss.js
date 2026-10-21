@@ -188,6 +188,7 @@ async function summon({ aiSettings, judgeSettings, now = new Date() }) {
       difficulty: "hard",
       status: "learning",
       source: "Weekend Boss",
+      origin: "ai-generated",
       statement: boss.statement,
       notes: `# ${title}\n\n> ${boss.taunt}\n\n- Topic mục tiêu: **${weakness.topic}** (${weakness.waCount} WA gần đây)\n- Phần thưởng: **+${BOSS_XP_REWARD} XP** khi AC lần đầu\n${verifyNote ? `- ${verifyNote}\n` : ""}`,
       analysis: boss.rating ? { cfRating: boss.rating } : undefined,

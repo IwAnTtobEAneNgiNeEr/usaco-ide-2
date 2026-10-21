@@ -33,6 +33,7 @@ async function saveCode(app) {
   if (code === app.state.savedCode) {
     markDirty(app, false);
     app.setSaveState("Saved", "saved");
+    await app.syncMeta?.();
     return true;
   }
   app.setSaveState("Saving…", "saving");
@@ -41,6 +42,7 @@ async function saveCode(app) {
     app.state.savedCode = code;
     markDirty(app, false);
     app.setSaveState("Saved", "saved");
+    await app.syncMeta?.();
     return true;
   } catch (err) {
     app.setSaveState("Save failed", "err");

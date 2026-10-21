@@ -128,6 +128,7 @@ router.post("/personalized", asyncHandler(async (req, res) => {
   const first = tests[0] || { input: "", expected: "" };
   const meta = await problemStore.createProblem({
     title: p.title,
+    origin: "ai-generated",
     source: "Bài cá nhân hóa",
     topic: generated.topic || recommendation.topic,
     difficulty: personalizedPractice.difficultyFromRating(p.rating),
@@ -208,7 +209,8 @@ router.post("/", asyncHandler(async (req, res) => {
 
 // GET /api/problems/:id
 router.get("/:id", requireProblem, asyncHandler(async (req, res) => {
-  res.json({ problem: await problemStore.readMeta(req.problemId) });
+  const problem = await problemStore.readMeta(req.problemId), truth = await require("../judgeState").contract(req.problemId);
+  res.json({ problem: { ...problem, truth }, truth });
 }));
 
 // PUT /api/problems/:id

@@ -23,6 +23,7 @@ function debounce(fn, ms) {
 function markDirty(app, on) {
   app.state.dirty = on;
   app.el.dirtyDot.classList.toggle("on", on);
+  renderMeta(app);
 }
 
 async function saveCode(app) {
@@ -35,6 +36,7 @@ async function saveCode(app) {
     app.state.savedCode = code;
     markDirty(app, false);
     app.setSaveState("Saved", "saved");
+    await app.syncMeta?.();
     return true;
   } catch (err) {
     app.setSaveState("Save failed", "err");
@@ -128,7 +130,10 @@ export function renderMeta(app) {
     m.timeLimitMs && `<span class="chip"><b>TL</b> ${Math.round(m.timeLimitMs)}ms</span>`,
     m.usacoMode && m.fileName && `<span class="chip chip-usaco"><b>USACO</b> ${escapeHtml(m.fileName)}.in/.out</span>`,
     m.usesChecker && `<span class="chip chip-usaco" title="Bài này chấm bằng checker.cpp (special judge)"><b>SPJ</b> checker.cpp</span>`,
-    m.lastVerdict && `<span class="chip"><b>last</b> <span class="vbadge v-${escapeHtml(m.lastVerdict)}">${escapeHtml(m.lastVerdict)}</span></span>`
+    `<span class="chip" data-truth-status="${escapeHtml(app.state.dirty ? "unsaved" : m.truth?.derivedStatus || "unverified")}"><b>Judge</b> ${escapeHtml(app.state.dirty ? "Chưa lưu — cần Judge lại" : m.truth?.derivedStatus === "verified" ? "AC hiện tại" : m.truth?.derivedStatus === "stale" ? "STALE — đầu vào chấm đã đổi" : m.truth?.derivedStatus || "unverified")}</span>`,
+    m.truth?.nextAction && `<span class="chip" data-truth-next>${escapeHtml(m.truth.nextAction.label)}</span>`,
+    m.truth?.candidateCount > 0 && `<span class="chip">${m.truth.candidateCount} AI candidate chưa dùng để chấm</span>`,
+    m.lastVerdict && `<span class="chip"><b>lịch sử</b> ${escapeHtml(m.lastVerdict)}</span>`
   ].filter(Boolean).join("");
   app.el.metaChips.innerHTML = chips;
 }
@@ -176,6 +181,7 @@ export function initEditor(app) {
     refreshHighlight(app);
     if (!app.state.currentId) return;
     markDirty(app, el.codeEditor.value !== app.state.savedCode);
+    app.invalidateJudge?.();
     if (app.state.settings.autosave) { app.setSaveState("Editing…", ""); codeSaver(); }
   });
   el.codeEditor.addEventListener("scroll", () => syncScroll(app));
@@ -369,9 +375,9 @@ function bindIoField(app, element, savedKey, saver) {
     if (!app.state.currentId) return;
     const v = element.value;
     if (v === app.state[savedKey]) return;
-    try { await saver(v); app.state[savedKey] = v; }
+    try { await saver(v); app.state[savedKey] = v; await app.syncMeta?.(); }
     catch (err) { app.toast(err.message, "err"); }
   }, 700);
-  element.addEventListener("input", save);
+  element.addEventListener("input", () => { if (savedKey !== "savedNotes") app.invalidateJudge?.(); save(); });
   element.addEventListener("blur", save);
 }
