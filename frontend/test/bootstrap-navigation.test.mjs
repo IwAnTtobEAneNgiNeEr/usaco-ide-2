@@ -99,7 +99,10 @@ function startBoot({ pause = "problems", preset = "free" } = {}) {
       if (!(name in context) && name !== "initLayout" && name !== "initWorkspaces") context[name] = noop;
     }
   }
-  context.mountCmEditor = async () => true;
+  context.mountCmEditor = async () => {
+    if (pause === "editor") { started.resolve(); await pending.promise; }
+    return true;
+  };
   context.initSettings = async () => {
     if (pause === "settings") { started.resolve(); await pending.promise; }
   };
@@ -113,11 +116,12 @@ function startBoot({ pause = "problems", preset = "free" } = {}) {
     release: pending.resolve, finished: context.finished };
 }
 
-for (const pause of ["settings", "problems", "problem"]) {
+for (const pause of ["editor", "settings", "problems", "problem"]) {
   test(`History selection survives bootstrap waiting for ${pause}`, async () => {
     const boot = startBoot({ pause, preset: "learning" });
     await boot.started;
     boot.tabs.find((tab) => tab.dataset.tab === "history").click();
+    assert.equal(boot.app.state.activeTab, "history");
     boot.release();
     await boot.finished;
     assert.equal(boot.app.state.activeTab, "history");
