@@ -1,6 +1,6 @@
 # Kế hoạch giao ChatGPT Work qua điện thoại
 
-> Câu lệnh mẫu: **Đọc `WORK_DIEN_THOAI.md` trên nhánh `codex/public-beta-playbook` và làm W1.**
+> Câu lệnh mẫu: **Đọc `WORK_DIEN_THOAI.md` trên nhánh `codex/public-beta-playbook` và làm W0.**
 >
 > File đồng hành: [TRUC_TIEP_PUBLIC.md](TRUC_TIEP_PUBLIC.md). Nếu đã merge các file vào nhánh chính, chỉ định nhánh mới có chứa chúng. File này thay thế thứ tự task cũ trong `PUBLIC_BETA_TASKS.md`; giữ file cũ để truy vết, không tự xóa.
 
@@ -8,7 +8,7 @@
 
 Owner muốn public beta nhỏ để lấy feedback với hai chức năng: **(1) tạo/biến thể đề bằng AI từ những nguồn được phép sử dụng; (2) kho OJ, viết code, nộp bài và lưu submission**. Làm ít tính năng nhưng trọn flow và đáng tin trước. Xưởng/đấu trường cùng tầm nhìn đa dụng có thể trở lại sau; không chặn beta bằng việc hoàn tất mọi tính năng cũ.
 
-Đây là danh sách task, không phải một lệnh triển khai tất cả. Owner gọi đúng mã W1, W2…; chỉ thực hiện task đó và các kiểm tra phụ thuộc cần thiết. Một yêu cầu làm task bao gồm tạo nhánh làm việc, commit, push nhánh và mở draft PR cho task khi tài khoản/môi trường cho phép; không push trực tiếp main, không merge hay deploy. Nếu nhánh PR không tạo được, bàn giao diff và blocker rõ ràng. Mọi tác vụ làm thay đổi hạ tầng, tài khoản, quyền, secret, domain hoặc dữ liệu thật cần một yêu cầu riêng cho đúng hành động.
+Đây là danh sách task, không phải một lệnh triển khai tất cả. Owner gọi đúng mã W0, W1, W2…; chỉ thực hiện task đó và các kiểm tra phụ thuộc cần thiết. Một yêu cầu làm task bao gồm tạo nhánh làm việc, commit, push nhánh và mở draft PR cho task khi tài khoản/môi trường cho phép; không push trực tiếp main, không merge hay deploy. Nếu nhánh PR không tạo được, bàn giao diff và blocker rõ ràng. Mọi tác vụ làm thay đổi hạ tầng, tài khoản, quyền, secret, domain hoặc dữ liệu thật cần một yêu cầu riêng cho đúng hành động.
 
 **Trước mọi task:** đọc `AGENTS.md`, `README.md`, `docs/security/truth-core.md`, `docs/operations/development.md`, các file được task chỉ ra; kiểm tra working tree, remote, các PR và commit đầu nhánh thực tế. Ảnh chụp ngày 28/10/2026: main `216e38d`; integration `962f209`; PR #3 `fix/history-navigation-race` là `d8d6d2f`; tài liệu này ban đầu nằm trên `codex/public-beta-playbook` dựa trên PR #3. PR #4 là nhánh song song vào integration. Không giả định main là code mới nhất, PR #3/#4 đã merge, hoặc một commit cố định còn là mới nhất.
 
@@ -16,11 +16,27 @@ Mở PR vào base phù hợp sau khi kiểm tra lại. Nếu PR #3 còn mở và
 
 **Giới hạn Cloud:** kết nối GitHub không tự chứng minh Cloud trên điện thoại đã sẵn sàng. Xem [Issue #9](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/issues/9) và [tài liệu Cloud environments](https://learn.chatgpt.com/docs/environments/cloud-environments). Browser trong Codex Cloud được publish hiện không hỗ trợ; khả năng mỗi chế độ Work có thể khác. Bằng chứng UI thật và compiler vẫn cần môi trường thích hợp ở file trực tiếp. Không chuyển credential, MXC hoặc profile từ máy khác sang Cloud.
 
-**Kiểm tra:** trong lượt lập kế hoạch này không có test mới hay browser run. Các task code tương lai phải tái hiện, có regression có ý nghĩa và chạy targeted/relevant tests trong containment theo `AGENTS.md`. Frontend test thuần chỉ chạy sau khi xem file test và xác nhận không spawn compiler/backend/network hoặc đụng dữ liệu thật. `npm test` ở root là compiler suite, không chạy trong Cloud chưa xác minh. Critical Truth Core cần browser E2E và containment; nếu chưa có thì ghi rõ **chưa đạt gate**, vẫn có thể bàn giao draft, không gọi là hoàn tất hay sẵn sàng merge.
+**Kiểm tra:** ngày 28/10/2026 đã có lượt thử browser và API trên commit `a98090c` với workspace tổng hợp, Node 24.22.1, GCC 13.3 và AI giả lập local; không dùng provider thật. Các task code tương lai phải tái hiện, có regression có ý nghĩa và chạy targeted/relevant tests trong containment theo `AGENTS.md`. Frontend test thuần chỉ chạy sau khi xem file test và xác nhận không spawn compiler/backend/network hoặc đụng dữ liệu thật. `npm test` ở root là compiler suite, không chạy trong Cloud chưa xác minh. Critical Truth Core cần browser E2E và containment; nếu chưa có thì ghi rõ **chưa đạt gate**, vẫn có thể bàn giao draft, không gọi là hoàn tất hay sẵn sàng merge.
+
+## W0 — giữ nguyên đề gốc khi dịch
+
+**Ưu tiên trước W1 vì có nguy cơ mất nội dung.** Đã tái hiện trên workspace tổng hợp: tạo bài `origin: imported` với đề tiếng Anh chỉ có trong `statement.md`, `statement.en.md` rỗng; mở bài khi giao diện là tiếng Việt và AI giả lập local trả về bản dịch hợp lệ. Backend sau đó trả bản dịch trong cả `statement.md` và `statement.vi.md`, còn `statement.en.md` vẫn rỗng. Ngoài ra, `PUT` metadata `statementSourceLanguage: "en"` trả giá trị đó, nhưng `GET` kế tiếp không còn trường này. Đây là bằng chứng cho điều kiện vừa nêu, không khẳng định tất cả dữ liệu cũ đã mất.
+
+**Đọc:** `frontend/src/i18n.js` (`setStatementVariants`, `applyStatementLanguage`, `persistActiveStatementVariant`, paste), `frontend/src/main.js` (load problem), `backend/src/problemStore.js` (`defaultMeta`, `readMeta`, `updateProblem`), routes/files.js và contract lưu statement. Đối chiếu Truth Core trước khi đổi dữ liệu ảnh hưởng Judge/test.
+
+**Làm:**
+
+1. Kiểm tra nhánh/base hiện tại và tái hiện bằng dữ liệu tổng hợp, AI mock, không dùng key thật; thêm regression hành vi cho metadata đọc sau ghi và vòng đời đề nhập tiếng Anh → dịch → reload → chọn lại bản gốc. Nếu môi trường không có browser, tách được các kiểm tra backend/frontend thuần an toàn và nêu rõ browser E2E còn thiếu.
+2. Sửa contract lưu/đọc để bảo toàn ngôn ngữ nguồn, bản gốc và bản dịch. Mở bài hoặc chuyển ngôn ngữ không được làm mất bản gốc hay âm thầm thay statement gốc bằng nội dung AI. Xem các nơi Judge, sample extraction và AI dùng statement để không làm sai fingerprint, trust hoặc các flow đang hoạt động. Không chỉ đổi nhãn UI.
+3. Khi provider lỗi, trả rỗng hoặc nội dung không hợp lệ, không ghi đè nội dung đã có; tiếp tục cho người dùng đọc bản gốc và báo lỗi rõ. Không khẳng định có thể tự kiểm tra hoàn toàn độ chính xác bản dịch.
+4. Giữ dữ liệu cũ đọc được. Không tự migrate, phục hồi hay ghi đè workspace của người dùng; trường hợp bản gốc cũ đã mất phải được báo riêng, không bịa nội dung. Không thay đổi receipt/test/Judge để che sai lệch.
+5. Chạy kiểm tra hành vi phù hợp và an toàn với dữ liệu synthetic; báo lệnh, pass/fail/skip. Kiểm tra `git diff --check`; nếu không thể chạy browser E2E hoặc các kiểm tra theo `AGENTS.md`, ghi rõ trong draft PR, không tuyên bố sẵn sàng merge.
+
+**Đạt:** sau dịch, reload và đổi ngôn ngữ vẫn lấy đúng đề gốc; metadata tồn tại qua đọc lại; lỗi provider không phá dữ liệu; regression cho trường hợp bài chỉ có `statement.md` và các trường hợp Việt/Anh liên quan. Bàn giao base/head SHA, diff, link draft PR hoặc blocker, kết quả kiểm tra và rủi ro.
 
 ## W1 — nguồn gốc và độ tin cậy của biến thể AI
 
-**Vì sao:** `frontend/src/features/synthesizer.js` gọi `api.createProblem` để tạo biến thể mà không gửi `origin`; `backend/src/problemStore.js` mặc định `user-authored`. `backend/src/routes/ai.js` `/process` và `backend/src/oracleTrust.js` phân biệt `ai-generated` khi quyết định sample được tin hay là candidate. Từ source có nguy cơ sample của biến thể AI bị nhận là sample của statement đáng tin; chưa có bằng chứng runtime, cần kiểm tra.
+**Vì sao:** `frontend/src/features/synthesizer.js` gọi `api.createProblem` để tạo biến thể mà không gửi `origin`; `backend/src/problemStore.js` mặc định `user-authored`. Đã tái hiện với browser và AI mock local: biến thể ghi `user-authored`, `derivedFrom` rỗng, một sample khớp đề được thêm là trusted; chương trình chỉ in đáp án sample nhận AC 1/1. AC đúng với bộ test chỉ có sample, nhưng không chứng minh lời giải đúng toàn bài. `backend/src/routes/ai.js` `/process` và `backend/src/oracleTrust.js` phân biệt `ai-generated` khi xét sample.
 
 **Làm:**
 
@@ -34,7 +50,7 @@ Mở PR vào base phù hợp sau khi kiểm tra lại. Nếu PR #3 còn mở và
 
 ## W2 — trạng thái OJ không gây hiểu nhầm
 
-**Đọc:** `frontend/src/statement.js`, `frontend/src/editor.js`, `frontend/src/problems.js`, `backend/src/judgeState.js`, Truth Core. Statement brief đang tìm AC lịch sử để gắn “Đã giải”; editor có current/stale/dirty. Đây là điểm đáng kiểm chứng, không tự kết luận mọi màn đều sai.
+**Đọc:** `frontend/src/statement.js`, `frontend/src/editor.js`, `frontend/src/problems.js`, `backend/src/judgeState.js`, Truth Core. Đã tái hiện: sau AC rồi sửa code và reload, editor báo `STALE` nhưng statement brief vẫn hiện “Đã giải”. Không suy rộng thành mọi màn đều sai.
 
 **Làm:** tạo tình huống tổng hợp từng AC rồi thay input hoặc chưa lưu; xác định projection chính xác. Sửa nhãn ở phần bị ảnh hưởng: AC hiện tại, cần Judge lại, và từng AC trong quá khứ phải khác nhau; giữ lịch sử. Bao phủ current AC, stale, dirty, chưa từng AC và reload bằng regression phù hợp. Không thay đổi luật Judge, không coi AC lịch sử là current. Nếu browser E2E chưa chạy, PR ghi rõ và chuyển ca xác nhận cho D2 trong file trực tiếp.
 
