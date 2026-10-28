@@ -37,6 +37,8 @@ function defaultMeta(id, overrides = {}) {
     derivedFrom: overrides.derivedFrom && typeof overrides.derivedFrom === "object" ? overrides.derivedFrom : null,
     track: typeof overrides.track === "string" ? overrides.track : "",
     concept: typeof overrides.concept === "string" ? overrides.concept : "",
+    // Empty means legacy/unknown; the reader may infer without rewriting data.
+    statementSourceLanguage: ["en", "vi"].includes(overrides.statementSourceLanguage) ? overrides.statementSourceLanguage : "",
     topic: overrides.topic || "",
     difficulty: overrides.difficulty || "unrated",
     rating: overrides.rating == null ? null : overrides.rating,
@@ -170,7 +172,10 @@ async function updateProblem(id, patch = {}) {
   return withLock(id, async () => {
     const meta = await readMeta(id);
     for (const key of META_PATCHABLE) {
-      if (key in patch) meta[key] = patch[key];
+      if (key in patch) {
+        if (key === "statementSourceLanguage" && !["", "en", "vi"].includes(patch[key])) continue;
+        meta[key] = patch[key];
+      }
     }
     meta.updatedAt = nowIso();
     await writeMeta(id, meta);

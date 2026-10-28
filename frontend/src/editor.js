@@ -232,7 +232,7 @@ export function initEditor(app) {
   bindIoField(app, el.ioInput, "savedInput", (v) => api.saveInput(app.state.currentId, v));
   bindIoField(app, el.ioExpected, "savedExpected", (v) => api.saveExpected(app.state.currentId, v));
   bindIoField(app, el.ioNotes, "savedNotes", (v) => api.saveNotes(app.state.currentId, v));
-  bindIoField(app, el.ioStatement, "savedStatement", (v) => api.saveStatement(app.state.currentId, v));
+  bindIoField(app, el.ioStatement, "savedStatement", (v) => app.persistActiveStatementVariant(v));
 
   app.flushIo = async () => {
     if (!app.state.currentId) return;

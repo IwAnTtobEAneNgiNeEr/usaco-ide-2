@@ -932,8 +932,10 @@ async function runPipeline(app, { force = false, regen = false } = {}) {
 
   try {
     await app.persistActiveStatementVariant?.(statement);
-    await api.saveStatement(app.state.currentId, statement);
-    app.state.savedStatement = statement;
+    // Analyze the canonical source so AI translation cannot redefine samples
+    // or their content-bound trust receipts.
+    statement = app.getSourceStatement?.() ?? statement;
+    app.state.savedStatement = app.el.ioStatement.value;
     renderStatement(app);
     refreshExamples(app, statement);
 
@@ -1035,7 +1037,7 @@ async function runOcr(app, dataUrl, mimeType, fileName) {
     if (!md) { status(app, `<span class="warn-text">OCR failed: không có nội dung.</span>`); return; }
     const cur = app.el.ioStatement.value.trim();
     app.el.ioStatement.value = cur ? cur + "\n\n---\n\n" + md : md;
-    await api.saveStatement(app.state.currentId, app.el.ioStatement.value);
+    await app.persistActiveStatementVariant(app.el.ioStatement.value);
     app.state.savedStatement = app.el.ioStatement.value;
     app.state._aiAutoDisabled = false;
     if (app.setStatementMode) app.setStatementMode("read");
@@ -1207,7 +1209,6 @@ export function initStatement(app) {
     if (!app.state.currentId) return;
     try {
       await app.persistActiveStatementVariant?.(el.ioStatement.value);
-      await api.saveStatement(app.state.currentId, el.ioStatement.value);
       app.state.savedStatement = el.ioStatement.value;
       renderStatement(app);
       app.toast("Đã lưu đề bài", "ok");
@@ -1224,7 +1225,7 @@ export function initStatement(app) {
     el.genTestsCard.classList.add("hidden"); el.genTestsCard.innerHTML = "";
     if (app.setStatementMode) app.setStatementMode("edit");
     status(app, "Dán ảnh (Ctrl+V), tải ảnh/PDF, hoặc gõ đề bài — AI sẽ tự phân tích &amp; tạo test.");
-    try { await api.saveStatement(app.state.currentId, ""); app.state.savedStatement = ""; } catch (err) { app.toast(err.message, "err"); }
+    try { await app.persistActiveStatementVariant(""); app.state.savedStatement = ""; } catch (err) { app.toast(err.message, "err"); }
   });
 
   // Upload image / PDF.

@@ -164,41 +164,82 @@ export function initLanguage(app) {
     };
   };
 
+  // statement.md remains the canonical source used by sample trust and AI.
+  // Translations are presentation variants, never replacements for that file.
+  app.getSourceStatement = () => app.state.statementVariants[app.state.statementVariants.sourceLanguage] || "";
   app.persistActiveStatementVariant = async (value = app.el.ioStatement.value) => {
-    const active = app.state.activeStatementLanguage || app.state.uiLanguage;
-    app.state.statementVariants[active] = value;
-    if (!app.state.currentId) return;
-    await Promise.all([
-      active === "vi" ? api.saveStatementVi(app.state.currentId, value) : api.saveStatementEn(app.state.currentId, value),
-      api.updateProblem(app.state.currentId, { statementSourceLanguage: app.state.statementVariants.sourceLanguage })
-    ]);
+    const id = app.state.currentId;
+    const variants = app.state.statementVariants;
+    let active = app.state.activeStatementLanguage || variants.sourceLanguage;
+    if (!id) return;
+    if (!variants.en && !variants.vi && value.trim()) {
+      active = variants.sourceLanguage = inferLanguage(value);
+      app.state.activeStatementLanguage = active;
+    }
+    // Serialize canonical/variant writes per user action; only source edits
+    // may change canonical bytes (and consequently statement-sample receipts).
+    if (active === variants.sourceLanguage) {
+      await api.saveStatement(id, value);
+      if (variants[active] !== value) {
+        const other = active === "en" ? "vi" : "en";
+        await (other === "vi" ? api.saveStatementVi(id, "") : api.saveStatementEn(id, ""));
+        variants[other] = "";
+      }
+    }
+    await (active === "vi" ? api.saveStatementVi(id, value) : api.saveStatementEn(id, value));
+    await api.updateProblem(id, { statementSourceLanguage: variants.sourceLanguage });
+    variants[active] = value;
   };
 
+  let statementRequest = 0;
   app.applyStatementLanguage = async () => {
+    const request = ++statementRequest;
     const id = app.state.currentId;
     if (!id) return;
     const variants = app.state.statementVariants;
+    const active = app.state.activeStatementLanguage;
+    // Preserve unsaved edits before switching away from the visible variant.
+    if (active && app.el.ioStatement.value !== app.state.savedStatement) {
+      await app.persistActiveStatementVariant(app.el.ioStatement.value);
+    }
+    if (request !== statementRequest || id !== app.state.currentId || variants !== app.state.statementVariants) return;
     const target = app.state.statementLanguageMode === "source" ? variants.sourceLanguage : app.state.uiLanguage;
-    if (target === app.state.activeStatementLanguage && app.el.ioStatement.value === variants[target]) return;
+    const original = variants[variants.sourceLanguage];
+    const fieldValue = app.el.ioStatement.value;
+    const isCurrent = () => request === statementRequest && id === app.state.currentId
+      && variants === app.state.statementVariants && app.el.ioStatement.value === fieldValue;
     let translated = variants[target];
     if (!translated) {
-      const original = variants[variants.sourceLanguage];
       if (!original) return;
       app.el.statementStatus.textContent = t("translating", app.state.uiLanguage);
       try {
-        translated = (await api.aiTranslateStatement({ statement: original, targetLanguage: target })).statement;
-        variants[target] = translated;
+        const result = await api.aiTranslateStatement({ statement: original, targetLanguage: target });
+        if (!isCurrent()) return;
+        translated = result?.statement;
+        const blocks = (text) => text.match(/```[^\n]*\n[\s\S]*?```/g) || [];
+        if (typeof translated !== "string" || !translated.trim()
+          || JSON.stringify(blocks(original)) !== JSON.stringify(blocks(translated))) {
+          throw new Error(t("translateFailed", app.state.uiLanguage));
+        }
         await (target === "vi" ? api.saveStatementVi(id, translated) : api.saveStatementEn(id, translated));
+        variants[target] = translated;
       } catch (error) {
+        if (!isCurrent()) return;
+        // Keep the source readable even when the initial display was a legacy
+        // working copy. Do not fabricate a missing historical original.
+        app.state.activeStatementLanguage = variants.sourceLanguage;
+        app.el.ioStatement.value = original;
+        app.state.savedStatement = original;
+        app.renderStatement?.();
         app.toast?.(t("translateFailed", app.state.uiLanguage), "err");
-        app.el.statementStatus.textContent = error.message;
+        app.el.statementStatus.textContent = t("translateFailed", app.state.uiLanguage);
         return;
       }
     }
+    if (!isCurrent()) return;
     app.state.activeStatementLanguage = target;
     app.el.ioStatement.value = translated;
     app.state.savedStatement = translated;
-    await api.saveStatement(id, translated);
     app.renderStatement?.();
   };
 
@@ -215,10 +256,11 @@ export function initLanguage(app) {
     // Persist the imported source before requesting a translation. A failed or
     // cancelled request must never leave the learner with only a partial copy.
     if (app.state.currentId) {
-      await Promise.all([
-        sourceLanguage === "vi" ? api.saveStatementVi(app.state.currentId, text) : api.saveStatementEn(app.state.currentId, text),
-        api.updateProblem(app.state.currentId, { statementSourceLanguage: sourceLanguage })
-      ]);
+      const id = app.state.currentId;
+      await app.persistActiveStatementVariant(text);
+      // A replacement source also invalidates a translation from the old text.
+      await (sourceLanguage === "en" ? api.saveStatementVi(id, "") : api.saveStatementEn(id, ""));
+      app.state.savedStatement = text;
     }
     if (sourceLanguage !== target) await app.applyStatementLanguage();
     field.dispatchEvent(new Event("input", { bubbles: true }));
