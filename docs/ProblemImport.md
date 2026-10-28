@@ -53,6 +53,19 @@ Set `USACO_COMPANION_PORT=0` to disable.
 ## Where it's stored
 
 The statement is saved to `workspace/problems/<id>/statement.md` — a plain file you can edit
-in any editor.
+in any editor. This file is the canonical source for backend analysis and
+statement-sample trust. `statement.en.md` and `statement.vi.md` hold language
+variants; `meta.json.statementSourceLanguage` is `en`, `vi`, or empty for legacy
+unknown language. Changing the reading language saves only a translation variant,
+never the canonical source. Explicit source edits update the canonical file and
+invalidate the old translation; edits to a translation stay in its variant.
+Analysis from the statement view uses the source text, even while reading a translation.
+
+Empty/malformed translation responses and changed fenced blocks are rejected.
+These checks cannot prove translation accuracy; the source remains available.
+Legacy data is read without a bulk migration. A historically overwritten original
+cannot be reconstructed by this fix: recover it only from an independently reviewed
+backup, with a separate recovery task. Language inference for metadata without a
+source language remains a heuristic, especially for unaccented or other-language text.
 
 Troubleshooting OCR: [Troubleshooting.md](Troubleshooting.md#ocr).

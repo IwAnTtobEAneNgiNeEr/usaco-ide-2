@@ -299,6 +299,8 @@ app.loadProblem = async (id) => {
     setEditorFiles(app, { code, input, expected, notes, statement });
     app.setStatementVariants?.({ statement, statementEn, statementVi, sourceLanguage: problem.statementSourceLanguage });
     app.state.activeStatementLanguage = app.state.statementVariants?.sourceLanguage;
+    app.el.ioStatement.value = app.getSourceStatement?.() ?? statement;
+    app.state.savedStatement = app.el.ioStatement.value;
     renderTests(app);
     renderHistory(app);
     loadProblemView(app);
