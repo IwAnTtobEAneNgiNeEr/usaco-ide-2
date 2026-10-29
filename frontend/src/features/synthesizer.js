@@ -43,6 +43,7 @@ function renderResult(r) {
     : "";
 
   return [
+    `<p class="panel-hint">Biến thể do AI tạo, chưa được kiểm duyệt. Test cần được xem xét; khớp sample không xác minh lời giải cho toàn bài.</p>`,
     // The "why it exists" complexity story, front and center.
     `<div class="synth-shift">
       <div class="synth-shift-col">
@@ -72,6 +73,7 @@ export function initSynthesizer(app) {
   const createBtn = modal.querySelector("#synth-create");
   const regenBtn = modal.querySelector("#synth-regen");
   let lastResult = null;
+  let resultSource = null;
   let synthAbort = null;
   const triggerLabel = trigger.textContent;
 
@@ -101,6 +103,14 @@ export function initSynthesizer(app) {
     if (synthAbort) { synthAbort.abort(); return; }
     if (!app.state.currentId) { app.toast("Mở một bài trước đã.", "err"); return; }
     const pid = app.state.currentId;
+    const source = {
+      id: pid,
+      title: app.state.meta?.title || pid,
+      source: app.state.meta?.source || "",
+      topic: app.state.meta?.topic || "",
+    };
+    lastResult = null;
+    resultSource = null;
     synthAbort = new AbortController();
     setSynthStop(true);
     body.innerHTML = `<p class="muted"><span class="spinner"></span> AI đang dựng bản nâng cấp…</p>`;
@@ -111,6 +121,7 @@ export function initSynthesizer(app) {
       const res = await api.aiSynthesize({ problemId: pid, force: !!force }, { signal: synthAbort.signal });
       if (app.state.currentId !== pid) { close(); return; } // switched problems mid-flight
       lastResult = res.result || {};
+      resultSource = source;
       body.innerHTML = renderResult(lastResult);
       regenBtn.classList.remove("hidden");
       createBtn.classList.toggle("hidden", !lastResult.baiNangCap);
@@ -132,20 +143,17 @@ export function initSynthesizer(app) {
 
   createBtn.addEventListener("click", async () => {
     if (!lastResult || !lastResult.baiNangCap) return;
-    const meta = app.state.meta || {};
+    if (!resultSource || app.state.currentId !== resultSource.id) {
+      close();
+      app.toast("Bài gốc đã đổi — mở lại Bản nâng cấp từ bài muốn dùng.", "err");
+      return;
+    }
+    const meta = resultSource;
     createBtn.disabled = true;
     try {
-      // Bug fixed 2026-07-07 (user report: "nó không tự sinh test case, cũng
-      // chẳng có đề mà chỉ từ 1 dòng ngắn ngủi"). Two things were wrong:
-      //   1. The new problem's statement was ONLY the delta note — no I/O
-      //      format, no worked example — so extractSamples/test-gen had
-      //      nothing to read at all.
-      //   2. Creating a problem via this API call never ran the paste→
-      //      analyze→gen-test pipeline that a normal statement paste triggers.
-      // Fix: keep the ORIGINAL statement's full I/O format + example intact
-      // (still valid for the harder variant — only the constraints changed)
-      // and append the upgrade delta as a clearly marked new constraints
-      // section, THEN trigger the exact same pipeline a manual paste uses.
+      // Retain the source I/O and examples as context, then append the AI
+      // upgrade. The change can invalidate copied samples: none becomes a
+      // trusted oracle simply by appearing in this generated statement.
       const originalStatement = app.el.ioStatement ? app.el.ioStatement.value : "";
       const upgradeSection = [
         `## Bản nâng cấp của: ${meta.title || ""}`,
@@ -161,6 +169,8 @@ export function initSynthesizer(app) {
       const { problem } = await api.createProblem({
         title: `${meta.title || "Bài"} (nâng cấp)`,
         source: meta.source || "",
+        origin: "ai-generated",
+        derivedFrom: { id: meta.id, title: meta.title },
         topic: meta.topic || "",
         difficulty: "hard",
         status: "learning",
@@ -169,7 +179,7 @@ export function initSynthesizer(app) {
       await app.refreshProblems();
       await app.selectProblem(problem.id);
       close();
-      app.toast("Đã tạo bài nâng cấp — đang tự phân tích đề &amp; sinh test…", "ok");
+      app.toast("Đã tạo biến thể AI chưa được kiểm duyệt — đang phân tích; test cần được xem xét.", "ok");
       // Same auto-pipeline a manual paste triggers (statement.js's
       // runStatementPipeline) — the student lands on a problem that already
       // has tests, not an empty shell they have to click into Problem tab for.
