@@ -61,6 +61,9 @@ export function initLanguage(app) {
   let scanTimer = null;
   let translating = false;
   let translationUnavailable = false;
+  let translationFailures = 0;
+  let translationEpoch = 0;
+  let translationAbort = null;
   let autoTranslationEnabled = language === "en";
 
   const collectFragments = () => {
@@ -102,11 +105,16 @@ export function initLanguage(app) {
     const nodesByText = collectFragments();
     const fragments = [...nodesByText.keys()].slice(0, 60);
     if (!fragments.length) return;
+    const epoch = translationEpoch;
+    let retryDelay = 180;
     translating = true;
+    translationAbort = new AbortController();
     try {
-      const { translations } = await api.aiTranslateUi({ fragments, targetLanguage });
+      const { translations } = await api.aiTranslateUi({ fragments, targetLanguage }, { signal: translationAbort.signal });
       // A response for the previous locale must never overwrite a newer choice.
-      if (targetLanguage !== app.state.uiLanguage) return;
+      if (epoch !== translationEpoch || targetLanguage !== app.state.uiLanguage) return;
+      if (!Array.isArray(translations) || !fragments.some((_, index) => typeof translations[index] === "string" && translations[index].trim())) throw new Error("Empty or invalid UI translation response");
+      translationFailures = 0;
       fragments.forEach((source, index) => {
         const translated = String(translations[index] || "").trim();
         if (!translated) return;
@@ -116,26 +124,41 @@ export function initLanguage(app) {
         }
       });
     } catch (error) {
-      // No AI key should not make the UI unstable. Curated core controls still
-      // switch locally; the next render retries only after settings change.
+      if (epoch !== translationEpoch) return;
       if (error?.data?.code === "NO_KEY") translationUnavailable = true;
+      else {
+        translationFailures += 1;
+        translationUnavailable = translationFailures >= 3;
+        retryDelay = Math.min(500 * 2 ** (translationFailures - 1), 2000);
+        if (translationUnavailable) app.toast?.("Đã tạm dừng dịch giao diện; lưu lại cài đặt AI để thử lại.", "err");
+      }
     } finally {
       translating = false;
+      translationAbort = null;
       // Work through the next short batch without flooding the provider.
-      queueVisibleUiTranslation();
+      queueVisibleUiTranslation(retryDelay);
     }
   };
 
-  const queueVisibleUiTranslation = () => {
-    if (!autoTranslationEnabled) return;
-    clearTimeout(scanTimer);
-    scanTimer = setTimeout(() => { translateVisibleUi(); }, 180);
+  const queueVisibleUiTranslation = (delay = 180) => {
+    // MutationObserver passes mutation records, not a delay.
+    if (typeof delay !== "number") delay = 180;
+    if (!autoTranslationEnabled || translationUnavailable || translating || scanTimer !== null) return;
+    scanTimer = setTimeout(() => { scanTimer = null; translateVisibleUi(); }, delay);
   };
   const observer = new MutationObserver(queueVisibleUiTranslation);
   observer.observe(document.body, { subtree: true, childList: true, characterData: true });
-  app.refreshUiTranslations = () => {
+  const resetUiTranslation = () => {
+    translationEpoch += 1;
+    translationAbort?.abort();
+    clearTimeout(scanTimer);
+    scanTimer = null;
+    translationFailures = 0;
     translationUnavailable = false;
     autoTranslationEnabled = true;
+  };
+  app.refreshUiTranslations = () => {
+    resetUiTranslation();
     queueVisibleUiTranslation();
   };
 
@@ -147,8 +170,7 @@ export function initLanguage(app) {
     try { localStorage.setItem(STORAGE_KEY, app.state.uiLanguage); } catch { /* private mode */ }
     applyStatic(app.state.uiLanguage);
     document.dispatchEvent(new CustomEvent("localechange", { detail: { language: app.state.uiLanguage } }));
-    autoTranslationEnabled = true;
-    translationUnavailable = false;
+    resetUiTranslation();
     queueVisibleUiTranslation();
     if (app.state.currentId) await app.applyStatementLanguage?.();
   };

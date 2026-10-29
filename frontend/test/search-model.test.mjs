@@ -78,3 +78,17 @@ test("matchesFilters + normTopic keep the old local semantics", () => {
   assert.equal(matchesFilters(p, { search: "binary" }), true);
   assert.equal(matchesFilters(p, { status: "solved" }), false);
 });
+
+test("Đã giải filters current verified Judge evidence in both search and fallback", () => {
+  const rows = [
+    { id: "current", status: "learning", truth: { derivedStatus: "verified" }, source: "cses", topic: "dp" },
+    { id: "stale", status: "solved", truth: { derivedStatus: "stale" }, source: "cses", topic: "dp" },
+    { id: "historical", status: "solved", truth: { derivedStatus: "historically-accepted" }, source: "cses", topic: "dp" },
+    { id: "untested", status: "solved", truth: { derivedStatus: "unverified" }, source: "cses", topic: "dp" },
+  ];
+  const filters = { status: "solved", source: "cses", topics: ["dp"], search: "" };
+  assert.deepEqual(rows.filter((row) => matchesFilters(row, filters)).map((row) => row.id), ["current"]);
+  assert.deepEqual(applyLocalFilters(rows, { ...filters, search: "matched by server" }).map((row) => row.id), ["current"]);
+  assert.deepEqual(buildSearchParams({ search: "source", status: "solved" }), { q: "source" });
+  assert.equal(matchesFilters({ status: "review" }, { status: "review" }), true);
+});

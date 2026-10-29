@@ -21,7 +21,8 @@ export function trackOf(p) {
 export function matchesFilters(p, f) {
   if (f.track && trackOf(p) !== f.track) return false;
   if (f.source && p.source !== f.source) return false;
-  if (f.status && p.status !== f.status) return false;
+  if (f.status === "solved" && p.truth?.derivedStatus !== "verified") return false;
+  if (f.status && f.status !== "solved" && p.status !== f.status) return false;
   if (f.difficulty && p.difficulty !== f.difficulty) return false;
   if (f.topics && f.topics.length) {
     const hay = new Set([p.topic, ...(p.tags || [])].filter(Boolean).map(normTopic));
@@ -40,7 +41,8 @@ export function matchesFilters(p, f) {
 export function buildSearchParams(filters) {
   const out = {};
   if (filters.search) out.q = filters.search;
-  if (filters.status) out.status = filters.status;
+  // Server status is the manual learning field, not current Judge evidence.
+  if (filters.status && filters.status !== "solved") out.status = filters.status;
   for (const key of ["track", "concept", "provider", "collection", "minRating", "maxRating"]) {
     if (filters[key] !== "" && filters[key] != null) out[key] = filters[key];
   }
@@ -50,7 +52,7 @@ export function buildSearchParams(filters) {
 // The Library's remaining local filters, applied OVER server search results
 // (the server only handled q/status).
 export function applyLocalFilters(items, filters) {
-  const residual = { ...filters, search: "", status: "" };
+  const residual = { ...filters, search: "", status: filters.status === "solved" ? "solved" : "" };
   return (Array.isArray(items) ? items : []).filter((p) => matchesFilters(p, residual));
 }
 

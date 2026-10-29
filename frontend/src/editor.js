@@ -136,6 +136,7 @@ export function renderMeta(app) {
     m.lastVerdict && `<span class="chip"><b>lịch sử</b> ${escapeHtml(m.lastVerdict)}</span>`
   ].filter(Boolean).join("");
   app.el.metaChips.innerHTML = chips;
+  app.updateStatementTruthStatus?.();
 }
 
 export function setEditorFiles(app, files) {

@@ -105,8 +105,8 @@ function visibleRows(app) {
     const byId = new Map(problems.map((p) => [p.id, p]));
     const merged = serverSearch.items
       .filter((r) => r.activityKind === "competitive-problem")
-      .map((r) => ({ ...(byId.get(r.id) || {}), ...r, __reasons: r.reasons, __serverMatch: true }))
-      .filter((r) => r.id);
+      .filter((r) => byId.has(r.id))
+      .map((r) => ({ ...byId.get(r.id), ...r, truth: byId.get(r.id).truth, __reasons: r.reasons, __serverMatch: true }));
     return applyLocalFilters(merged, filters);
   }
   return problems

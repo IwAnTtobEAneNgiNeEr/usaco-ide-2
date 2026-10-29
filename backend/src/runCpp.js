@@ -143,6 +143,7 @@ function runProcess(command, args, options) {
     let stdoutCapped = false;
     let stderrCapped = false;
     let fileCapped = false;
+    let stdinError = null;
     const text = (buffer, max) => new TextDecoder("utf-8").decode(Buffer.from(buffer.toString("utf8")).subarray(0, max), { stream: true });
 
     try {
@@ -164,6 +165,13 @@ function runProcess(command, args, options) {
       });
       return;
     }
+
+    // A compiler or submitted program may exit before consuming stdin. EPIPE
+    // is an asynchronous stream event, so try/catch around end() cannot catch
+    // it; early close is valid when the process has already produced output.
+    child.stdin.on("error", (error) => {
+      if (error.code !== "EPIPE") stdinError = error;
+    });
 
     child.stdout.on("data", (chunk) => {
       stdout = Buffer.concat([stdout, chunk]);
@@ -216,12 +224,13 @@ function runProcess(command, args, options) {
     child.on("close", (code) => {
       clearTimeout(timer);
       clearInterval(fileTimer);
+      const stdinDiagnostic = stdinError ? text(Buffer.from(String(stdinError.message || "stdin write failed")), maxStderr) : "";
       resolve({
-        ok: code === 0 && !timedOut && !stdoutCapped && !stderrCapped && !fileCapped,
-        code,
+        ok: code === 0 && !stdinError && !timedOut && !stdoutCapped && !stderrCapped && !fileCapped,
+        code: stdinError && code === 0 ? null : code,
         notFound: false,
         stdout: text(stdout, maxStdout),
-        stderr: text(stderr, maxStderr),
+        stderr: text(stderr, maxStderr) || stdinDiagnostic,
         timeMs: Date.now() - startedAt,
         timedOut,
         outputCapped: stdoutCapped || stderrCapped || fileCapped,
