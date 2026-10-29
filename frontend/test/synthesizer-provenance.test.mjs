@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { escapeHtml } from '../src/md.js';
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'w1-synth-'));
@@ -97,7 +98,7 @@ async function captureJudgeInputs(id) {
   };
   mockRequire.resolve = name => {
     assert.ok(['./runCpp', './judgeService'].includes(name));
-    return new URL(`../../backend/src/${name.slice(2)}.js`, import.meta.url).pathname;
+    return fileURLToPath(new URL(`../../backend/src/${name.slice(2)}.js`, import.meta.url));
   };
   const module = { exports: {} };
   vm.runInNewContext(source, { module, require: mockRequire, process });
