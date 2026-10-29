@@ -2,6 +2,85 @@
 
 > Dùng khi có máy tính, môi trường/chủ tài khoản và khả năng xem app, cấu hình, kiểm chứng hoặc vận hành thật. File đồng hành: [WORK_DIEN_THOAI.md](WORK_DIEN_THOAI.md). Làm từng mục theo thứ tự và điều kiện, không triển khai tất cả chỉ vì file này tồn tại.
 
+## Kết luận và phạm vi beta — cập nhật 29/10/2026
+
+**Chưa mở public submission hoặc AI bằng server hiện tại.** Bản code khảo sát là IDE local: `/api/problems/:id/workspace` trả code, notes và tests; API settings cho thay `baseUrl` AI; `runCpp.js` chạy tiến trình với quyền backend. Output cap, Host loopback và data root riêng có ích cho local nhưng không tạo phân quyền nhiều user hay sandbox cho Internet. Đây là kết luận từ code, không phải kết quả pentest.
+
+Beta đề xuất chỉ có: **(1)** catalog các bài đã review → statement/sample → C++ → Run sample/custom → Submit hidden suite → verdict + lịch sử riêng; **(2)** user có quyền dùng nội dung nguồn → AI tạo **draft riêng** → xem/sửa, biết chưa kiểm chứng → nếu muốn đưa vào catalog thì người được phân quyền kiểm duyệt và chuẩn bị bộ chấm độc lập. Bài AI cá nhân có thể cho chạy thử sample trong runner an toàn, nhưng kết quả đó phải được gọi đúng là chạy thử; không hứa AC chính thức chỉ từ sample. Nguồn lớn được hỗ trợ từng nguồn sau khi xác minh quyền, API và hành vi thực tế; nhập link không đồng nghĩa đã fetch/copy/được phép đăng lại.
+
+Không đưa Xưởng/Arena, rating, thi đấu, social, nhiều ngôn ngữ hoặc scale kiểu LeetCode vào điều kiện beta. Giữ chúng trong sản phẩm local và xem lại sau khi có feedback. Mục tiêu thực tế là người mới hoàn thành một vòng giải bài và một vòng tạo draft có thể hiểu được.
+
+### Điều đã kiểm tra và chưa kiểm tra
+
+- Ngày 29/10, GitHub: `main` 216e38d; PR #2 draft `962f209` vào main; PR #3 `d8d6d2f` và PR #4 `a5ca374` cùng nhắm integration; PR #17 W0 draft `cb391716` nhắm PR #3. PR #4 chưa nằm trong PR #17. Trước mọi thay đổi phải kiểm tra lại refs và base, không suy ra nhánh mới nhất theo ngày tạo.
+- Work báo PR #17 có 62 targeted checks đạt và static CI đạt; chưa có browser/HTTP E2E, toàn bộ Judge suite hay compiler containment trên head đó. Báo cáo PR là bằng chứng Work cung cấp; chưa thay thế review độc lập.
+- Ngày 29/10, Codex mở head #17 từ bản `git archive` vào `/tmp/usaco-plan-wm8gA3Bu/app`, dùng Node 24.22.1, `USER_DATA_ROOT` mới, loopback và Companion tắt. Browser mở bài mẫu, xem statement ở desktop và 390×844. Trên desktop tiêu đề lặp và toán hiện literal `$a$`/`\\le`; tại 390×844, panel Run ép vùng đề còn rất hẹp. Có thể tái hiện trong trạng thái được mô tả; chưa kiểm tra mọi viewport hay thiết bị thật. Ảnh đã xem trong lượt browser, chưa lưu thành tệp evidence.
+- Lượt 28/10 ở snapshot `a98090c` từng thử AC → sửa → stale → WA và AI mock, tìm thấy lỗi provenance/receipt, filter và retry dịch UI. Đó là bằng chứng lịch sử cho snapshot đó; cần tái hiện trên base mới trước khi sửa. Lượt 29/10 **không chạy submit/compiler suite, provider thật, AI generation E2E, tải đồng thời hay security test**. Màn DMOJ public gặp security verification; phần so sánh DMOJ dựa trên repo/docs, không vượt qua challenge.
+- Dữ liệu kiểm tra trong `/tmp/usaco-plan-wm8gA3Bu/user-data` là tổng hợp, không đưa vào Git. Runtime `node` đã kết thúc; không có bằng chứng từ lượt này rằng môi trường host là sandbox để chạy code không tin cậy.
+
+**Đường code để bắt đầu kiểm tra:** danh sách `frontend/src/problems.js` → `backend/src/routes/catalog.js`/`problems.js`; đề/editor `frontend/src/statement.js`, `editor.js` và `i18n.js` → `routes/files.js`/`problemStore.js`; Submit `frontend/src/api.js` → `routes/judge.js` → `judgeService.js`/`runCpp.js` → `evidenceStore.js`; biến thể AI `frontend/src/features/synthesizer.js` → `routes/ai.js` và `routes/problems.js` → `oracleTrust.js`/`verifyTests.js`. Đối chiếu `judgeState.js`, `truthModel.js` và `docs/security/truth-core.md` trước thay đổi verdict hay trust.
+
+### Tham khảo sản phẩm và mã nguồn mở
+
+| Nguồn | Mẫu hữu ích | Quyết định cho beta và giới hạn |
+| --- | --- | --- |
+| [LeetCode: luyện bài](https://support.leetcode.com/hc/en-us/articles/360012016874-Start-your-Coding-Practice), [filter list](https://support.leetcode.com/hc/en-us/articles/360013577094-How-to-use-My-List) | Đọc đề + editor + lịch sử submission; lọc theo độ khó/trạng thái/tag | Ưu tiên vòng tìm → giải → kết quả; không dựng rating/acceptance rate giả khi chưa có dữ liệu |
+| [DMOJ online-judge](https://github.com/DMOJ/online-judge), [settings](https://github.com/DMOJ/online-judge/blob/master/dmoj/settings.py) | Statement Markdown/toán, submission live, quyền và giới hạn queue | Học contract và UX; DMOJ là AGPL-3.0, phải xem giấy phép trước khi tái dùng code |
+| [USACO Guide IDE](https://github.com/cpinitiative/ide) | IDE cho competitive programming, hỗ trợ mobile và CodeMirror 6 trên mobile | Tham khảo phân chia trải nghiệm; không bắt buộc đổi stack hiện tại. Repo dùng MPL-2.0, xem license nếu lấy code |
+| [Polygon](https://polygon.codeforces.com/) và [DOMjudge problem format](https://github.com/DOMjudge/domjudge/blob/main/doc/manual/problem-format.rst) | Đề, generator, correct/wrong solutions, judging và validation; problem package | AI tạo draft; bài chính thức cần reference, test biên và lời giải sai điển hình để kiểm tra bộ test |
+| [Judge0](https://github.com/judge0/judge0), [isolate](https://github.com/ioi/isolate), [DOMjudge](https://github.com/DOMjudge/domjudge) | Runner tách biệt, giới hạn tài nguyên và sandbox | **Ứng viên đánh giá**, không mặc định an toàn hoặc rẻ cho cấu hình này. Judge0 GPL-3.0, DOMjudge GPL-2.0-or-later; xem license, dịch vụ, vận hành và test trước khi chọn |
+| [Hydro](https://github.com/hydro-dev/Hydro) | OJ đầy đủ, nguồn ngoài/virtual judge | Tham khảo tổ chức; Hydro có AGPL-3.0 và điều khoản bổ sung theo repo. Không xem hỗ trợ nguồn là quyền sao chép nội dung |
+
+Ví dụ [Codeforces mô tả điều kiện công bố problem materials](https://codeforces.com/blog/entry/967): có yêu cầu ghi nguồn/link và giới hạn riêng cho một số materials. Đó là ví dụ để bắt đầu kiểm tra, không phải kết luận rằng mọi bài, test, biến thể AI hay provider đều được phép dùng. Kiểm tra license hiện hành cho từng nguồn và hành động.
+
+### Các phase cố định và điểm giao giữa điện thoại/máy tính
+
+| Phase | Việc chính và người thực hiện | Đầu ra và điều kiện qua phase | Ước lượng công chủ động* |
+| --- | --- | --- | --- |
+| **P0 — baseline & PR** | Codex trực tiếp: kiểm tra #2/#3/#4/#17, review W0 và test còn thiếu; Work sửa finding nếu được giao | Xác định base, diff, checks, thứ tự tích hợp, không còn finding chặn W0; gate thiếu được ghi rõ | 4–8 giờ |
+| **P1 — độ đúng local** | W1 provenance/AI trust; W2 trạng thái lịch sử; W9 retry AI; W12 filter. Codex tái hiện, review và xác nhận | Không mất đề; candidate không tự trusted; current/stale và filter thống nhất; provider lỗi không lặp vô hạn | 16–30 giờ |
+| **P2 — flow & nội dung** | Codex + owner chọn phạm vi nguồn D3; W3/W10/W11 catalog, render và mobile; W4 AI draft sau D3; W7 fixture nội dung | Người mới tìm → đọc → code và hiểu draft/official; browser desktop/390/768 xác nhận; nội dung mẫu có nguồn và review | 12–24 giờ |
+| **P3 — thiết kế web** | Codex + owner quyết định D4: auth, model dữ liệu, runner và ngân sách | Một thiết kế vertical slice có quyền, version, queue, lỗi, migration/rollback và giới hạn; owner chọn phương án trước code | 10–20 giờ |
+| **P4 — xây beta** | Theo task riêng sau P3: auth/ownership/storage, API submit/queue, runner, AI gateway; W5/W6 là các PR nhỏ theo thiết kế | Hai user không đọc/sửa chéo; hidden tests kín; C++ compile/run được cô lập; AI server key, quota, kill switch và budget; bản dữ liệu có backup | 40–80 giờ |
+| **P5 — staging** | Codex trực tiếp chạy ma trận D2/D5/D6/D7, kiểm tra security/chi phí, backup restore, lỗi worker và rollback | Có bằng chứng theo commit + môi trường; không có blocker P0/P1; chủ sở hữu có runbook và đường dừng Judge/AI | 12–24 giờ |
+| **P6 — beta mời → mở rộng** | Owner mời nhóm nhỏ; Codex theo dõi feedback và hotfix có kiểm soát | Người dùng hoàn thành hai flow; không có lỗi nghiêm trọng về verdict, rò dữ liệu hay chi phí vượt mức; owner quyết định mở rộng | 6–12 giờ công, cộng thời gian chờ feedback |
+
+\* Ước lượng ban đầu **100–198 giờ công**, giả định một người dùng AI hỗ trợ, C++ là ngôn ngữ duy nhất, bắt đầu với ít bài và dùng runner đã được đánh giá. Với 10–15 giờ/tuần là khoảng **7–20 tuần công**, chưa tính thời gian chờ phê duyệt/nhà cung cấp hoặc học thêm. Đây không phải cam kết; nếu phải tự xây/cứu sandbox hay tích hợp phức tạp, thời gian có thể lớn hơn. Chốt lại sau P0/P3 dựa trên thử nghiệm và ngân sách.
+
+**Điều kiện public:** P0–P5 đạt trên cùng phiên bản triển khai, owner duyệt triển khai; bắt đầu P6 bằng nhóm mời và quota thấp. Một preview chỉ đọc có thể mở sớm hơn sau khi tách hoàn toàn API nhạy cảm và kiểm tra quyền nội dung; preview không thu được submission và chưa hoàn thành mục tiêu OJ. Nếu judge sandbox hoặc AI gateway chưa đạt, giữ riêng tính năng tương ứng đóng.
+
+### Thiết kế beta đề xuất để quyết định ở P3
+
+1. **Frontend:** danh sách có tìm/lọc thực, bài chi tiết có statement + editor + Run/Submit rõ nghĩa, result có queued/running/verdict và lịch sử riêng. Màn hẹp chọn một vùng Đề / Code / Kết quả với nút quay lại; desktop có thể chia hai vùng. Giao diện AI phải hiển thị nguồn, draft/chưa review, loading/error/cancel và quyền publish; không tiết lộ hidden tests.
+2. **API/data:** `user`, `problem`, `problem_version`, `test_suite_version` private, `submission` với source snapshot, `judge_job` và `attempt` bất biến, `ai_draft`/review/nguồn. API public theo quyền user; API curator/admin riêng. Auth/session, kiểm tra ownership từng object, CSRF/CORS theo cơ chế session được chọn; không đưa nguyên các router local `/workspace`, `/tests`, `/settings` ra Internet.
+3. **Judge:** frontend gửi source + problem/version + idempotency key → API kiểm quota và ghi submission → queue → worker/runner cách ly compile **và** run → so khớp output phía server → lưu attempt và trả trạng thái. Worker có timeout, CPU/memory/disk/process/output/network limits, không có secret, không reuse môi trường giữa user; callback và retry phải kiểm chứng, không ghi hai verdict hoặc mất job.
+4. **AI:** UI gửi nội dung có quyền và lựa chọn cố định → API authenticated kiểm size/quota/budget → provider do server kiểm soát → validate schema → lưu draft riêng, báo AI có thể sai. Không cho user chọn `baseUrl` sử dụng key chung; giới hạn retry, timeout, concurrency, log/redaction và kill switch. Nhánh verify reference C++ phải qua runner như submission hoặc tắt.
+5. **Bảo toàn dữ liệu:** version schema, backup trước migration, thử restore, rollback có thể làm theo; không đưa source bài nộp, hidden tests, key, prompt cá nhân hay runtime vào repo public. Thông báo mục đích thu thập, thời gian giữ/xóa và cách phản hồi; không mặc định dùng bài nộp để train AI.
+
+**Lựa chọn kiến trúc ở P3:**
+
+| Phương án | Lợi và đổi lại | Đề xuất bước tiếp |
+| --- | --- | --- |
+| Giữ frontend hiện có, xây API web và tích hợp runner đã được đánh giá | Giữ tài sản UX/Truth Core; vẫn phải xây auth, data ownership, queue và kiểm chứng runner | **Ưu tiên khảo sát đầu tiên** cho beta nhỏ; làm một vertical slice staging và đo chi phí/thời gian trước khi chọn |
+| Dùng trọn OJ mở như DMOJ/Hydro, gắn AI qua service riêng | Có nhiều chức năng OJ; đổi stack, vận hành và có ràng buộc license/tích hợp UX; chưa chứng minh phù hợp | Làm spike so sánh import, auth, hidden tests và giấy phép nếu phương án đầu quá nặng |
+| Tự triển khai runner/sandbox trên VM | Linh hoạt và có thể chủ động chi phí; chủ dự án chịu phần lớn việc cách ly, cập nhật và sự cố | Chỉ chọn nếu có người vận hành và chứng minh được D5; `g++` local hoặc container mặc định không đủ |
+
+Ở P3, so cả **thời gian tích hợp, chi phí ở mức dùng thử, license, quyền dữ liệu, độ tin cậy và khả năng dừng/khôi phục**; không quyết định chỉ theo số dòng code hay giá rẻ nhất. Tên nhà cung cấp, tài khoản và domain là quyết định sau khi có kết quả spike; không mua/deploy trong task lập kế hoạch này.
+
+### Kiểm chứng tối thiểu trên staging
+
+| Nhóm | Các ca phải có bằng chứng trước beta |
+| --- | --- |
+| Sản phẩm | User mới tìm/lọc/mở bài; Run sample khác Submit; AC/WA/CE/RE/TLE, reload, lịch sử, stale; 390/768/desktop và keyboard; AI thành công/lỗi/quota/cancel/reload |
+| Truth Core | Full-suite AC → đổi source/test → stale → WA; CE qua restart; AI candidate không chấm như trusted; cancelled/single-test không cấp AC; import/Stop nếu liên quan |
+| Phân quyền | User A/B + admin: không đọc/sửa source, draft hoặc submission của nhau; hidden inputs/expected không trong public API/client; route admin/settings bị chặn |
+| Judge/AI abuse | Trên hạ tầng riêng được phép: vòng lặp, output/disk/process spam, timeout/memory, network/filesystem trái phép, job trùng, worker chết/retry, quota và concurrent requests; mock AI sai schema/429/5xx |
+| Vận hành | Test khôi phục backup, dừng AI/Judge, cảnh báo chi phí, rollback phiên bản, kiểm tra secret/log và lỗi service. Ghi pass/fail/skip, số lần, SHA và môi trường; không suy luận từ static CI |
+
+**Ngân sách:** chi phí tháng = domain phân bổ tháng + web/API + DB/lưu trữ/backup + queue/runner + AI theo input/output token + băng thông + dự phòng. Tham khảo [Railway](https://railway.com/pricing): Hobby tối thiểu $5/tháng gồm usage credit, dùng thêm trả thêm; [Render](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses) từng nêu ví dụ web + Postgres khoảng $13/tháng (tháng 7/2026), chưa gồm worker/AI/domain. Đây là **ví dụ giá, không phải báo giá cho app**. Đo thử trên staging, xác nhận giá hiện hành, ngân sách tối đa và hard limit/thông báo thực tế trước khi mở. [OWASP API4](https://api-security.owasp.org/editions/2023/en/0xa4-unrestricted-resource-consumption/) giải thích giới hạn tài nguyên và chi phí.
+
+**Cần học theo thứ tự làm:** Git refs/PR/diff/revert → browser/API/HTTP và data flow → auth/ownership/session → test oracle/sample/hidden và Judge/sandbox → DB/queue/retry → AI token/quota/structured output → DNS/TLS/backup/logs/rollback. Mỗi phase yêu cầu giải thích được input, output, ai có quyền, lỗi và cách kiểm chứng trước khi chấp nhận patch AI.
+
 ## Mục tiêu và phạm vi
 
 Hai luồng phải đến được người dùng thật: **kho OJ → đọc đề → code C++ → nộp → nhận verdict và lịch sử**, và **AI dựa trên nguồn có quyền → tạo đề draft → xem lại → dùng/publish theo quyền**. Nhóm thử đầu tiên nhỏ, có giới hạn quota và cách báo lỗi. Các tính năng Xưởng/Arena là tài sản dài hạn nhưng không cần phơi toàn bộ trong beta.
