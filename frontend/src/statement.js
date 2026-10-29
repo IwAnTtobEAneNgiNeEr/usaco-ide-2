@@ -443,6 +443,7 @@ function renderStatement(app) {
     solvedChip,
     briefSrc && `<span class="stmt-brief-src">${escapeHtml(briefSrc)}</span>`,
     briefOriginLabels[meta.origin] && `<span class="stmt-brief-origin">gốc: ${escapeHtml(briefOriginLabels[meta.origin])}</span>`,
+    meta.origin === "ai-generated" && `<span class="stmt-brief-origin">Đề AI chưa được kiểm duyệt · test cần được xem xét</span>`,
     meta.derivedFrom && `<button type="button" class="stmt-brief-derived" data-open-problem="${escapeHtml(String(meta.derivedFrom.id || meta.derivedFrom))}" title="Mở artifact gốc">⑂ Phát triển từ: ${escapeHtml(String(meta.derivedFrom.title || meta.derivedFrom.id || meta.derivedFrom))}</button>`,
   ].filter(Boolean);
   const briefMetaHtml = briefParts.length ? `<div class="stmt-brief-meta">${briefParts.join('<span class="stmt-brief-dot"></span>')}</div>` : "";
