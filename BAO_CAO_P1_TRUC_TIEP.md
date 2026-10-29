@@ -1,6 +1,6 @@
 # P1 trực tiếp — bàn giao 30/10/2026
 
-**Trạng thái:** phần W2/W9/W12 và P0 EPIPE được chuẩn bị để commit trên một nhánh riêng dựa trên head `b7043630692bd89a0120da6e80fd41b5cc8944ae` của PR #18. PR #18 đã có implementation và regression tests W1 đầy đủ hơn bản W1 local ban đầu; commit này kế thừa W1 từ PR #18 và không thay thế các file W1 đó. PR #18 dựa trên PR #3; W0 P0 ở worktree khác, không có trong nhánh này. Đây vẫn là patch thử nghiệm, chưa qua gate tích hợp/public.
+**Trạng thái:** patch được đưa lên nhánh `codex/p1-public-beta-followup-20261030`, dựa trên head `b7043630692bd89a0120da6e80fd41b5cc8944ae` của PR #18. PR #18 đã có implementation và regression tests W1 đầy đủ hơn bản W1 local ban đầu; nhánh này kế thừa W1 từ PR #18, không thay thế các file W1 đó. Sau commit đầu `a23c3341a30f85b8566faddcd812ac11ee5e61e3`, kiểm tra blob phát hiện hai file lớn bị cắt trong bước truyền; commit kế tiếp sửa bằng nội dung đã đối chiếu hash. PR #18 dựa trên PR #3; W0 P0 ở worktree khác, không có trong nhánh này. Đây vẫn là patch thử nghiệm, chưa qua gate tích hợp/public.
 
 **Đối chiếu nhánh:** checkout gốc của lượt triển khai là PR #2 `962f209095cb2c1be3257033b292e143a07224e5` (detached). Khi chuẩn bị commit, phát hiện nhánh `fix/w1-synth-provenance` và PR #18 đã có trên GitHub. Phần synth local cũ và test trùng tên được giữ ngoài commit; `frontend/src/statement.js` vẫn giữ cảnh báo đề AI/test của W1 cùng nhãn trạng thái Truth Core W2.
 
