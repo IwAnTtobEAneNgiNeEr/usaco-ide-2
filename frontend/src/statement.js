@@ -14,10 +14,20 @@ let stopNeonCanvas = null;
 
 export function statementTruthLabel(meta = {}, dirty = false) {
   const derived = meta.truth?.derivedStatus;
-  const hasAc = (Array.isArray(meta.history) && meta.history.some((entry) => entry && entry.type !== "run" && entry.verdict === "AC")) || derived === "historically-accepted";
+  // Raw history also retains Run, cancelled and single-test attempts. They
+  // must not become a full Judge acceptance through this display fallback.
+  const hasAc = (Array.isArray(meta.history) && meta.history.some((entry) => entry
+    && (entry.type === "judge" || !entry.type)
+    && !entry.cancelled && entry.scope !== "single" && entry.scope !== "scratch"
+    && entry.verdict === "AC")) || derived === "historically-accepted";
   if (dirty) return "Code chưa lưu — cần Judge lại";
   if (derived === "verified") return "✓ AC hiện tại";
   if (derived === "stale") return hasAc ? "Cần Judge lại · từng AC trước đây" : "Cần Judge lại · đầu vào chấm đã đổi";
+  if (derived === "needs-work") {
+    const verdict = meta.truth?.currentVerdict;
+    const current = verdict ? `${verdict} hiện tại — cần sửa và Judge lại` : "Chưa AC — cần sửa và Judge lại";
+    return hasAc ? `${current} · từng AC trước đây` : current;
+  }
   if (hasAc) return "Từng AC trước đây · chưa xác nhận đầu vào hiện tại";
   return "";
 }
