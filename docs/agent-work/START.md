@@ -23,6 +23,7 @@ Lệnh không liệt kê file bị ignore, không chứng minh không có secret
 ## Nơi lưu thông tin
 
 - [Mẫu task và bàn giao](TASK-TEMPLATE.md): dùng cho việc nhiều bước, có phụ thuộc, nghiên cứu hoặc cần qua nhiều phiên. Việc nhỏ chỉ cần bàn giao ngắn trong kết quả/PR.
+- [Bản đồ tính năng và kiểm chứng](feature-map.md): các luồng quan trọng, code liên quan và giới hạn bằng chứng trên base được ghi trong file.
 - [Nghiên cứu workflow 2026-11-02](research-2026-11-02.md): nguồn gốc, giới hạn và lý do chọn cách làm.
 - [Task chuẩn hóa workflow 2026-11-02](workflow-2026-11-02.md): phạm vi thực hiện và các việc còn mở tại thời điểm khảo sát.
 - [Kế hoạch beta trực tiếp](../../TRUC_TIEP_PUBLIC.md) và [task giao từ điện thoại](../../WORK_DIEN_THOAI.md): bối cảnh sản phẩm trên nhánh chứa chúng; không tự triển khai toàn bộ chỉ vì đã đọc.
@@ -37,3 +38,9 @@ Tạo **một file theo task** khi cần, ví dụ `docs/agent-work/2026-11-03-h
 - CI của nhánh integration lúc khảo sát chỉ kiểm tra tĩnh. [Issue #7](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/issues/7) theo dõi branch protection; [#8](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/issues/8) provenance; [#10](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/issues/10) History browser; [#11](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/issues/11) browser harness an toàn. Kiểm tra lại live trước khi tạo việc trùng.
 
 Muốn bộ hướng dẫn hiện diện trên GitHub/default branch thì commit cục bộ chưa đủ: cần push, review và tích hợp theo quyền và gate hiện hành. Không tự coi draft PR hay CI xanh là đã merge hoặc đã kiểm chứng toàn bộ.
+
+## Cập nhật GitHub — 2026-11-03
+
+- [PR #21](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/pull/21) đưa playbook vào nhánh của PR #3; [PR #20](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/pull/20) là workflow này, còn [PR #22](https://github.com/IwAnTtobEAneNgiNeEr/usaco-ide-2/pull/22) cải tiến cấu hình Xưởng browser harness. Cả ba là draft; #20 và #22 dựa trên nhánh của #21, không phải `main`. Kiểm tra lại base, trạng thái và xung đột khi tích hợp.
+- `main` đã bật bảo vệ áp dụng cả admin: yêu cầu PR, giải quyết các cuộc thảo luận, chặn force-push và xóa nhánh; số approval bắt buộc là 0. **Chưa có CI check bắt buộc**: workflow hiện trên `main` không tạo check `static` mới. Issue #7 chưa hoàn tất; sau khi workflow đích được tích hợp và kiểm chứng, chọn check bắt buộc, kiểm tra thực thi và ghi nhận kết quả. `integration` chưa được cấu hình bảo vệ trong task này.
+- PR #22 có test cấu hình cục bộ, nhưng browser E2E thật còn chờ môi trường/browser có containment phù hợp; issue #11 chưa hoàn tất. Không coi test tĩnh hoặc test cấu hình là bằng chứng E2E.
