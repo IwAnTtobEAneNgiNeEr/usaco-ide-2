@@ -1,5 +1,7 @@
 # USACO IDE 2.0
 
+> Historical release description; it does not certify a current GitHub release or package. Recheck the actual release, tag, branch and validation evidence before distribution.
+
 **A local-first C++ IDE and judge for competitive programming** — write C++, judge against
 many test cases with a real local `g++`, stress-test against a brute force, visualize your
 inputs, and (optionally) get an AI coach. No account, no cloud, runs offline.

@@ -1,5 +1,7 @@
 # Xưởng API Contract — v2 Preview Runtime (backend ↔ frontend)
 
+> Phạm vi: contract Xưởng v2. Các số mục README bên dưới thuộc phiên bản tài liệu cũ; trước khi sửa hành vi, đối chiếu code, fixture và kiểm thử trên nhánh thực tế cùng `docs/security/truth-core.md`.
+
 > **Trạng thái C0:** ĐÓNG BĂNG 2026-07-23. Đây là contract triển khai P1 Xưởng.
 > Mọi route/payload v1 Demo-first còn được giữ để tương thích trong transition,
 > nhưng không phải input cho UI rebuild. Frontend và backend phải dùng fixture

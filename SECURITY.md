@@ -1,6 +1,6 @@
 # Security policy and limits
 
-This ZIP-derived local source has no established upstream branch/release identity or verified private security contact. Do not infer a support promise from a branch name, README URL, tests or this file.
+The original campaign source was ZIP-derived; the current Git checkout has observable branches and history, but that does not establish a released artifact or a verified private security contact. Do not infer a support promise from a branch name, README URL, tests or this file.
 
 ## Supported use boundary
 
@@ -16,6 +16,6 @@ If a real credential is exposed, the owner must revoke/rotate it at its provider
 
 ## Supply chain and automation
 
-Backend npm ci --ignore-scripts uses the lockfile. Advisory checks are point-in-time and may still find unfixed issues; never run blanket audit fixes. Electron is separately packaged, unvalidated and lacks a lockfile in this snapshot. CI uses pinned official actions, read-only contents permission and no deployment/secrets. Dependabot proposals require review; no auto-merge is configured. Actual GitHub plan, settings and permissions must be checked by the owner before activation.
+Backend npm ci --ignore-scripts uses the lockfile. Advisory checks are point-in-time and may still find unfixed issues; never run blanket audit fixes. Electron has a separate tracked lockfile but its dependencies, packaging and release have not been validated in this campaign. The integration branch's CI uses pinned official actions, read-only contents permission and no deployment/secrets; it is static-only. Review the workflow on the actual branch. Dependabot proposals require review; GitHub settings and permissions must be verified before changes.
 
 This policy does not certify compliance with OWASP, NIST or a hosted-execution security standard.
