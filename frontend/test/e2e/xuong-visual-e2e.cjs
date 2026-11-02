@@ -1,36 +1,31 @@
 "use strict";
 // F4 · real browser E2E + PNG capture for Xưởng.
 //
-// This drives a real Chrome against a running server and writes real PNGs.
-// It is NOT part of the unit suite (`node --test test/**/*.test.mjs`) because it
-// needs a live backend; run it explicitly:
-//
-//   node test/e2e/xuong-visual-e2e.js                  # dev preview :5099
-//   BASE=http://127.0.0.1:5050 node test/e2e/xuong-visual-e2e.js   # canonical
-//
-// puppeteer-core is not a repo dependency; it is resolved from the existing
-// local audit harness. If it is missing the script says so and exits 2 rather
-// than pretending the acceptance ran.
+// Drives a real Chrome against an explicitly owned loopback server and writes
+// PNGs outside source. Run only in verified containment with synthetic data.
+// See docs/operations/development.md for required paths and preflight.
 
-const fs = require("fs");
 const path = require("path");
-const Module = require("module");
+const { resolveConfig, browserOptions } = require("./visual-e2e-config.cjs");
 
-const AUDIT_MODULES = "C:/Users/Admin/usaco-audit/node_modules";
-const CHROME = process.env.CHROME || "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const BASE = process.env.BASE || "http://127.0.0.1:5099";
-const OUT = path.join(__dirname, "shots");
-
-if (!Module.globalPaths.includes(AUDIT_MODULES)) Module.globalPaths.push(AUDIT_MODULES);
+let config;
 let puppeteer;
 try {
-  puppeteer = require(path.join(AUDIT_MODULES, "puppeteer-core"));
+  config = resolveConfig(process.env, path.resolve(__dirname, "../../.."));
+} catch (error) {
+  console.error(`Browser preflight failed: ${error.message}`);
+  process.exit(2);
+}
+try {
+  // The caller must provide an audited, trusted local dependency in containment.
+  puppeteer = require(config.puppeteer);
 } catch {
-  console.error(`puppeteer-core not found at ${AUDIT_MODULES} — cannot run the browser acceptance.`);
+  console.error("Cannot load audited puppeteer-core from USACO_E2E_PUPPETEER_PATH.");
   process.exit(2);
 }
 
-fs.mkdirSync(OUT, { recursive: true });
+const BASE = config.baseUrl;
+const OUT = config.output;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 const record = (name, ok, detail = "") => {
@@ -38,13 +33,10 @@ const record = (name, ok, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"} · ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
+let ownedBrowser;
 (async () => {
-  const browser = await puppeteer.launch({
-    executablePath: CHROME,
-    headless: "new",
-    args: ["--no-sandbox", "--disable-gpu", "--force-color-profile=srgb"],
-    defaultViewport: { width: 1600, height: 940, deviceScaleFactor: 1 },
-  });
+  const browser = await puppeteer.launch(browserOptions(config));
+  ownedBrowser = browser;
   const page = await browser.newPage();
 
   const noise = [];
@@ -407,12 +399,16 @@ const record = (name, ok, detail = "") => {
   record("Browser console clean", noise.length === 0, noise.slice(0, 6).join(" ; ") || "0 warnings/errors");
 
   await browser.close();
+  ownedBrowser = null;
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed · shots in ${OUT}`);
   if (noise.length) console.log("console noise:\n" + noise.join("\n"));
-  process.exit(failed.length ? 1 : 0);
-})().catch((error) => {
+  process.exitCode = failed.length ? 1 : 0;
+})().catch(async (error) => {
+  if (ownedBrowser) {
+    try { await ownedBrowser.close(); } catch { /* preserve the original failure */ }
+  }
   console.error("E2E crashed:", error);
-  process.exit(1);
+  process.exitCode = 1;
 });
