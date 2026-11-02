@@ -30,6 +30,14 @@ Minimum targeted set: truth-campaign, truth-core-contract, judge-service, proble
 
 Use a new profile with synthetic data for browser checks. Required affected flows: AC -> expected edit -> stale -> WA, CE inspect after reload/restart, wrong AI expected excluded, cancelled/single attempts not full AC, import/Stop and unchanged persistence. Headless Chrome with its sandbox enabled is used locally; no personal cookies. Browser evidence and compiler output remain in the kit and are reviewed before export.
 
+### Xưởng visual E2E preflight
+
+`frontend/test/e2e/xuong-visual-e2e.cjs` drives a real local server and captures screenshots. Before running it, verify the appropriate containment for the environment, the server process and its owned synthetic USER_DATA_ROOT. On borrowed Windows use the verified MXC wrapper; a loopback URL or a separate browser profile alone is not OS isolation. Create two **new, empty, owned writable directories outside source** only after containment preflight succeeds: one for screenshots and one for the browser profile. Keep both outside Git and never use a personal profile.
+
+In the contained child, explicitly set `USACO_E2E_BASE_URL` to the verified owned server's `http://127.0.0.1:<port>`, `USACO_E2E_OUTPUT_DIR` and `USACO_E2E_PROFILE_DIR` to those distinct directories, `USACO_E2E_CHROME_PATH` to the local browser executable, and `USACO_E2E_PUPPETEER_PATH` to a trusted audited `puppeteer-core` package directory. Use absolute paths. Then run `node frontend/test/e2e/xuong-visual-e2e.cjs` from the project root. Missing or unsafe configuration fails before loading Puppeteer. No global install, disabled browser sandbox or automatic source-tree evidence directory is used.
+
+Configuration checks and synthetic unit tests do not prove that the server is owned, that the Chrome sandbox is active, or that MXC/OS isolation is correct. Verify those separately. If the browser/dependency/containment is missing, report E2E as blocked; do not fall back to an unsandboxed or personal environment. Screenshots and console output may contain data and require review before sharing.
+
 ## Backup, rollback and resumption
 
 Before a data/schema change: stop the owned server, copy the entire owned USER_DATA_ROOT to a new timestamped backup, record hashes/schema/source identity, validate the copy and test restore into a new location. Never overwrite a user's only data copy. Keep sensitive backups out of Git/ZIP delivery. No migration was necessary for governance.
