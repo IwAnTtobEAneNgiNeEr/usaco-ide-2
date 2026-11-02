@@ -2,9 +2,11 @@
 
 ## Source and setup
 
-Use the full governance app tree, not the older ZIP or a changes-only overlay. Source identity is established by the campaign SOURCE_OF_TRUTH.md and SHA-256 manifests; no Git ancestry is implied. Keep runtime and backups outside source. Reuse working dependencies; for a clean trusted environment use Node 24 and npm ci --prefix backend --ignore-scripts. Check the lockfile before installation. Optional desktop packaging is not part of this verified setup.
+Use the full governance app tree, not the older ZIP or a changes-only overlay. The historical campaign used SOURCE_OF_TRUTH.md and SHA-256 manifests; an archive alone implies no Git ancestry. For a Git checkout, additionally verify the current commit, branch, remote and intended base. Keep runtime and backups outside source. Reuse working dependencies; for a clean trusted environment use Node 24 and npm ci --prefix backend --ignore-scripts. Check the lockfile before installation. Optional desktop packaging is not part of this verified setup.
 
 Static check (no app import, compiler, tests or network): node scripts/verify-repository.cjs. It checks JSON/syntax/hygiene with size/time limits. It is heuristic and does not replace a secret scanner or actual Git index inspection.
+
+For local task handoff, node scripts/agent-status.cjs reports registered worktrees, tracked/untracked changes and stash count without staging, committing or fetching. Use --details only locally when paths are needed; review output before sharing. An unreadable worktree is UNKNOWN, ignored files are not listed, and local remote-tracking data is not a live GitHub check. See ../agent-work/START.md.
 
 ## Borrowed Windows: verified MXC only
 
@@ -34,6 +36,6 @@ Use a new profile with synthetic data for browser checks. Required affected flow
 
 Before a data/schema change: stop the owned server, copy the entire owned USER_DATA_ROOT to a new timestamped backup, record hashes/schema/source identity, validate the copy and test restore into a new location. Never overwrite a user's only data copy. Keep sensitive backups out of Git/ZIP delivery. No migration was necessary for governance.
 
-Campaign rollback needs no data migration: stop owned processes, retain the governance directory unchanged, and start a NEW disposable copy from the protected Truth Core baseline. Verify its manifest. Keep both copies until the owner reviews; do not delete or overwrite them. For future established Git ancestry, revert reviewed commits on a new branch; do not reset/force-push shared history.
+Campaign rollback needs no data migration: stop owned processes, retain the governance directory unchanged, and start a NEW disposable copy from the protected Truth Core baseline. Verify its manifest. Keep both copies until the owner reviews; do not delete or overwrite them. For established Git ancestry, revert reviewed commits on a new branch; do not reset/force-push shared history.
 
 On resumption, read AGENTS.md, latest source/changed-file manifests and regression evidence; verify protected baselines, current tooling/MXC and owned paths. Re-run only checks justified by new changes. Record unverified platforms, manual steps and outstanding security/dependency work. The scripts/analyze-events.js legacy tool reads repository data directly; do not run it on participant data without a separately authorized owned copy.

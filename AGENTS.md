@@ -1,8 +1,9 @@
 # USACO IDE: agent entry point
 
 ## Authority and scope
-- This source is a ZIP-derived working copy carrying the verified Truth Core changes. Do not invent Git history or treat the original ZIP as the latest implementation.
+- The original campaign source was ZIP-derived; this checkout has Git ancestry that must be checked against its actual remote and base. Do not invent history for the ZIP or treat it as the latest implementation.
 - Read README.md, docs/security/truth-core.md and docs/operations/development.md before changes. Historical docs/reference/legacy-product-direction.md and docs/HANDOVER.md are context, not competing instructions.
+- For task orientation and owner-facing status, read docs/agent-work/START.md when present. Plans and research are dated context, not new authority; verify their claims against the current branch, worktrees and live PRs.
 - Start at the project root. Without a Git root, Codex discovers project instructions from its working directory only; explicitly read this file when starting in a subdirectory. No nested instruction file is needed today.
 - Backend: Express/CommonJS, backend/server.js and backend/src/. Frontend: vanilla ES modules in frontend/. File persistence: USER_DATA_ROOT/data and workspace. desktop/ is an optional Electron package; it was not validated in this campaign.
 
@@ -23,6 +24,8 @@
 
 ## Change and verification discipline (project policy)
 - Inspect -> reproduce -> regression test -> implement -> verify -> refactor. Do not weaken tests to hide failures. Keep changes small and preserve current architecture.
+- For multi-step or cross-session work, use a task-specific record based on docs/agent-work/TASK-TEMPLATE.md; include goals, relevant sources, progress, decisions, evidence and next steps. Keep trivial work lightweight and avoid editing another task's record.
+- At task start and handoff inspect the relevant worktrees, staged, unstaged and untracked files. node scripts/agent-status.cjs is a local read-only aid; missing worktree status is unknown, ignored files and live remote state are outside its scope.
 - Governance/docs changes must preserve application bytes. Functional work must reproduce defects before behavior changes and run targeted plus relevant existing tests in containment.
 - Critical changes also need real browser E2E with a fresh profile and synthetic data: AC -> edit -> STALE -> WA, CE reload/restart, AI candidates excluded, Stop/import where relevant. Record actual counts, failures and retries.
 - No credentials, private data, profiles, caches, node_modules, generated binaries or raw runtime evidence in Git/delivery. .gitignore does not remove already tracked data; inspect the actual index when Git is available. Heuristic scanning is not proof of absence.
@@ -34,5 +37,6 @@
 - Stay within the task-owned copy. Do not edit the original ZIP, protected baselines, personal profiles, credentials, global config, ACLs, Windows policies, registry, firewall or permanent PATH.
 - No destructive cleanup. Inventory and propose recoverable quarantine first. Never stop an unrecognized process.
 - Remote creation, push, settings/visibility changes, merge, release, history rewrite and deletion need specific owner approval. A repository URL or local test success is not that approval.
+- For an authorized implementation, create logical local commits on established ancestry after reviewing the exact staged paths. Preserve unrelated work and record unfinished checks; if identity, ownership, safety or ancestry is unresolved, report the blocker instead of inventing a commit. A local commit is not an off-machine backup.
 - If Git history/auth is uncertain, stop at reconciliation; do not initialize fabricated ancestry. Never copy existing user credentials. Let the owner authenticate manually if needed.
-- Handoff: source identity and before/after SHA-256, exact changed files, commands/environment, pass/fail/skip counts and evidence paths, risks/blockers, rollback, and next task. Use logical commits only on established Git ancestry; otherwise keep an explicit change manifest.
+- Handoff: source identity and before/after SHA-256, exact changed files, commands/environment, pass/fail/skip counts and evidence paths, risks/blockers, rollback, and next task. State separately whether work is uncommitted, committed locally, pushed or in a PR; do not imply a remote result that was not verified.

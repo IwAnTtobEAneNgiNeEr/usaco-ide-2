@@ -2,6 +2,8 @@
 
 Describe the trigger, before/after behavior and scope. Link the source commit or ZIP manifest identity; do not invent ancestry.
 
+Record the base and head SHA, related issue or task record, dependencies on other PRs, and what a reviewer should inspect first.
+
 ## Validation
 
 - [ ] Static repository check passed (attach actual output).
@@ -13,3 +15,5 @@ Describe the trigger, before/after behavior and scope. Link the source commit or
 ## Risks and rollback
 
 Describe migrations, backup/restore, unresolved risks and reversibility. CI only covers static checks; it does not verify the Judge or hosted isolation. No push/merge/release/settings permission is implied by this template.
+
+State what is unverified or blocked, whether the work exists only locally or on a remote branch, and the next concrete step. Keep raw private evidence outside this public repository.

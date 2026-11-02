@@ -1,5 +1,7 @@
 # Workspace Environment Implementation Plan
 
+> Historical plan for this particular workspace task, not instructions for every agent session. Current project policy and the validated Node line are in `AGENTS.md` and `docs/operations/development.md`; verify current source before reusing any step.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn the IDE's isolated panels into one task-adaptive Workspace

@@ -1,5 +1,7 @@
 # Changelog
 
+> Historical release notes below are not proof of a currently published artifact or current CI coverage. On 2026-11-02, the GitHub release and tag listings returned no entries; recheck live before release decisions.
+
 All notable changes to USACO IDE 2.0 are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project aims to follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
